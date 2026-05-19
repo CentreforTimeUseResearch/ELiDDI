@@ -25,6 +25,11 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "test": "test"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^8.0.12"
   }
 }

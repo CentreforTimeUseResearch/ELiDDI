@@ -1,0 +1,30 @@
+{
+  "name": "eliddi",
+  "version": "0.0.1",
+  "description": "A web-based tool for collecting daily activities in a timeline format. Built for research studies and time-use surveys.",
+  "keywords": [
+    "time",
+    "use",
+    "ctur",
+    "research",
+    "university",
+    "college",
+    "london",
+    "diary"
+  ],
+  "homepage": "https://github.com/CentreforTimeUseResearch/ELiDDI#readme",
+  "bugs": {
+    "url": "https://github.com/CentreforTimeUseResearch/ELiDDI/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CentreforTimeUseResearch/ELiDDI.git"
+  },
+  "license": "MIT",
+  "author": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  }
+}

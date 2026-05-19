@@ -31,7 +31,7 @@ Development is underway and updates will be committed regularly. Planned work in
 
 - Core diary functionality
 - An interface that conforms to UK Government accessibility standards
-- Customisable activity categoties
+- Customisable activity categories
 - Internationalisation options
 - Data definition options
 - Full documentation and contribution guidelines

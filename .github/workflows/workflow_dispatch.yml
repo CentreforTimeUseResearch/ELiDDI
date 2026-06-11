@@ -7,4 +7,5 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - run: echo "output from workflow dispatch test action"
+            - run: echo ${{ github.event.inputs.data }}
 

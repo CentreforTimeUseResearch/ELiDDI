@@ -64,7 +64,10 @@ function processJsonToHTML(jsonData) {
     }
 
     console.log(html);
-
+    console.log('<hr />')
+    console.log('<pre>')
+    console.log('hello')
+    console.log('</pre>')
 }
 
 //console.log('<span>'+filePath+'</span>');

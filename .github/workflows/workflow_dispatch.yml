@@ -1,6 +1,9 @@
 name: Basic Workflow Dispatch Test
 on:
     workflow_dispatch:
+        inputs:
+            data:
+                type: string
 
 jobs:
     deploy:

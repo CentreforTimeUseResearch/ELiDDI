@@ -1,6 +1,10 @@
 import fs from 'fs'
 import path from 'path';
 import { fileURLToPath } from 'url';
+
+
+
+const environment = process.env.ACTIONS_ENV;
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
 const __dirname = path.dirname(__filename); // get the name of the directory
 
@@ -67,6 +71,7 @@ function processJsonToHTML(jsonData) {
     console.log('<hr />')
     console.log('<pre>')
     console.log('hello')
+    console.log(environment)
     console.log('</pre>')
 }
 

@@ -38,6 +38,8 @@ jobs:
             node-version: 25
 
       - name: Install and Build
+        env:
+            ACTIONS_ENV: ${{ github.event.inputs.data }}
         run: |
             npm ci
             npm run build    

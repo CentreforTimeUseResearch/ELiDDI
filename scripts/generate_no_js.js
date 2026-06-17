@@ -36,18 +36,68 @@ fs.readFile(filePath, 'utf8', (err, data) => {
     processJsonToHTML(data);
 });
 
+function generateCardNav(chunk, cardNum) {
+    let navstring =  `<nav aria-label="navigate this page">`
+
+    if(chunk > 1 || cardNum > 6) {
+        // calculate chunk and cardnum to jump
+        let target;
 
 
-function createCardHTML(timeSlot) {
+        if(cardNum > 6) {
+            // the simple case - not crossing a chunk boundary
+            target = `${chunk}_${cardNum - 6}`
+        } else {
+            // the difficult case - crossing a chunk boundary
+            target = `${chunk - 1}_${rowsChunkSize - (6 - cardNum)}`
+        }
+
+        
+
+
+        navstring += `<a href="#${target}">Skip backwards one hour</a> | `;
+    }
+
+    if(chunk > 1 || cardNum > 1) {
+        // calculate chunk and cardnum to jump 
+        let target = `${chunk}_${cardNum - 1}`
+
+        if(chunk > 1 && cardNum == 1) {
+            // the simple case - not crossing a chunk boundary
+             target = `${chunk - 1}_${rowsChunkSize - (1 - cardNum)}`
+        }
+
+
+        navstring += `<a href="#${target}">Skip backwards ten minutes</a> | `;
+    }
+
+    if(chunk < numChunks && cardNum < rowsChunkSize)
+    {
+         // calculate chunk and cardnum to jump 
+        navstring += `<a href="#">Skip forward ten minutes</a> | `
+    }
+
+    if(chunk < numChunks && cardNum < rowsChunkSize)
+    {
+        // calculate chunk and cardnum to jump
+        navstring += `<a href="#">Skip forward one hour</a>`; 
+    }
+    
+    navstring += `</nav>`;
+
+
+
+
+    return navstring;
+}
+
+function createCardHTML(timeSlot, cardNum, chunk) {
     return `
-        <li>
-        <hr />
+        <li id=${chunk}_${cardNum}>
+        <hr /> ${chunk} --- ${cardNum}
             <ul>
                 <li class="gridCell"><h3>${timeSlot}</h3></li>
-                <nav aria-label="navigate this page">
-                    <a href="#">Skip forward ten minutes</a> |
-                    <a href="#">Skip forward one hour</a> 
-                </nav>
+               
                 <li class="gridCell">
                     <span class="header">What were you doing? Please write down one main activity</span>
                     <input type="text" id="main-activity" name="main-activity" list="main-activity-list">
@@ -103,8 +153,9 @@ function createCardHTML(timeSlot) {
                 </li>
 
 
-                </ul>
+               
             </ul>
+             ${generateCardNav(chunk, cardNum)}
         </li>
         `;
 }
@@ -125,7 +176,7 @@ function createCardsHTML(activities, timeSlots, index) {
         <hr />${chunk} of ${numChunks}<hr />
         <h2 id="chunk_${chunk}">${timeSlots[0].split("-")[0]} - ${timeSlots[(timeSlots.length-1)].split("-").slice(-1)}</h2>
         ${generateChunkNav(chunk)}
-        ${timeSlots.map(createCardHTML).join(' ')}
+        ${timeSlots.map((timeSlot, i)=>createCardHTML(timeSlot, i + 1, chunk)).join(' ')}
         `;
     return cardsHTML;
 }
@@ -135,7 +186,11 @@ function processJsonToHTML(jsonData) {
     let html = '<h1>Time use diary</h1>';
     for (let i = 0; i < numChunks; i++) {
         // break the table into chunks of 18 (3 hours = 3 * (60 / 10)) 
-        const chunkTimeSlots = timeSlots.slice(i * rowsChunkSize, ((i + 1) * rowsChunkSize) - 1);
+        const chunkTimeSlots = timeSlots.slice(
+            i * rowsChunkSize, 
+            ((i + 1) * rowsChunkSize)
+        );
+
         html += `<br />${createCardsHTML(activities, chunkTimeSlots, i)}`;
     }
 

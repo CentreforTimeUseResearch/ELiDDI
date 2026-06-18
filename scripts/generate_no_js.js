@@ -36,6 +36,9 @@ fs.readFile(filePath, 'utf8', (err, data) => {
     processJsonToHTML(data);
 });
 
+/**
+ * to do: swap out magic numbers
+ */
 function generateCardNav(chunk, cardNum) {
     let navstring =  `<nav aria-label="navigate this page">`
 
@@ -52,18 +55,16 @@ function generateCardNav(chunk, cardNum) {
             target = `${chunk - 1}_${rowsChunkSize - (6 - cardNum)}`
         }
 
-        
-
-
-        navstring += `<a href="#${target}">Skip backwards one hour</a> | `;
+        navstring += `| <a href="#${target}">Skip backwards one hour</a> | `;
     }
 
     if(chunk > 1 || cardNum > 1) {
         // calculate chunk and cardnum to jump 
+        // the simple case - not crossing a chunk boundary
         let target = `${chunk}_${cardNum - 1}`
 
         if(chunk > 1 && cardNum == 1) {
-            // the simple case - not crossing a chunk boundary
+             // the difficult case - crossing a chunk boundary
              target = `${chunk - 1}_${rowsChunkSize - (1 - cardNum)}`
         }
 
@@ -71,16 +72,34 @@ function generateCardNav(chunk, cardNum) {
         navstring += `<a href="#${target}">Skip backwards ten minutes</a> | `;
     }
 
-    if(chunk < numChunks && cardNum < rowsChunkSize)
+    if(chunk !== numChunks || cardNum !== rowsChunkSize)
     {
-         // calculate chunk and cardnum to jump 
-        navstring += `<a href="#">Skip forward ten minutes</a> | `
+        // calculate chunk and cardnum to jump 
+        // the simple case - not crossing a chunk boundary
+        let target = `${chunk}_${cardNum + 1}`
+        
+        if(cardNum === rowsChunkSize) {
+            // the difficult case - crossing a chunk boundary
+            target = `${chunk+1}_${1}`
+        }
+
+        navstring += `<a href="#${target}">Skip forward ten minutes</a> | `
     }
 
-    if(chunk < numChunks && cardNum < rowsChunkSize)
+    if(chunk !== numChunks || cardNum < rowsChunkSize - 5)
     {
         // calculate chunk and cardnum to jump
-        navstring += `<a href="#">Skip forward one hour</a>`; 
+        // the simple case - not crossing a chunk boundary
+        let target = `${chunk}_${cardNum + 6}`
+        
+        if(cardNum > rowsChunkSize - 6) {
+            // the difficult case - crossing a chunk boundary
+            const cardsLeftInSection = rowsChunkSize - 6
+            target = `${chunk+1}_${cardNum - cardsLeftInSection}`
+        }
+
+
+        navstring += `<a href="#${target}">Skip forward one hour</a> |`; 
     }
     
     navstring += `</nav>`;

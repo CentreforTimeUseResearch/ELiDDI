@@ -107,70 +107,60 @@ function generateCardNav(chunk, cardNum, timeSlot) {
 function createCardHTML(timeSlot, cardNum, chunk) {
   return `
         <li id="${chunk}_${cardNum}">
-        
-            <ul>
-                <li class="gridCell"><h3>${timeSlot}</h3></li>
-               
-                <li class="gridCell">
-                    <label for="${chunk}_${cardNum}-main-activity" class="header">What were you doing? Please write down one main activity</label>
-                    <input type="text" id="${chunk}_${cardNum}-main-activity" name="${chunk}_${cardNum}-main-activity" list="main-activity-list">
-                </li>
+            <h3>${timeSlot}</h3>
 
-                <li class="gridCell">
-                    <label for="${chunk}_${cardNum}-secondary-activity" class="gridCell header">If you did something else at the same time, what else did you do? </label>
-                    <input type="text" id="${chunk}_${cardNum}-secondary-activity" name="${chunk}_${cardNum}-secondary-activity" list="main-activity-list">
-                </li>
+            <div class="gridCell">
+                <label for="${chunk}_${cardNum}-main-activity" class="header">What were you doing? Please write down one main activity</label>
+                <input type="text" id="${chunk}_${cardNum}-main-activity" name="${chunk}_${cardNum}-main-activity" list="main-activity-list">
+            </div>
 
-                <li class="gridCell">
-                    <label for="${chunk}_${cardNum}-deviceUsed" class="gridCell header">Did you use a smartphone tablet, or computer?</label>
-                    <input type="checkbox" id="${chunk}_${cardNum}-deviceUsed" name="${chunk}_${cardNum}-deviceUsed" />
-                </li>
+            <div class="gridCell">
+                <label for="${chunk}_${cardNum}-secondary-activity" class="header">If you did something else at the same time, what else did you do? </label>
+                <input type="text" id="${chunk}_${cardNum}-secondary-activity" name="${chunk}_${cardNum}-secondary-activity" list="main-activity-list">
+            </div>
 
+            <div class="gridCell">
+                <label for="${chunk}_${cardNum}-deviceUsed" class="header">Did you use a smartphone tablet, or computer?</label>
+                <input type="checkbox" id="${chunk}_${cardNum}-deviceUsed" name="${chunk}_${cardNum}-deviceUsed" />
+            </div>
 
-                <li class="gridCell">
-                    <label for="${chunk}_${cardNum}-location" class="gridCell header">Where were you? Location, or mode of transport</label>
-                    <input type="text" id="${chunk}_${cardNum}-location" name="${chunk}_${cardNum}-location" list="locations-list">
-                </li>
+            <div class="gridCell">
+                <label for="${chunk}_${cardNum}-location" class="header">Where were you? Location, or mode of transport</label>
+                <input type="text" id="${chunk}_${cardNum}-location" name="${chunk}_${cardNum}-location" list="locations-list">
+            </div>
 
-                <li class="gridCell">
-                    
-                    <fieldset>
+            <div class="gridCell">
+                <fieldset>
                     <legend>Were you alone or with somebody you know? <small>Mark all relevant boxes</small></legend>
-                        <label><input type="checkbox" id="${chunk}_${cardNum}-alone" name="${chunk}_${cardNum}-alone"/>Alone</label>
-                        <label><input type="checkbox" id="${chunk}_${cardNum}-spouse_partner" name="${chunk}_${cardNum}-spouse_partner"/>Spouse/partner</label>
-                        <label><input type="checkbox" id="${chunk}_${cardNum}-mother" name="${chunk}_${cardNum}-mother"/>Mother</label>
-                        <label><input type="checkbox" id="${chunk}_${cardNum}-father" name="${chunk}_${cardNum}-father"/>Father</label>
-                        <label><input type="checkbox" id="${chunk}_${cardNum}-child_0_7" name="${chunk}_${cardNum}-child_0_7"/>Child aged 0-7</label>
-                        <label><input type="checkbox" id="${chunk}_${cardNum}-other_in_household" name="${chunk}_${cardNum}-other_in_household"/>Other Person</label>
-                        <label><input type="checkbox" id="${chunk}_${cardNum}-other_outside_household" name="${chunk}_${cardNum}-other_outside_household"/>Others you know</label>
-                    </fieldset>
-                    
-                </li>
+                    <label><input type="checkbox" id="${chunk}_${cardNum}-alone" name="${chunk}_${cardNum}-alone"/>Alone</label>
+                    <label><input type="checkbox" id="${chunk}_${cardNum}-spouse_partner" name="${chunk}_${cardNum}-spouse_partner"/>Spouse/partner</label>
+                    <label><input type="checkbox" id="${chunk}_${cardNum}-mother" name="${chunk}_${cardNum}-mother"/>Mother</label>
+                    <label><input type="checkbox" id="${chunk}_${cardNum}-father" name="${chunk}_${cardNum}-father"/>Father</label>
+                    <label><input type="checkbox" id="${chunk}_${cardNum}-child_0_7" name="${chunk}_${cardNum}-child_0_7"/>Child aged 0-7</label>
+                    <label><input type="checkbox" id="${chunk}_${cardNum}-other_in_household" name="${chunk}_${cardNum}-other_in_household"/>Other Person</label>
+                    <label><input type="checkbox" id="${chunk}_${cardNum}-other_outside_household" name="${chunk}_${cardNum}-other_outside_household"/>Others you know</label>
+                </fieldset>
+            </div>
 
-                
+            <div class="gridCell">
+                <label for="${chunk}_${cardNum}-enjoyed" class="header">How much did you enjoy this time? 1 = not at all 7 = very much</label>
+                <select id="${chunk}_${cardNum}-enjoyed" name="${chunk}_${cardNum}-enjoyed">
+                    <option>1</option>
+                    <option>2</option>
+                    <option>3</option>
+                    <option>4</option>
+                    <option>5</option>
+                    <option>6</option>
+                    <option>7</option>
+                </select>
+            </div>
 
-                <li class="gridCell">
-                    <label for="${chunk}_${cardNum}-enjoyed" class="gridCell header">How much did you enjoy this time? 1 = not at all 7 = very much</label>
-                     <select id="${chunk}_${cardNum}-enjoyed" name="${chunk}_${cardNum}-enjoyed">
-                        <option>1</option>
-                        <option>2</option>
-                        <option>3</option>
-                        <option>4</option>
-                        <option>5</option>
-                        <option>6</option>
-                        <option>7</option>
-                    </select>
-                </li>
+            <div class="gridCell">
+                <label for="${chunk}_${cardNum}-activity_continued_until_next_entry" class="header">Continue this activity until next entry (if checked you can leave the between entries blank)</label>
+                <input type="checkbox" id="${chunk}_${cardNum}-activity_continued_until_next_entry" name="${chunk}_${cardNum}-activity_continued_until_next_entry"/>
+            </div>
 
-                <li class="gridCell">
-                    <label for="${chunk}_${cardNum}-activity_continued_until_next_entry" class="gridCell header">Continue this activity until next entry (if checked you can leave the between entries blank)</label>
-                     <input type="checkbox" id="${chunk}_${cardNum}-activity_continued_until_next_entry" name="${chunk}_${cardNum}-activity_continued_until_next_entry"/>
-                </li>
-
-
-               
-            </ul>
-             ${generateCardNav(chunk, cardNum, timeSlot)}
+            ${generateCardNav(chunk, cardNum, timeSlot)}
         </li>
         `;
 }
@@ -189,7 +179,7 @@ function createCardsHTML(activities, timeSlots, index) {
   const chunk = index + 1;
   // ${activities.timeline.map((activity) => activity.name.trim() ? '<td>' + activity.name + '</td>' : '').join(" ")}
   const cardsHTML = `
-        <label>Diary progress:<progress value="${chunk}" max="${numChunks}">${chunk} of ${numChunks}</progress></label>
+        <label>Diary progress: ${chunk} of ${numChunks} <progress value="${chunk}" max="${numChunks}" /></label>
         <h2 id="chunk_${chunk}">${timeSlots[0].split('-')[0]} - ${timeSlots[timeSlots.length - 1].split('-').slice(-1)}</h2>
         ${generateChunkNav(chunk)}
         <ol>

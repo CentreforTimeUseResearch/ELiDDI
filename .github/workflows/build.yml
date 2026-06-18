@@ -1,0 +1,10 @@
+name: CI deploy
+on:
+    push:
+        branches:
+            - master
+
+jobs:
+    ci:
+        runs-on: ubuntu-latest
+

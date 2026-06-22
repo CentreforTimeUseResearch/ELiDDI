@@ -105,28 +105,31 @@ function generateCardNav(chunk, cardNum, timeSlot) {
 }
 
 function createCardHTML(timeSlot, cardNum, chunk) {
+
+  const firstHeader = cardNum === 1 ? 'firstHeader' : '';
+
   return `
-        <li id="${chunk}_${cardNum}">
+        <li id="${chunk}_${cardNum}" class="gridRow ${firstHeader}">
             <h3>${timeSlot}</h3>
 
             <div class="gridCell">
                 <label for="${chunk}_${cardNum}-main-activity" class="header">What were you doing? Please write down one main activity</label>
-                <input type="text" id="${chunk}_${cardNum}-main-activity" name="${chunk}_${cardNum}-main-activity" list="main-activity-list">
+                <span><input type="text" id="${chunk}_${cardNum}-main-activity" name="${chunk}_${cardNum}-main-activity" list="main-activity-list"></span>
             </div>
-
+ 
             <div class="gridCell">
                 <label for="${chunk}_${cardNum}-secondary-activity" class="header">If you did something else at the same time, what else did you do? </label>
-                <input type="text" id="${chunk}_${cardNum}-secondary-activity" name="${chunk}_${cardNum}-secondary-activity" list="main-activity-list">
+                <span><input type="text" id="${chunk}_${cardNum}-secondary-activity" name="${chunk}_${cardNum}-secondary-activity" list="main-activity-list"></span>
             </div>
 
             <div class="gridCell">
                 <label for="${chunk}_${cardNum}-deviceUsed" class="header">Did you use a smartphone tablet, or computer?</label>
-                <input type="checkbox" id="${chunk}_${cardNum}-deviceUsed" name="${chunk}_${cardNum}-deviceUsed" />
+                <span><input type="checkbox" id="${chunk}_${cardNum}-deviceUsed" name="${chunk}_${cardNum}-deviceUsed" /></span>
             </div>
 
             <div class="gridCell">
                 <label for="${chunk}_${cardNum}-location" class="header">Where were you? Location, or mode of transport</label>
-                <input type="text" id="${chunk}_${cardNum}-location" name="${chunk}_${cardNum}-location" list="locations-list">
+                <span><input type="text" id="${chunk}_${cardNum}-location" name="${chunk}_${cardNum}-location" list="locations-list"></span>
             </div>
 
             <div class="gridCell">
@@ -144,7 +147,7 @@ function createCardHTML(timeSlot, cardNum, chunk) {
 
             <div class="gridCell">
                 <label for="${chunk}_${cardNum}-enjoyed" class="header">How much did you enjoy this time? 1 = not at all 7 = very much</label>
-                <select id="${chunk}_${cardNum}-enjoyed" name="${chunk}_${cardNum}-enjoyed">
+                <span><select id="${chunk}_${cardNum}-enjoyed" name="${chunk}_${cardNum}-enjoyed">
                     <option>1</option>
                     <option>2</option>
                     <option>3</option>
@@ -152,12 +155,12 @@ function createCardHTML(timeSlot, cardNum, chunk) {
                     <option>5</option>
                     <option>6</option>
                     <option>7</option>
-                </select>
+                </select></span>
             </div>
 
             <div class="gridCell">
                 <label for="${chunk}_${cardNum}-activity_continued_until_next_entry" class="header">Continue this activity until next entry (if checked you can leave the between entries blank)</label>
-                <input type="checkbox" id="${chunk}_${cardNum}-activity_continued_until_next_entry" name="${chunk}_${cardNum}-activity_continued_until_next_entry"/>
+                <span><input type="checkbox" id="${chunk}_${cardNum}-activity_continued_until_next_entry" name="${chunk}_${cardNum}-activity_continued_until_next_entry"/></span>
             </div>
 
             ${generateCardNav(chunk, cardNum, timeSlot)}

@@ -40,6 +40,17 @@ This section will be expanded as the project takes shape.
 
 ---
 
+## Running Tests
+
+Tests are written with [Vitest](https://vitest.dev/).
+
+```bash
+npm test          # watch mode
+npm test -- --run # single pass
+```
+
+---
+
 ## Contributing
 
 It's early days, but interest and ideas are very welcome. Once the initial architecture is established, contribution guidelines will be published. In the meantime, feel free to open a discussion or raise an issue.

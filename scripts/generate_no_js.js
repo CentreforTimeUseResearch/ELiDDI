@@ -109,7 +109,7 @@ function createCardHTML(timeSlot, cardNum, chunk) {
   const firstHeader = cardNum === 1 ? 'firstHeader' : '';
 
   return `
-        <li id="${chunk}_${cardNum}" class="gridRow ${firstHeader}">
+        <li id="${chunk}_${cardNum}" class="card-tenMinutes gridRow ${firstHeader}">
             <h3>${timeSlot}</h3>
 
             <div class="gridCell">
@@ -185,7 +185,7 @@ function createCardsHTML(activities, timeSlots, index) {
         <label>Diary progress: ${chunk} of ${numChunks} <progress value="${chunk}" max="${numChunks}" /></label>
         <h2 id="chunk_${chunk}">${timeSlots[0].split('-')[0]} - ${timeSlots[timeSlots.length - 1].split('-').slice(-1)}</h2>
         ${generateChunkNav(chunk)}
-        <ol>
+        <ol class="card-threeHours">
         ${timeSlots.map((timeSlot, i) => createCardHTML(timeSlot, i + 1, chunk)).join(' ')}
         </ol>
         `;
@@ -201,7 +201,7 @@ function generateFooter() {
 function processJsonToHTML(jsonData) {
   const activities = JSON.parse(jsonData);
   let html = '<header><h1>Time use diary</h1></header>';
-  html += '<form method="post" action="/">';
+  html += '<form method="post" action="/"><dynamic-timeline>';
   for (let i = 0; i < numChunks; i++) {
     // break the table into chunks of 18 (3 hours = 3 * (60 / 10))
     const chunkTimeSlots = timeSlots.slice(i * rowsChunkSize, (i + 1) * rowsChunkSize);
@@ -210,7 +210,7 @@ function processJsonToHTML(jsonData) {
   }
   html += generateFooter();
 
-  html += '</form>';
+  html += '</dynamic-timeline></form>';
 
   console.log(html);
   // console.log('<hr />')

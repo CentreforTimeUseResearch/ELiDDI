@@ -48,8 +48,25 @@
   }
 }
 
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+
+  75% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
 body {
   margin: 0;
+  opacity: 0;
+  animation: fadeIn 2s forwards;
 }
 
 h1,
@@ -91,7 +108,7 @@ p {
     /* grid-auto-columns: 100px; */
     grid-template-columns: repeat(auto-fit, minmax(10px, 1fr));
     grid-template-areas: "header header header header header header header";
-    gap: 8px;
+    gap: 8px 8px;
 
     background-color: #ccc;
 

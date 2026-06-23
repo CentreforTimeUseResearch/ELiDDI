@@ -1,4 +1,4 @@
-import { DynamicTimelineUI } from "./components/dynamicTimelineUI";
+import { DynamicTimelineUI } from "./components/dynamicTimelineUI/dynamicTimelineUI";
 
 
 

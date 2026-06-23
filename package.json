@@ -28,6 +28,7 @@
     "dev": "vite",
     "build": "vite build --base=./",
     "preview": "vite preview",
+    "test": "vitest",
     "lint": "eslint src scripts",
     "lint:fix": "eslint src scripts --fix",
     "format": "prettier --write src scripts",
@@ -38,7 +39,9 @@
     "eslint": "^10.5.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.6.0",
+    "jsdom": "^29.1.1",
     "prettier": "^3.8.4",
-    "vite": "^8.0.12"
+    "vite": "^8.0.12",
+    "vitest": "^4.1.9"
   }
 }

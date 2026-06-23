@@ -9,5 +9,8 @@ export default {
         return html.replace('__GENERATED__', output)
       }
     }
-  ]
+  ],
+  test: {
+    environment: 'jsdom',
+  },
 }

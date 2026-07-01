@@ -1,4 +1,4 @@
-import { Autocomplete } from "../autocomplete/autocomplete";  // as el-autocomplete
+// import { Autocomplete } from "../autocomplete/autocomplete";  // as el-autocomplete
 
 import './activityPanel.css';
 

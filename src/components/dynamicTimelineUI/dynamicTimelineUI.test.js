@@ -9,9 +9,10 @@ describe('DynamicTimelineUI', () => {
     document.body.innerHTML = ''
   })
 
-  it('renders Hello World heading', () => {
-    const el = document.createElement('dynamic-timeline')
-    document.body.appendChild(el)
-    expect(el.innerHTML).toBe('<h1>Hello, World!</h1>')
+  it('renders sidebar and activity panel', () => {
+    const el = document.createElement('dynamic-timeline');
+    document.body.appendChild(el);
+    expect(el.innerHTML).toContain('activity-panel');
+    expect(el.innerHTML).toContain('side-bar');
   })
 })

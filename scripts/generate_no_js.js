@@ -200,8 +200,8 @@ function generateFooter() {
 
 function processJsonToHTML(jsonData) {
   const activities = JSON.parse(jsonData);
-  let html = '<header><h1>Time use diary</h1></header>';
-  html += '<form method="post" action="/"><dynamic-timeline>';
+  let html = '<dynamic-timeline><header><h1>Time use diary</h1></header>';
+  html += '<form method="post" action="/">';
   for (let i = 0; i < numChunks; i++) {
     // break the table into chunks of 18 (3 hours = 3 * (60 / 10))
     const chunkTimeSlots = timeSlots.slice(i * rowsChunkSize, (i + 1) * rowsChunkSize);

@@ -102,6 +102,48 @@ p {
   margin: 0;
 }
 
+/**
+ * utility classes 
+ */
+.hidden {
+  display: none;
+}
+
+
+button.reset-to-div {
+  /* Remove user-agent appearance and background */
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+
+  /* Remove native borders and padding */
+  border: none;
+  padding: 0;
+  margin: 0;
+
+  /* Inherit text styling from the parent instead of the browser UA stylesheet */
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  text-align: inherit;
+
+  /* Match the default block-level display layout of a div */
+  display: block;
+
+  /* Reset cursor to default text/arrow pointer instead of a hand (if desired) */
+  cursor: default;
+}
+
+/* Optional: Removes the default outline box on click, but make sure to 
+   provide custom focus styles if this remains an interactive button! */
+button.reset-to-div:focus {
+  outline: none;
+}
+
+
+/**
+ * no javascript styles
+ */
 .no-js {
   .gridRow {
     display: grid;
@@ -155,3 +197,10 @@ p {
     }
   }
 }
+
+/**
+ * javascript enabled styles 
+ */
+
+
+body:not(.no-js) {}

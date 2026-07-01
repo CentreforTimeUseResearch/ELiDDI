@@ -1,3 +1,8 @@
+import { ActivityPanel } from "../activityPanel/activityPanel";
+import { Sidebar } from "../sidebar/sidebar";
+
+import './dynamicTimelineUI.css';
+
 export class DynamicTimelineUI extends HTMLElement {
     constructor() {
         super();
@@ -8,7 +13,10 @@ export class DynamicTimelineUI extends HTMLElement {
     }
 
     render() {
-        // this component is a work in progress so this output is for debug purposes
-        this.innerHTML = `<h1>Hello, World!</h1>`;
+        // this component is a work in progress
+        this.innerHTML = `<activity-panel></activity-panel><side-bar></side-bar>`;
     }
 }
+
+
+customElements.define('dynamic-timeline', DynamicTimelineUI);

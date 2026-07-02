@@ -210,14 +210,16 @@ function processJsonToHTML(jsonData) {
   }
   html += generateFooter();
 
-  html += '</dynamic-timeline></form>';
+  html += '</form></dynamic-timeline>';
 
   console.log(html);
-  // console.log('<hr />')
-  // console.log('<pre>')
-  // console.log('hello')
-  // console.log(environment)
-  // console.log('</pre>')
+  console.log('<hr />');
+  console.log('<pre>');
+  console.log(environment);
+  console.log('</pre>');
+
+
+
 }
 
 //console.log('<span>'+filePath+'</span>');

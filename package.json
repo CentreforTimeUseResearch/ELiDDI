@@ -32,14 +32,17 @@
     "lint": "eslint src scripts",
     "lint:fix": "eslint src scripts --fix",
     "format": "prettier --write src scripts",
-    "format:check": "prettier --check src scripts"
+    "format:check": "prettier --check src scripts",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "eslint": "^10.5.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.6.0",
+    "husky": "^9.1.7",
     "jsdom": "^29.1.1",
+    "lint-staged": "^17.0.8",
     "prettier": "^3.8.4",
     "vite": "^8.0.12",
     "vitest": "^4.1.9"

@@ -104,77 +104,87 @@ function generateCardNav(chunk, cardNum, timeSlot) {
   return navstring;
 }
 
-function createCardHTML(data, timeSlot, cardNum, chunk) {
 
-  const firstHeader = cardNum === 1 ? 'firstHeader' : '';
-
-  const dataListIds = data.map((timelineObject) => timelineObject.timeline.replace(' ', '-').toLowerCase())
-
-  // we can't make these any more generic as the data doesn't indicate what type of form UI (eg select, radio) to use.
+function generateTextFieldInput(chunk, cardNum, uniqueRef, questionText) {
   return `
-        <li id="${chunk}_${cardNum}" class="card-tenMinutes gridRow ${firstHeader}">
-            <h3>${timeSlot}</h3>
+  <div class="gridCell">
+      <label for="${chunk}_${cardNum}-${uniqueRef}" class="header">${questionText}</label>
+      <span><input type="text" id="${chunk}_${cardNum}-${uniqueRef}" name="${chunk}_${cardNum}-${uniqueRef}" list="${uniqueRef}"></span>
+  </div>
+  `;
+}
 
-            <!-- timeline 0 -->
-            <div class="gridCell">
-                <label for="${chunk}_${cardNum}-main-activity" class="header">What were you doing? Please write down one main activity</label>
-                <span><input type="text" id="${chunk}_${cardNum}-main-activity" name="${chunk}_${cardNum}-main-activity" list="${dataListIds[0]}"></span>
-            </div>
- 
-            <!-- timeline 1 -->
-            <div class="gridCell">
-                <label for="${chunk}_${cardNum}-secondary-activity" class="header">If you did something else at the same time, what else did you do? </label>
-                <span><input type="text" id="${chunk}_${cardNum}-secondary-activity" name="${chunk}_${cardNum}-secondary-activity" list="${dataListIds[1]}"></span>
-            </div>
 
-            <!-- timeline 4 -->
-            <div class="gridCell">
-                <label for="${chunk}_${cardNum}-deviceUsed" class="header">Did you use a smartphone tablet, or computer?</label>
-                <span><input type="checkbox" id="${chunk}_${cardNum}-deviceUsed" name="${chunk}_${cardNum}-deviceUsed" list=${dataListIds[4]}/></span>
-            </div>
+function generateSingleCheckboxInput(chunk, cardNum, uniqueRef, questionText) {
+  return `
+  <div class="gridCell">
+    <label for="${chunk}_${cardNum}-${uniqueRef}" class="header">${questionText}</label>
+    <span><input type="checkbox" id="${chunk}_${cardNum}-${uniqueRef}" name="${chunk}_${cardNum}-${uniqueRef}" list=${uniqueRef}/></span>
+  </div>
+  `;
+}
 
-            <!-- timeline 2 -->
-            <div class="gridCell">
-                <label for="${chunk}_${cardNum}-location" class="header">Where were you? Location, or mode of transport</label>
-                <span><input type="text" id="${chunk}_${cardNum}-location" name="${chunk}_${cardNum}-location" list="${dataListIds[2]}"></span>
-            </div>
-
-            <!-- timeline 3 -->
-            <div class="gridCell">
+function generateMultiCheckboxInput(chunk, cardNum, uniqueRef, options, questionText) {
+  return `
+              <div class="gridCell">
                 <fieldset>
-                    <legend>Were you alone or with somebody you know? <small>Mark all relevant boxes</small></legend>
-                    <label><input type="checkbox" id="${chunk}_${cardNum}-alone" name="${chunk}_${cardNum}-who"/>Alone</label><br />
-  ${data[3].options.map(
+                    <legend>${questionText} <small>Mark all relevant boxes</small></legend>
+                    <label><input type="checkbox" id="${chunk}_${cardNum}-alone" name="${chunk}_${cardNum}-${uniqueRef}"/>Alone</label><br />
+  ${options.map(
     (option) => {
       const safeId = option.replace(/ |\//g, "_");
-      return `<label><input type="checkbox" id="${chunk}_${cardNum}-${safeId}" name="${chunk}_${cardNum}-who"/>${option}</label><br />`
+      const label = option.split('-').pop().trim();  // remove category info, if any
+
+      return `<label><input type="checkbox" id="${chunk}_${cardNum}-${safeId}" name="${chunk}_${cardNum}-${uniqueRef}"/>${option}</label><br />`
     }
   ).join("")}
                </fieldset>
             </div>
+            `;
 
-            <!-- timeline 7 -->
+}
+
+function generateSelectDropDown(chunk, cardNum, uniqueRef, options, questionText) {
+  return `
             <div class="gridCell">
-                <label for="${chunk}_${cardNum}-enjoyed" class="header">How much did you enjoy this time? 1 = not at all 7 = very much</label>
+                <label for="${chunk}_${cardNum}-enjoyed" class="header">${questionText}</label>
                 <span><select id="${chunk}_${cardNum}-enjoyed" name="${chunk}_${cardNum}-enjoyed">
-                    <option>1</option>
-                    <option>2</option>
-                    <option>3</option>
-                    <option>4</option>
-                    <option>5</option>
-                    <option>6</option>
-                    <option>7</option>
+                    ${options.map(option => `<option>${option}</option>`).join("")}
                 </select></span>
-            </div>
+            </div>`;
+}
 
-            <div class="gridCell">
-                <label for="${chunk}_${cardNum}-activity_continued_until_next_entry" class="header">Continue this activity until next entry (if checked you can leave the between entries blank)</label>
-                <span><input type="checkbox" id="${chunk}_${cardNum}-activity_continued_until_next_entry" name="${chunk}_${cardNum}-activity_continued_until_next_entry"/></span>
-            </div>
+function createCardHTML(data, timeSlot, cardNum, chunk) {
 
-            ${generateCardNav(chunk, cardNum, timeSlot)}
-        </li>
-        `;
+  const firstHeader = cardNum === 1 ? 'firstHeader' : '';
+
+  data.forEach((timelineObject) => timelineObject.uniqueRef = timelineObject.timeline.replace(' ', '-').toLowerCase())
+
+  return `
+  <li id="${chunk}_${cardNum}" class="card-tenMinutes gridRow ${firstHeader}">
+    <h3>${timeSlot}</h3>
+
+            
+  ${data.map((timeline, index) => {
+    if (timeline.mode === 'single-choice') {
+      if (timeline.allow_free_text) {
+        return generateTextFieldInput(chunk, cardNum, timeline.uniqueRef, timeline.description)
+      } else {
+        return generateSelectDropDown(chunk, cardNum, timeline.uniqueRef, timeline.options, timeline.description)
+      }
+    } else if (timeline.mode === 'multiple-choice') {
+      return generateMultiCheckboxInput(chunk, cardNum, timeline.uniqueRef, timeline.options, timeline.description)
+    }
+  }).join("")}
+
+
+
+
+  ${generateSingleCheckboxInput(chunk, cardNum, 'activity_continued_until_next_entry', 'Continue this activity until next entry (if checked you can leave the between entries blank)')}
+
+  ${generateCardNav(chunk, cardNum, timeSlot)}
+  </li>
+  `;
 }
 
 function generateChunkNav(chunk) {
@@ -209,14 +219,11 @@ function generateFooter() {
     `;
 }
 
-function createTimelinesWithFlattenedActivities(data) {
-  // extract activity selection lists for timelines
-  const timelines = data.timeline.reduce((acc, timeline) => { acc[timeline.name] = timeline.categories; return acc }, {})
-  // we need to flatten activities 
+function createTimelinesWithFlattenedActivities(timelines) {
 
-  const timelinesWithFlattenedActivities = Object.keys(timelines).map(
+  const timelinesWithFlattenedActivities = timelines.map(
     (timeline) => {
-      const categoryObjectList = timelines[timeline];
+      const categoryObjectList = timeline.categories;
 
       const categoriesWithFlattenedActivityList = categoryObjectList.reduce(
         (acc, categoryObject) => {
@@ -259,7 +266,10 @@ function createTimelinesWithFlattenedActivities(data) {
       )
 
       return {
-        timeline,
+        timeline: timeline.name,
+        mode: timeline.mode,
+        description: timeline.description,
+        allow_free_text: timeline.allow_free_text,
         options
       }
     }
@@ -294,7 +304,7 @@ function generateScriptBlockForEnvironmentVariables(jsonData) {
 
 function processJsonToHTML(jsonData) {
   const data = JSON.parse(jsonData);
-  const timelinesWithFlattenedActivities = createTimelinesWithFlattenedActivities(data);
+  const timelinesWithFlattenedActivities = createTimelinesWithFlattenedActivities(data.timeline);
 
 
 

@@ -1,5 +1,6 @@
-  dynamic-timeline {
-      display: block;
-      height: 100vh;
-      background-image: url(../../assets/images/timeline.png);
-  }
+dynamic-timeline {
+  display: block;
+  height: 100vh;
+  background-image: url(../../assets/images/timeline.png);
+  background-position-y: 80px;
+}

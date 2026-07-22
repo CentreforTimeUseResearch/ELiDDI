@@ -9,6 +9,10 @@ el-onboarding {
     flex-direction: column;
     height: 100%;
 
+    img {
+        display: none;
+    }
+
     .content {
         flex-grow: 1;
         flex-shrink: 0;

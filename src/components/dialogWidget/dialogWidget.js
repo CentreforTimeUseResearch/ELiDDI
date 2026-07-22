@@ -58,16 +58,23 @@ export class DialogWidget extends TinyBase {
         // this.render();
     }
 
+    moveSpotlight(x, y, size) {
+        this.style.setProperty("--spotlight1-x", x + "%");
+        this.style.setProperty("--spotlight1-y", y + "%");
+        this.style.setProperty("--spotlight-size", size + "%");
+    }
+
+    moveModalTop(y) {
+        this.style.setProperty("--modal-y-pos", y + "px");
+    }
+
     render() {
-        // this.classList.add(this[POSITION]);
-        // this.classList.add(this[BACKDROP] === 'true' ? 'backdrop' : 'no-backdrop');
-        // this.classList.add(this[POINTER]);
 
         this.innerHTML = `
         <dialog id="dialog">
             <div class="dialog-layout">
                 <div class="dialog-content"> 
-                    ${this.onboarding ? `<el-onboarding></el-onboarding>` : `<div></div>`}
+                    ${this.onboarding ? `<el-onboarding ${this.setProps({ moveSpotlight: this.moveSpotlight, moveModalTop: this.moveModalTop })}></el-onboarding>` : `<div></div>`}
                 </div>
                 <div class="dialog-actions">
                       <button>skip</button>

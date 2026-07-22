@@ -17,16 +17,33 @@
   },
   "instructions": [
     {
-      "title": "Select and Place an Activity",
-      "text": "Choose an activity from the menu at the bottom of the screen, then place it on the timeline."
+      "title": "1. Select a Timeline",
+      "text": "Use the <strong>timeline picker</strong> to switch timelines. Each timeline records different information about your day. When you switch you will see information about what each timeline is for.",
+      "spotlight": [
+        50,
+        2,
+        18
+      ],
+      "image": "timeline-picker.png"
     },
     {
-      "title": "Adjust Activity Duration",
-      "text": "Click and drag the edges horizontally to set the duration."
+      "title": "Pick a start time",
+      "text": "Click or tap on the timeline to indicate the start time, you can always adjust this in the next step",
+      "spotlight": [
+        50,
+        50,
+        40
+      ],
+      "modalTop": "450"
     },
     {
-      "title": "Submit Your Diary",
-      "text": "Once you've recorded all your activities for the day, click the Submit button to complete your diary."
+      "title": "Submit your diary",
+      "text": "Once you've recorded all your activities for the day, click the Submit button to complete your diary.",
+      "spotlight": [
+        50,
+        90,
+        20
+      ]
     }
   ],
   "timeline": [

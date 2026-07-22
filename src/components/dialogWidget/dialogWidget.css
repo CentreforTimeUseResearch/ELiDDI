@@ -1,13 +1,41 @@
 el-dialog {
+
+
   --border-color: #6f86ff;
+
+  --spotlight1-x: 50%;
+  --spotlight1-y: 2%;
+  --spotlight-size: 18%;
+  --spotlight1-base-color: #000;
+  --spotlight1-spot-color: #fff;
+  --spotlight1-opacity: 76%;
+
+  --modal-y-pos: 0px;
 
   dialog {
     position: relative;
+    inset-block-start: var(--modal-y-pos);
+
     box-sizing: border-box;
     border: 4px solid var(--border-color);
     border-radius: 16px;
-    height: 100vh;
-    max-height: 60%;
+    transition-property: inset-block-start;
+    transition-duration: 0.5s;
+
+    &:has(.spotlight) {
+
+      /* backdrop with spotlight */
+      &::backdrop {
+        background: radial-gradient(circle at var(--spotlight1-x) var(--spotlight1-y),
+            var(--spotlight1-spot-color) var(--spotlight-size),
+            color-mix(in srgb, var(--spotlight1-base-color) var(--spotlight1-opacity), transparent) var(--spotlight-size));
+        mix-blend-mode: darken;
+        transition-property: background;
+        transition-duration: 0.5s;
+        transition-behavior: allow-discrete;
+      }
+    }
+
 
     .dialog-layout {
       height: 100%;

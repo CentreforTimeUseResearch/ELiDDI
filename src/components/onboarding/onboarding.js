@@ -43,17 +43,23 @@ export class Onboarding extends TinyBase {
 
   render() {
     const { onboardingStep } = this.store.getState();
-    const { title, text } = GLOBALS.DATA.instructions[onboardingStep];
-    const isLastStep = onboardingStep === GLOBALS.DATA.instructions.length - 1
-    console.log(isLastStep)
+    const { title, text, spotlight, modalTop } = GLOBALS.DATA.instructions[onboardingStep];
+    const numberOfSteps = GLOBALS.DATA.instructions.length;
+    const isLastStep = onboardingStep === numberOfSteps - 1; // index is zero indexed so last index is one less than numberOfSteps;
+
+    if (Array.isArray(spotlight)) {
+      this.props.moveSpotlight(...spotlight)
+    }
+    this.props.moveModalTop(modalTop || 0);
+
     this.innerHTML = `
-            <div class="content">
-              <h4>${title}</h4>
+            <div class="content spotlight">
+              <h4>${title}</h4>            
               <img class="onboarding-card-image" src="/src/assets/images/dummy_timeline.png" />
               <div>${text}</div> 
             </div>
             <div class="navigation">
-              <progress id="onboarding-progress" max="3" value="${onboardingStep + 1}">1 of 3</progress>
+              <progress id="onboarding-progress" max="${numberOfSteps}" value="${onboardingStep + 1}">${onboardingStep} of ${numberOfSteps}</progress>
               <div class="button-bar">
                 ${onboardingStep > 0 ? `<button data-back>back</button>` : ''}
                 <button data-next ${isLastStep ? `class="last"` : ''} >${isLastStep ? 'start' : 'next'}</button>

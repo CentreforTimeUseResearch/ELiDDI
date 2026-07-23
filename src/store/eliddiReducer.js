@@ -34,8 +34,20 @@ const uipanel = (state = undefined, action) => {
   }
 }
 
+const timelineIndex = (state = 0, action) => {
+  switch (action?.type) {
+    case 'SWITCH_TIMELINE':
+      return action.payload;
+    case 'RESET_TIMELINE_INDEX':
+      return 0;
+    default:
+      return state;
+  }
+}
+
 export const eliddiReducer = combineReducers({
   onboarding,
   onboardingStep,
   uipanel,
+  timelineIndex
 });

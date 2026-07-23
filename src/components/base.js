@@ -1,16 +1,25 @@
 import { eliddiReducer } from '../store/eliddiReducer';
 import { createStore } from '../store/store';
+import { localStoreSave, localStoreLoad } from '../store/localStorage';
 
 // singletons via module patten
+
+
+// props is a key:value store that allows components to pass objects arrays and functions  
 const props = {};
-let store;
+
+// application state (based on primitive redux)
+const persistedState = localStoreLoad();
+let store = createStore(eliddiReducer, persistedState);
+store.subscribe(() => {
+  localStoreSave(store.getState())
+})
 
 export class TinyBase extends HTMLElement {
   key;
 
   constructor() {
     super();
-    store = createStore(eliddiReducer);
   }
 
   connectedCallback() {

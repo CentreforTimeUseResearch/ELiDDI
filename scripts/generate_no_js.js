@@ -129,13 +129,13 @@ function generateMultiCheckboxInput(chunk, cardNum, uniqueRef, options, question
                     <legend>${questionText} <small>Mark all relevant boxes</small></legend>
                     <label><input type="checkbox" id="${chunk}_${cardNum}-alone" name="${chunk}_${cardNum}-${uniqueRef}"/>Alone</label><br />
   ${options
-    .map((option) => {
-      const safeId = option.replace(/ |\//g, '_');
-      const label = option.split('-').pop().trim(); // remove category info, if any
+      .map((option) => {
+        const safeId = option.replace(/ |\//g, '_');
+        const label = option.split('-').pop().trim(); // remove category info, if any
 
-      return `<label><input type="checkbox" id="${chunk}_${cardNum}-${safeId}" name="${chunk}_${cardNum}-${uniqueRef}"/>${option}</label><br />`;
-    })
-    .join('')}
+        return `<label><input type="checkbox" id="${chunk}_${cardNum}-${safeId}" name="${chunk}_${cardNum}-${uniqueRef}"/>${option}</label><br />`;
+      })
+      .join('')}
                </fieldset>
             </div>
             `;
@@ -165,12 +165,21 @@ function createCardHTML(data, timeSlot, cardNum, chunk) {
 
             
   ${data
-    .map((timeline, index) => {
-      if (timeline.mode === 'single-choice') {
-        if (timeline.allow_free_text) {
-          return generateTextFieldInput(chunk, cardNum, timeline.uniqueRef, timeline.description);
-        } else {
-          return generateSelectDropDown(
+      .map((timeline, index) => {
+        if (timeline.mode === 'single-choice') {
+          if (timeline.allow_free_text) {
+            return generateTextFieldInput(chunk, cardNum, timeline.uniqueRef, timeline.description);
+          } else {
+            return generateSelectDropDown(
+              chunk,
+              cardNum,
+              timeline.uniqueRef,
+              timeline.options,
+              timeline.description
+            );
+          }
+        } else if (timeline.mode === 'multiple-choice') {
+          return generateMultiCheckboxInput(
             chunk,
             cardNum,
             timeline.uniqueRef,
@@ -178,21 +187,9 @@ function createCardHTML(data, timeSlot, cardNum, chunk) {
             timeline.description
           );
         }
-      } else if (timeline.mode === 'multiple-choice') {
-        return generateMultiCheckboxInput(
-          chunk,
-          cardNum,
-          timeline.uniqueRef,
-          timeline.options,
-          timeline.description
-        );
-      }
-    })
-    .join('')}
-
-
-
-
+      })
+      .join('')}
+      
   ${generateSingleCheckboxInput(chunk, cardNum, 'activity_continued_until_next_entry', 'Continue this activity until next entry (if checked you can leave the between entries blank)')}
 
   ${generateCardNav(chunk, cardNum, timeSlot)}

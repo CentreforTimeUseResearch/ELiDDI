@@ -1,0 +1,10 @@
+el-contextual-help {
+  flex-grow: 0;
+  color: #6f86ff;
+  text-align: right;
+
+  svg {
+    margin-left: 5px;
+    width: 100%;
+  }
+}

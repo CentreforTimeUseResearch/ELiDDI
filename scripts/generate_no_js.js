@@ -104,7 +104,6 @@ function generateCardNav(chunk, cardNum, timeSlot) {
   return navstring;
 }
 
-
 function generateTextFieldInput(chunk, cardNum, uniqueRef, questionText) {
   return `
   <div class="gridCell">
@@ -113,7 +112,6 @@ function generateTextFieldInput(chunk, cardNum, uniqueRef, questionText) {
   </div>
   `;
 }
-
 
 function generateSingleCheckboxInput(chunk, cardNum, uniqueRef, questionText) {
   return `
@@ -130,18 +128,17 @@ function generateMultiCheckboxInput(chunk, cardNum, uniqueRef, options, question
                 <fieldset>
                     <legend>${questionText} <small>Mark all relevant boxes</small></legend>
                     <label><input type="checkbox" id="${chunk}_${cardNum}-alone" name="${chunk}_${cardNum}-${uniqueRef}"/>Alone</label><br />
-  ${options.map(
-    (option) => {
-      const safeId = option.replace(/ |\//g, "_");
-      const label = option.split('-').pop().trim();  // remove category info, if any
+  ${options
+    .map((option) => {
+      const safeId = option.replace(/ |\//g, '_');
+      const label = option.split('-').pop().trim(); // remove category info, if any
 
-      return `<label><input type="checkbox" id="${chunk}_${cardNum}-${safeId}" name="${chunk}_${cardNum}-${uniqueRef}"/>${option}</label><br />`
-    }
-  ).join("")}
+      return `<label><input type="checkbox" id="${chunk}_${cardNum}-${safeId}" name="${chunk}_${cardNum}-${uniqueRef}"/>${option}</label><br />`;
+    })
+    .join('')}
                </fieldset>
             </div>
             `;
-
 }
 
 function generateSelectDropDown(chunk, cardNum, uniqueRef, options, questionText) {
@@ -149,33 +146,49 @@ function generateSelectDropDown(chunk, cardNum, uniqueRef, options, questionText
             <div class="gridCell">
                 <label for="${chunk}_${cardNum}-enjoyed" class="header">${questionText}</label>
                 <span><select id="${chunk}_${cardNum}-enjoyed" name="${chunk}_${cardNum}-enjoyed">
-                    ${options.map(option => `<option>${option}</option>`).join("")}
+                    ${options.map((option) => `<option>${option}</option>`).join('')}
                 </select></span>
             </div>`;
 }
 
 function createCardHTML(data, timeSlot, cardNum, chunk) {
-
   const firstHeader = cardNum === 1 ? 'firstHeader' : '';
 
-  data.forEach((timelineObject) => timelineObject.uniqueRef = timelineObject.timeline.replace(' ', '-').toLowerCase())
+  data.forEach(
+    (timelineObject) =>
+      (timelineObject.uniqueRef = timelineObject.timeline.replace(' ', '-').toLowerCase())
+  );
 
   return `
   <li id="${chunk}_${cardNum}" class="card-tenMinutes gridRow ${firstHeader}">
     <h3>${timeSlot}</h3>
 
             
-  ${data.map((timeline, index) => {
-    if (timeline.mode === 'single-choice') {
-      if (timeline.allow_free_text) {
-        return generateTextFieldInput(chunk, cardNum, timeline.uniqueRef, timeline.description)
-      } else {
-        return generateSelectDropDown(chunk, cardNum, timeline.uniqueRef, timeline.options, timeline.description)
+  ${data
+    .map((timeline, index) => {
+      if (timeline.mode === 'single-choice') {
+        if (timeline.allow_free_text) {
+          return generateTextFieldInput(chunk, cardNum, timeline.uniqueRef, timeline.description);
+        } else {
+          return generateSelectDropDown(
+            chunk,
+            cardNum,
+            timeline.uniqueRef,
+            timeline.options,
+            timeline.description
+          );
+        }
+      } else if (timeline.mode === 'multiple-choice') {
+        return generateMultiCheckboxInput(
+          chunk,
+          cardNum,
+          timeline.uniqueRef,
+          timeline.options,
+          timeline.description
+        );
       }
-    } else if (timeline.mode === 'multiple-choice') {
-      return generateMultiCheckboxInput(chunk, cardNum, timeline.uniqueRef, timeline.options, timeline.description)
-    }
-  }).join("")}
+    })
+    .join('')}
 
 
 
@@ -220,83 +233,70 @@ function generateFooter() {
 }
 
 function createTimelinesWithFlattenedActivities(timelines) {
+  const timelinesWithFlattenedActivities = timelines.map((timeline) => {
+    const categoryObjectList = timeline.categories;
 
-  const timelinesWithFlattenedActivities = timelines.map(
-    (timeline) => {
-      const categoryObjectList = timeline.categories;
+    const categoriesWithFlattenedActivityList = categoryObjectList.reduce((acc, categoryObject) => {
+      const categoryName = categoryObject.name;
+      const flattenedActivities = [];
 
-      const categoriesWithFlattenedActivityList = categoryObjectList.reduce(
-        (acc, categoryObject) => {
-          const categoryName = categoryObject.name;
-          const flattenedActivities = [];
-
-          categoryObject.activities.forEach(activity => {
-            if (activity.childItems && activity.childItems.length > 0) {
-              activity.childItems.forEach((childItem) => {
-                flattenedActivities.push(`${activity.name} - ${childItem.name}`);
-              })
-              return;
-            }
-            flattenedActivities.push(activity.name)
+      categoryObject.activities.forEach((activity) => {
+        if (activity.childItems && activity.childItems.length > 0) {
+          activity.childItems.forEach((childItem) => {
+            flattenedActivities.push(`${activity.name} - ${childItem.name}`);
           });
-
-          acc[categoryName] = flattenedActivities
-
-          return acc;
-        },
-        {}
-      )
-
-      // now flatten this into one list per timeline
-
-
-      const options = [];
-      Object.keys(categoriesWithFlattenedActivityList).forEach(
-        (categoryName) => {
-          categoriesWithFlattenedActivityList[categoryName].forEach(
-            (activity) => {
-              if (categoryName.trim()) {
-                options.push(`${categoryName} - ${activity}`)
-              } else {
-                options.push(activity);
-              }
-            }
-          )
+          return;
         }
-      )
+        flattenedActivities.push(activity.name);
+      });
 
-      return {
-        timeline: timeline.name,
-        mode: timeline.mode,
-        description: timeline.description,
-        allow_free_text: timeline.allow_free_text,
-        options
-      }
-    }
-  )
+      acc[categoryName] = flattenedActivities;
+
+      return acc;
+    }, {});
+
+    // now flatten this into one list per timeline
+
+    const options = [];
+    Object.keys(categoriesWithFlattenedActivityList).forEach((categoryName) => {
+      categoriesWithFlattenedActivityList[categoryName].forEach((activity) => {
+        if (categoryName.trim()) {
+          options.push(`${categoryName} - ${activity}`);
+        } else {
+          options.push(activity);
+        }
+      });
+    });
+
+    return {
+      timeline: timeline.name,
+      mode: timeline.mode,
+      description: timeline.description,
+      allow_free_text: timeline.allow_free_text,
+      options,
+    };
+  });
 
   return timelinesWithFlattenedActivities;
 }
 
-
 function generateDataLists(timelinesWithFlattenedActivities) {
-  return timelinesWithFlattenedActivities.map(
-    ({ timeline, options }) => {
+  return timelinesWithFlattenedActivities
+    .map(({ timeline, options }) => {
       return generateDataList(timeline, options);
-    }
-  ).join("");
-
+    })
+    .join('');
 }
 
 function generateDataList(timeline, options) {
-
-  return `<datalist id="${timeline.replace(" ", "-").toLowerCase()}">${options.map((option) => {
-    return `<option value="${option}"></option>`
-  }).join("")
-    }</datalist>`
+  return `<datalist id="${timeline.replace(' ', '-').toLowerCase()}">${options
+    .map((option) => {
+      return `<option value="${option}"></option>`;
+    })
+    .join('')}</datalist>`;
 }
 
-// this function makes the values in the environment variable available to 
+// this function makes the values in the environment variable available to
 // the runtime browser javascript
 function generateScriptBlockForEnvironmentVariables(jsonData) {
   return `<script>GLOBALS = {DATA: ${jsonData} }; </script>`;
@@ -305,8 +305,6 @@ function generateScriptBlockForEnvironmentVariables(jsonData) {
 function processJsonToHTML(jsonData) {
   const data = JSON.parse(jsonData);
   const timelinesWithFlattenedActivities = createTimelinesWithFlattenedActivities(data.timeline);
-
-
 
   let html = generateScriptBlockForEnvironmentVariables(jsonData);
 
@@ -328,9 +326,6 @@ function processJsonToHTML(jsonData) {
   console.log('<pre>');
   console.log(environment);
   console.log('</pre>');
-
-
-
 }
 
 //console.log('<span>'+filePath+'</span>');

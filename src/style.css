@@ -48,7 +48,6 @@
   }
 }
 
-
 @keyframes fadeIn {
   0% {
     opacity: 0;
@@ -109,7 +108,6 @@ p {
   display: none;
 }
 
-
 button.reset-to-div {
   /* Remove user-agent appearance and background */
   appearance: none;
@@ -140,7 +138,6 @@ button.reset-to-div:focus {
   outline: none;
 }
 
-
 /**
  * no javascript styles
  */
@@ -149,20 +146,18 @@ button.reset-to-div:focus {
     display: grid;
     /* grid-auto-columns: 100px; */
     grid-template-columns: repeat(auto-fit, minmax(10px, 1fr));
-    grid-template-areas: "header header header header header header header";
+    grid-template-areas: 'header header header header header header header';
     gap: 8px 8px;
 
     background-color: #ccc;
 
     .gridCell {
-      border: 1px solid grey
+      border: 1px solid grey;
     }
 
     nav {
       display: none;
     }
-
-
   }
 
   label,
@@ -174,7 +169,7 @@ button.reset-to-div:focus {
     display: inline;
   }
 
-  fieldset>label {
+  fieldset > label {
     display: block;
   }
 
@@ -202,5 +197,4 @@ button.reset-to-div:focus {
  * javascript enabled styles 
  */
 
-
-body:not(.no-js) {}
+/* body:not(.no-js) {} */

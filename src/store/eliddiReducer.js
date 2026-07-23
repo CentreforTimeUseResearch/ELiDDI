@@ -22,7 +22,20 @@ const onboarding = (state = true, action) => {
   }
 };
 
+// in this case we can only show one panel at a time
+const uipanel = (state = undefined, action) => {
+  switch (action?.type) {
+    case 'SHOW_PANEL':
+      return action.payload;
+    case 'HIDE_PANEL':
+      return undefined;
+    default:
+      return state;
+  }
+}
+
 export const eliddiReducer = combineReducers({
   onboarding,
   onboardingStep,
+  uipanel,
 });

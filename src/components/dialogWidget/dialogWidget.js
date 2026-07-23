@@ -29,8 +29,23 @@ export class DialogWidget extends TinyBase {
         this.render();
         this.dialog = this.querySelector('dialog');
 
+
+        this.querySelector('[data-skip]').addEventListener('click', () => {
+            this.store.dispatch({
+                type: 'DISMISS_ONBOARDING'
+            })
+        })
+        this.store.subscribe(this.updateState.bind(this))
+        this.updateState();
+    }
+
+    updateState() {
+        const { onboarding } = this.store.getState();
+        this.onboarding = onboarding;
         if (this.onboarding) {
             this.showModal();
+        } else {
+            this.close();
         }
     }
 
@@ -77,7 +92,7 @@ export class DialogWidget extends TinyBase {
                     ${this.onboarding ? `<el-onboarding ${this.setProps({ moveSpotlight: this.moveSpotlight, moveModalTop: this.moveModalTop })}></el-onboarding>` : `<div></div>`}
                 </div>
                 <div class="dialog-actions">
-                      <button>skip</button>
+                      <button data-skip>skip</button>
                 </div>
             </div>
         </dialog>

@@ -27,8 +27,8 @@
       "image": "timeline-picker.png"
     },
     {
-      "title": "Pick a start time",
-      "text": "Click or tap on the timeline to indicate the start time, you can always adjust this in the next step.",
+      "title": "2. Pick a start time",
+      "text": "Click or tap on the timeline to indicate the start time, you can always adjust this in the next step",
       "spotlight": [
         50,
         50,
@@ -37,11 +37,22 @@
       "modalTop": "450"
     },
     {
-      "title": "Submit your diary",
-      "text": "Once you've recorded all your activities for the day, click the Submit button to complete your diary.",
+      "title": "3. Add activity details",
+      "text": "Use the activity picker to fill out the activity details",
       "spotlight": [
         50,
         90,
+        20
+      ],
+      "modalTop": "-450",
+      "showPanel": "activity"
+    },
+    {
+      "title": "4. Submit your diary",
+      "text": "Once you've recorded all your activities for the day, click the Submit button to complete your diary.",
+      "spotlight": [
+        50,
+        10,
         20
       ]
     }

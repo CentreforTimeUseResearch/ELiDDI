@@ -16,14 +16,26 @@ export class Onboarding extends TinyBase {
     this.store.subscribe(this.render.bind(this))
   }
 
-  assignEventHandlers() {
+  assignEventHandlers(isLastStep) {
 
     this.back = this.querySelector('[data-back]')
     this.back?.addEventListener('click', () => this.onBackClick())
 
-    this.next = this.querySelector('[data-next]')
-    this.next?.addEventListener('click', () => this.onNextClick())
+    if (!isLastStep) {
+      this.next = this.querySelector('[data-next]')
+      this.next?.addEventListener('click', () => this.onNextClick())
+    }
+    else {
+      //assign event handler to button that moves on from onboarding 
+      this.next = this.querySelector('[data-next]')
+      this.next?.addEventListener('click', () => {
+        this.store.dispatch({
+          type: 'DISMISS_ONBOARDING'
+        })
+      })
 
+
+    }
     this.ready = true;
 
   }
@@ -40,12 +52,31 @@ export class Onboarding extends TinyBase {
     })
   }
 
+  onOpenPanel(payload) {
+    this.store.dispatch({
+      type: 'SHOW_PANEL',
+      payload
+    })
+  }
+
+  onClosePanel() {
+    this.store.dispatch({
+      type: 'HIDE_PANEL'
+    })
+  }
 
   render() {
-    const { onboardingStep } = this.store.getState();
-    const { title, text, spotlight, modalTop } = GLOBALS.DATA.instructions[onboardingStep];
+    const { onboardingStep, uipanel } = this.store.getState();
     const numberOfSteps = GLOBALS.DATA.instructions.length;
     const isLastStep = onboardingStep === numberOfSteps - 1; // index is zero indexed so last index is one less than numberOfSteps;
+    const { title, text, spotlight, modalTop, showPanel } = GLOBALS.DATA.instructions[onboardingStep];
+
+    if (showPanel && showPanel !== uipanel) {
+      this.onOpenPanel(showPanel)
+    } else if (showPanel === undefined && uipanel !== undefined) {
+      this.onClosePanel()
+    }
+
 
     if (Array.isArray(spotlight)) {
       this.props.moveSpotlight(...spotlight)
@@ -66,7 +97,7 @@ export class Onboarding extends TinyBase {
               </div>
             </div>
         `;
-    this.assignEventHandlers();
+    this.assignEventHandlers(isLastStep);
   }
 }
 

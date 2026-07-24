@@ -1,0 +1,8 @@
+el-timeline-stack {
+    background-color: red;
+    border: 2px solid yellow;
+    flex-grow: 1;
+    overflow-y: auto;
+    /* background-image: url(../../assets/images/timeline.png);
+    background-size: contain; */
+}

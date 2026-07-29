@@ -86,7 +86,7 @@ export class Onboarding extends TinyBase {
     this.innerHTML = `
             <div class="content spotlight">
               <h4>${title}</h4>            
-              <img class="onboarding-card-image" src="/src/assets/images/dummy_timeline.png" />
+              <!--<img class="onboarding-card-image" src="/src/assets/images/dummy_timeline.png" />-->
               <div>${text}</div> 
             </div>
             <div class="navigation">

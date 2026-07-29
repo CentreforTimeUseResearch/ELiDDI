@@ -1,0 +1,119 @@
+<svg 
+  xmlns="http://www.w3.org/2000/svg" 
+  viewBox="0 0 340 2400" 
+  width="340" 
+  height="2400" 
+  font-family="Arial, Helvetica, sans-serif"
+>
+
+  <!-- ============ DEFS ============ -->
+  <defs>
+    <!-- Time-of-day gradient: orange (sunrise) -> yellow -> green -> cyan -> blue -> violet (night) -->
+    <linearGradient id="timeGradient" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#ff9500"/>
+      <stop offset="8%"  stop-color="#ffe600"/>
+      <stop offset="30%" stop-color="#7ed321"/>
+      <stop offset="50%" stop-color="#22d3ee"/>
+      <stop offset="70%" stop-color="#3b82f6"/>
+      <stop offset="90%" stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#4c1d95"/>
+    </linearGradient>
+  </defs>
+
+  <!-- ============ BACKGROUND ============ -->
+  <rect x="0" y="0" width="340" height="2400" fill="#ffffff"/>
+  <!-- "Elapsed / past" shading: adjust y + height to match current time -->
+  <rect id="past-overlay" x="0" y="1050" width="340" height="1350" fill="#eef0f3"/>
+
+  <!-- ============ GRID LINES ============ -->
+  <g id="grid-lines">
+    <line x1="100" y1="0" x2="340" y2="0" stroke="#8f97a3" stroke-width="1"/>
+    <line x1="100" y1="50" x2="340" y2="50" stroke="#d8dbe0" stroke-width="1" stroke-dasharray="2,3"/>
+    <line x1="100" y1="100" x2="340" y2="100" stroke="#8f97a3" stroke-width="1"/>
+    <line x1="100" y1="150" x2="340" y2="150" stroke="#d8dbe0" stroke-width="1" stroke-dasharray="2,3"/>
+    <line x1="100" y1="200" x2="340" y2="200" stroke="#8f97a3" stroke-width="1"/>
+    <line x1="100" y1="250" x2="340" y2="250" stroke="#d8dbe0" stroke-width="1" stroke-dasharray="2,3"/>
+    <line x1="100" y1="300" x2="340" y2="300" stroke="#8f97a3" stroke-width="1"/>
+    <line x1="100" y1="350" x2="340" y2="350" stroke="#d8dbe0" stroke-width="1" stroke-dasharray="2,3"/>
+    <line x1="100" y1="400" x2="340" y2="400" stroke="#8f97a3" stroke-width="1"/>
+    <line x1="100" y1="450" x2="340" y2="450" stroke="#d8dbe0" stroke-width="1" stroke-dasharray="2,3"/>
+    <line x1="100" y1="500" x2="340" y2="500" stroke="#8f97a3" stroke-width="1"/>
+    <line x1="100" y1="550" x2="340" y2="550" stroke="#d8dbe0" stroke-width="1" stroke-dasharray="2,3"/>
+    <line x1="100" y1="600" x2="340" y2="600" stroke="#8f97a3" stroke-width="1"/>
+    <line x1="100" y1="650" x2="340" y2="650" stroke="#d8dbe0" stroke-width="1" stroke-dasharray="2,3"/>
+    <line x1="100" y1="700" x2="340" y2="700" stroke="#8f97a3" stroke-width="1"/>
+    <line x1="100" y1="750" x2="340" y2="750" stroke="#d8dbe0" stroke-width="1" stroke-dasharray="2,3"/>
+    <line x1="100" y1="800" x2="340" y2="800" stroke="#8f97a3" stroke-width="1"/>
+    <line x1="100" y1="850" x2="340" y2="850" stroke="#d8dbe0" stroke-width="1" stroke-dasharray="2,3"/>
+    <line x1="100" y1="900" x2="340" y2="900" stroke="#8f97a3" stroke-width="1"/>
+    <line x1="100" y1="950" x2="340" y2="950" stroke="#d8dbe0" stroke-width="1" stroke-dasharray="2,3"/>
+    <line x1="100" y1="1000" x2="340" y2="1000" stroke="#8f97a3" stroke-width="1"/>
+    <line x1="100" y1="1050" x2="340" y2="1050" stroke="#d8dbe0" stroke-width="1" stroke-dasharray="2,3"/>
+    <line x1="100" y1="1100" x2="340" y2="1100" stroke="#8f97a3" stroke-width="1"/>
+    <line x1="100" y1="1150" x2="340" y2="1150" stroke="#d8dbe0" stroke-width="1" stroke-dasharray="2,3"/>
+    <line x1="100" y1="1200" x2="340" y2="1200" stroke="#8f97a3" stroke-width="1"/>
+    <line x1="100" y1="1250" x2="340" y2="1250" stroke="#d8dbe0" stroke-width="1" stroke-dasharray="2,3"/>
+    <line x1="100" y1="1300" x2="340" y2="1300" stroke="#8f97a3" stroke-width="1"/>
+    <line x1="100" y1="1350" x2="340" y2="1350" stroke="#d8dbe0" stroke-width="1" stroke-dasharray="2,3"/>
+    <line x1="100" y1="1400" x2="340" y2="1400" stroke="#8f97a3" stroke-width="1"/>
+    <line x1="100" y1="1450" x2="340" y2="1450" stroke="#d8dbe0" stroke-width="1" stroke-dasharray="2,3"/>
+    <line x1="100" y1="1500" x2="340" y2="1500" stroke="#8f97a3" stroke-width="1"/>
+    <line x1="100" y1="1550" x2="340" y2="1550" stroke="#d8dbe0" stroke-width="1" stroke-dasharray="2,3"/>
+    <line x1="100" y1="1600" x2="340" y2="1600" stroke="#8f97a3" stroke-width="1"/>
+    <line x1="100" y1="1650" x2="340" y2="1650" stroke="#d8dbe0" stroke-width="1" stroke-dasharray="2,3"/>
+    <line x1="100" y1="1700" x2="340" y2="1700" stroke="#8f97a3" stroke-width="1"/>
+    <line x1="100" y1="1750" x2="340" y2="1750" stroke="#d8dbe0" stroke-width="1" stroke-dasharray="2,3"/>
+    <line x1="100" y1="1800" x2="340" y2="1800" stroke="#8f97a3" stroke-width="1"/>
+    <line x1="100" y1="1850" x2="340" y2="1850" stroke="#d8dbe0" stroke-width="1" stroke-dasharray="2,3"/>
+    <line x1="100" y1="1900" x2="340" y2="1900" stroke="#8f97a3" stroke-width="1"/>
+    <line x1="100" y1="1950" x2="340" y2="1950" stroke="#d8dbe0" stroke-width="1" stroke-dasharray="2,3"/>
+    <line x1="100" y1="2000" x2="340" y2="2000" stroke="#8f97a3" stroke-width="1"/>
+    <line x1="100" y1="2050" x2="340" y2="2050" stroke="#d8dbe0" stroke-width="1" stroke-dasharray="2,3"/>
+    <line x1="100" y1="2100" x2="340" y2="2100" stroke="#8f97a3" stroke-width="1"/>
+    <line x1="100" y1="2150" x2="340" y2="2150" stroke="#d8dbe0" stroke-width="1" stroke-dasharray="2,3"/>
+    <line x1="100" y1="2200" x2="340" y2="2200" stroke="#8f97a3" stroke-width="1"/>
+    <line x1="100" y1="2250" x2="340" y2="2250" stroke="#d8dbe0" stroke-width="1" stroke-dasharray="2,3"/>
+    <line x1="100" y1="2300" x2="340" y2="2300" stroke="#8f97a3" stroke-width="1"/>
+    <line x1="100" y1="2350" x2="340" y2="2350" stroke="#d8dbe0" stroke-width="1" stroke-dasharray="2,3"/>
+    <line x1="100" y1="2400" x2="340" y2="2400" stroke="#8f97a3" stroke-width="1"/>
+  </g>
+
+  <!-- ============ TIME GRADIENT LINE ============ -->
+  <rect x="85" y="0" width="4" height="2400" rx="2" fill="url(#timeGradient)"/>
+
+  <!-- ============ HOUR LABELS ============ -->
+  <g id="hour-labels" font-size="13" fill="#8a8f98" text-anchor="end">
+    <text x="65" y="10">04:00</text>
+    <text x="65" y="105">05:00</text>
+    <text x="65" y="205">06:00</text>
+    <text x="65" y="305">07:00</text>
+    <text x="65" y="405">08:00</text>
+    <text x="65" y="505">09:00</text>
+    <text x="65" y="605">10:00</text>
+    <text x="65" y="705">11:00</text>
+    <text x="65" y="805">12:00</text>
+    <text x="65" y="905">13:00</text>
+    <text x="65" y="1005">14:00</text>
+    <text x="65" y="1105">15:00</text>
+    <text x="65" y="1205">16:00</text>
+    <text x="65" y="1305">17:00</text>
+    <text x="65" y="1405">18:00</text>
+    <text x="65" y="1505">19:00</text>
+    <text x="65" y="1605">20:00</text>
+    <text x="65" y="1705">21:00</text>
+    <text x="65" y="1805">22:00</text>
+    <text x="65" y="1905">23:00</text>
+    <text x="65" y="2005">00:00</text>
+    <text x="65" y="2105">01:00</text>
+    <text x="65" y="2205">02:00</text>
+    <text x="65" y="2305">03:00</text>
+    <text x="65" y="2405">04:00</text>
+  </g>
+
+  <!-- ============ EVENTS ============ -->
+  <g id="events">
+    <rect class="event-block" x="105" y="800" width="230" height="450" fill="#9aa0c3" fill-opacity="0.45"/>
+    <text x="220" y="1025" text-anchor="middle" dominant-baseline="middle" font-size="13" fill="#3a3d4d">c/ch</text>
+  </g>
+
+</svg>

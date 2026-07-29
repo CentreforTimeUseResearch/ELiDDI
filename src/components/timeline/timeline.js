@@ -1,0 +1,127 @@
+import { TinyBase } from '../base';
+import './timeline.css';
+
+const SVGNS = "http://www.w3.org/2000/svg";
+
+const INDEX = 'index';
+
+export class Timeline extends TinyBase {
+  static observedAttributes = [INDEX];
+
+  ready = false;
+  store = super.getStore();
+  fragment;
+  timeLineElement
+  entries = [];
+
+  constructor() {
+    super();
+    this.fragment = document.getElementById("svg-timeline").content.cloneNode(true);
+  }
+
+
+
+  connectedCallback() {
+    super.connectedCallback();
+    this.assignEventHandlers();
+    const state = this.store.getState()
+    console.log(state)
+    const timeline = state.timelines[this[INDEX]]
+    if (!Array.isArray(timeline)) {
+      this.store.dispatch({
+        type: "ADD_TIMELINE",
+        payload: { timelineIndex: this[INDEX] }
+      })
+    } else {
+      this.entries = timeline
+    }
+    this.renderEntries();
+  }
+
+  renderEntries() {
+    // entry element looks like this
+    // <g>
+    //   <rect class="event-block" x="105" y="800" width="230" height="450" fill="#9aa0c3" fill-opacity="0.45" />
+    //   <text x="220" y="1025" text-anchor="middle" dominant-baseline="middle" font-size="13" fill="#3a3d4d">c/ch</text>
+    // </g>
+    // debugger;
+
+    // at some point there are going to have to have their own event handling 
+    // and at that point it might be a good idea to shift them into their own class/object
+    this.entries.map(entry => {
+      const rect = document.createElementNS(SVGNS, 'rect');
+      rect.setAttributeNS(null, 'x', '100');
+      rect.setAttributeNS(null, 'y', entry.startOffsetMins);
+      rect.setAttributeNS(null, 'height', entry.endOffsetMins - entry.startOffsetMins);
+      rect.setAttributeNS(null, 'width', '220');
+      rect.setAttributeNS(null, 'fill', '#9aa0c3');
+      rect.setAttributeNS(null, 'fill-opacity', '0.45');
+      this.timeLineElement.appendChild(rect)
+    })
+
+
+  }
+
+  calculateTheTimeSlotClicked(y) {
+    const minutesSinceDayStart = y / 2; // round to 10.
+    return Math.floor(minutesSinceDayStart / 10) * 10;
+  }
+
+  assignEventHandlers() {
+    if (!this.ready) {
+      this.timeLineElement = this.querySelector("svg");
+
+
+      // are there times when we don't want the timeline to be clickable?
+      this.timeLineElement?.addEventListener('click', (e) => this.onTimelineClick(e))
+      this.ready = true;
+    }
+  }
+
+  onTimelineClick(e) {
+    const { offsetY } = e;
+    const startOffsetMins = this.calculateTheTimeSlotClicked(offsetY >= 0 ? offsetY : 0);
+
+    // create entry
+    this.store.dispatch({
+      type: "ADD_ENTRY",
+      payload: {
+        timelineIndex: this[INDEX],
+        startOffsetMins,
+        endOffsetMins: startOffsetMins + 10,
+        id: this.entries.length
+      }
+    })
+
+    // open activity panel
+
+    this.store.dispatch({
+      type: 'SHOW_PANEL',
+      payload: 'activity'
+    })
+
+  }
+
+  // switchTimeline(payload) {
+  //   this.store.dispatch({
+  //     action: 'SWITCH_TIMELINE',
+  //     payload,
+  //   });
+  // }
+
+  attributeChangedCallback(name, oldValue, newValue) {
+    console.log(`Attribute ${name} has changed to ${newValue}.`);
+    if (this[name] !== newValue) {
+      this[name] = newValue;
+    }
+  }
+
+
+  render() {
+    console.log('render timeline')
+    // this component is a work in progress so this output is for debug purposes
+    this.appendChild(this.fragment)
+  }
+}
+
+customElements.define('el-timeline', Timeline);

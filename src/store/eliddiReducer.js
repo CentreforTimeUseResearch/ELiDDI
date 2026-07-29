@@ -34,7 +34,7 @@ const uipanel = (state = undefined, action) => {
   }
 }
 
-const timelineIndex = (state = 0, action) => {
+const currentTimelineIndex = (state = 0, action) => {
   switch (action?.type) {
     case 'SWITCH_TIMELINE':
       return action.payload;
@@ -45,9 +45,47 @@ const timelineIndex = (state = 0, action) => {
   }
 }
 
+const entry = (state = {}, action) => {
+  return state;
+}
+
+const timeline = (state = [], action) => {
+  switch (action?.type) {
+    case 'ADD_ENTRY':
+
+      const { startOffsetMins, endOffsetMins, id } = action.payload;
+      return [...state, {
+        startOffsetMins, endOffsetMins, id
+      }]
+    default:
+      return state
+  }
+}
+
+const timelines = (state = [], action) => {
+  const index = action?.payload?.timelineIndex
+  switch (action?.type) {
+    case 'ADD_ENTRY':
+      return [
+        ...state.slice(0, index),
+        [...timeline(state[index], action)],
+        ...state.slice(index + 1)
+      ]
+    case 'ADD_TIMELINE':
+      return [
+        ...state.slice(0, index),
+        [],
+        ...state.slice(index + 1)
+      ]
+    default:
+      return state;
+  }
+}
+
 export const eliddiReducer = combineReducers({
   onboarding,
   onboardingStep,
   uipanel,
-  timelineIndex
+  currentTimelineIndex,
+  timelines
 });

@@ -1,4 +1,4 @@
-// import '../timelinePicker/timelinePicker.js';
+import '../timelinePicker/timelinePicker.js';
 import '../contextualHelp/contextualHelp.js';
 import './navbar.css';
 

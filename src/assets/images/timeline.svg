@@ -1,4 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 2400" width="340" height="2400" font-family="Arial, Helvetica, sans-serif">
+<svg 
+  xmlns="http://www.w3.org/2000/svg" 
+  viewBox="0 0 340 2400" 
+  width="340" 
+  height="2400" 
+  font-family="Arial, Helvetica, sans-serif"
+>
 
   <!-- ============ DEFS ============ -->
   <defs>

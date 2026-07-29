@@ -40,7 +40,7 @@ export class TimelineStack extends TinyBase {
     // this component is a work in progress so this output is for debug purposes
     this.innerHTML = `
             <div class="" style=" ">
-            <el-timeline></el-timeline>
+            <el-timeline index="0"></el-timeline>
             </div>
         `;
   }

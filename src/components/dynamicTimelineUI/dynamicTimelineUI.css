@@ -1,6 +1,9 @@
 dynamic-timeline {
-  display: block;
+  display: flex;
   height: 100vh;
-  background-image: url(../../assets/images/timeline.png);
-  background-position-y: 80px;
+  flex-direction: column;
+  overflow: hidden;
+
+
+
 }

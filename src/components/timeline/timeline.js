@@ -25,7 +25,6 @@ export class Timeline extends TinyBase {
     super.connectedCallback();
     this.assignEventHandlers();
     const state = this.store.getState()
-    console.log(state)
     const timeline = state.timelines[this[INDEX]]
     if (!Array.isArray(timeline)) {
       this.store.dispatch({
@@ -110,7 +109,6 @@ export class Timeline extends TinyBase {
   // }
 
   attributeChangedCallback(name, oldValue, newValue) {
-    console.log(`Attribute ${name} has changed to ${newValue}.`);
     if (this[name] !== newValue) {
       this[name] = newValue;
     }
@@ -118,8 +116,6 @@ export class Timeline extends TinyBase {
 
 
   render() {
-    console.log('render timeline')
-    // this component is a work in progress so this output is for debug purposes
     this.appendChild(this.fragment)
   }
 }

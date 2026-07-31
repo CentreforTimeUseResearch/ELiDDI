@@ -48,7 +48,6 @@ export class ContextualHelp extends TinyBase {
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
-    console.log(`Attribute ${name} has changed to ${newValue}.`);
     if (this[name] !== newValue) {
       this[name] = newValue;
     }

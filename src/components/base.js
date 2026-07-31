@@ -40,7 +40,12 @@ export class TinyBase extends HTMLElement {
     return Date.now().toString(36) + Math.random().toString(36).substring(2, 12).padStart(12, 0);
   }
 
-  setProps(newProps) {
+  setProps(newProps, returnKey = false) {
+    // check props type
+    if (!(newProps === Object(newProps) && Object.prototype.toString.call(newProps) !== '[object Array]')) {
+      console.log('newProps must be a js object of {key:value} structure')
+      return
+    }
     // automatically bind the functions
     Object.keys(newProps).forEach((prop) => {
       if (typeof newProps[prop] === 'function') {
@@ -50,6 +55,11 @@ export class TinyBase extends HTMLElement {
 
     const uuid = this.createUUID();
     props[uuid] = newProps;
+
+    if (returnKey) {
+      return uuid;
+    }
+
     return `key = ${uuid}`;
   }
 

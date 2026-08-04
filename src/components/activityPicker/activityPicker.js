@@ -339,6 +339,30 @@ export class ActivityPicker extends TinyBase {
     this.renderAccordion(results)
   }
 
+  onActivitySelect(event) {
+
+    const activity = event?.currentTarget?.label;
+
+    if (!activity) {
+      console.log('problem with button to set label')
+      return;
+    }
+
+
+
+    const { id, timeline } = this.store.getState().selectedEntry;
+    // what is there is no selected entry?
+
+    // we have to make one
+
+    this.store.dispatch({
+      type: 'SET_SELECTED_ENTRY_ACTIVITY',
+      timeline_id: timeline,
+      selected_id: id,
+      activity
+    })
+  }
+
   renderAccordion(results) {
     console.log(results)
     // if (this.accordionDataKey)
@@ -365,7 +389,7 @@ export class ActivityPicker extends TinyBase {
                     value=""
                 >
                 <div id="activity-picker-popover" popover="manual" class="activity-picker-popover">
-                  <el-accordion ${this.setProps({ content: this.content })}></el-accordion>
+                  <el-accordion ${this.setProps({ content: this.content, buttonClick: this.onActivitySelect })}></el-accordion>
                 </div>
             </div>
         </div>

@@ -80,16 +80,25 @@ export class Timeline extends TinyBase {
   onTimelineClick(e) {
     const { offsetY } = e;
     const startOffsetMins = this.calculateTheTimeSlotClicked(offsetY >= 0 ? offsetY : 0);
-
+    const id = this.entries.length;
+    const timelineIndex = this[INDEX];
     // create entry
     this.store.dispatch({
       type: "ADD_ENTRY",
       payload: {
-        timelineIndex: this[INDEX],
+        timelineIndex,
         startOffsetMins,
         endOffsetMins: startOffsetMins + 10,
-        id: this.entries.length
+        id
       }
+    })
+
+    // state keeps the id and timeline index of the selected entry
+    // this means it can be retrieved without having to itterate to find entry with active flag
+    this.store.dispatch({
+      type: 'SELECT_ENTRY',
+      timelineIndex,
+      id
     })
 
     // open activity panel

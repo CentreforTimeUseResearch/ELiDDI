@@ -18,6 +18,7 @@ export class Accordion extends TinyBase {
   assignEventHandlers() { }
 
   createAccordionEntry({ name, activities }) {
+    const { buttonClick } = this.props;
     if (activities.length === 0) return
     return `<h3>
     <button type="button" aria-expanded="true" class="accordion-trigger" aria-controls="sect1" id="accordion1id">
@@ -33,7 +34,7 @@ export class Accordion extends TinyBase {
                 <el-activity-button 
                   label=${activity.name} 
                   color=${activity.color} 
-                  ${this.setProps({ onClick: () => { console.log('clicked') } })}
+                  ${this.setProps({ onClick: (event) => { buttonClick(event) } })}
                 >
                 </el-activity-button>`).join(" ")}
     </div>

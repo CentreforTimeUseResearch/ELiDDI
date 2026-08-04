@@ -46,19 +46,47 @@ const currentTimelineIndex = (state = 0, action) => {
 }
 
 const entry = (state = {}, action) => {
-  return state;
+  switch (action?.type) {
+    case 'SET_SELECTED_ENTRY_ACTIVITY':
+      return ({
+        ...state,
+        activity: action.activity
+      })
+    default:
+      return state;
+  }
 }
 
 const timeline = (state = [], action) => {
   switch (action?.type) {
     case 'ADD_ENTRY':
-
       const { startOffsetMins, endOffsetMins, id } = action.payload;
       return [...state, {
         startOffsetMins, endOffsetMins, id
       }]
+    case 'SET_SELECTED_ENTRY_ACTIVITY':
+      // find index of select entry using id
+      const index = state.findIndex((entry) => entry.id === action.selected_id)
+
+      return [
+        ...state.slice(0, index),
+        entry(state[index], action),
+        ...state.slice(index + 1)
+      ]
     default:
       return state
+  }
+}
+
+const selectedEntry = (state = undefined, action) => {
+  switch (action?.type) {
+    case 'SELECT_ENTRY':
+      return {
+        timeline: action.timelineIndex,
+        id: action.id
+      }
+    default:
+      return state;
   }
 }
 
@@ -77,6 +105,14 @@ const timelines = (state = [], action) => {
         [],
         ...state.slice(index + 1)
       ]
+    case 'SET_SELECTED_ENTRY_ACTIVITY':
+
+      const { timeline_id } = action;
+      return [
+        ...state.slice(0, timeline_id),
+        [...timeline(state[timeline_id], action)],
+        ...state.slice(timeline_id + 1)
+      ]
     default:
       return state;
   }
@@ -87,5 +123,6 @@ export const eliddiReducer = combineReducers({
   onboardingStep,
   uipanel,
   currentTimelineIndex,
-  timelines
+  timelines,
+  selectedEntry
 });

@@ -60,9 +60,9 @@ const entry = (state = {}, action) => {
 const timeline = (state = [], action) => {
   switch (action?.type) {
     case 'ADD_ENTRY':
-      const { startOffsetMins, endOffsetMins, id } = action.payload;
+      const { startOffsetMins, endOffsetMins, id, activity } = action.payload;
       return [...state, {
-        startOffsetMins, endOffsetMins, id
+        startOffsetMins, endOffsetMins, id, activity
       }]
     case 'SET_SELECTED_ENTRY_ACTIVITY':
       // find index of select entry using id

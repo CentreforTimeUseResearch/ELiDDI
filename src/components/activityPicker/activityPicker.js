@@ -106,7 +106,7 @@ export class ActivityPicker extends TinyBase {
   }
 
   handleInputFocus() {
-    this.props.onFocusCallback?.();
+    // this.props.onFocusCallback?.();
     // this.updateResults();
   }
 
@@ -340,6 +340,7 @@ export class ActivityPicker extends TinyBase {
   }
 
   onActivitySelect(event) {
+    event.stopPropagation();
 
     const activity = event?.currentTarget?.label;
 
@@ -350,17 +351,38 @@ export class ActivityPicker extends TinyBase {
 
 
 
-    const { id, timeline } = this.store.getState().selectedEntry;
-    // what is there is no selected entry?
+    const { id, timeline } = this.store.getState().selectedEntry || {};
 
-    // we have to make one
+    if (id) {
+      this.store.dispatch({
+        type: 'SET_SELECTED_ENTRY_ACTIVITY',
+        timeline_id: timeline,
+        selected_id: id,
+        activity
+      })
+    } else {
+      // what is there is no selected entry?
+      // create entry
+      const timelineIndex = this.store.getState().currentTimelineIndex;
+      const newId = this.store.getState().timelines[timelineIndex].length
 
-    this.store.dispatch({
-      type: 'SET_SELECTED_ENTRY_ACTIVITY',
-      timeline_id: timeline,
-      selected_id: id,
-      activity
-    })
+      this.store.dispatch({
+        type: "ADD_ENTRY",
+        payload: {
+          timelineIndex,
+          activity,
+          id: newId // how do we make an entry
+        }
+      })
+
+      // state keeps the id and timeline index of the selected entry
+      // this means it can be retrieved without having to itterate to find entry with active flag
+      this.store.dispatch({
+        type: 'SELECT_ENTRY',
+        timelineIndex,
+        id: newId // how do we make an entry
+      })
+    }
   }
 
   renderAccordion(results) {

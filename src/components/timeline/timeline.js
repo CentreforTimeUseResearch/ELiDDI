@@ -50,8 +50,8 @@ export class Timeline extends TinyBase {
     this.entries.map(entry => {
       const rect = document.createElementNS(SVGNS, 'rect');
       rect.setAttributeNS(null, 'x', '100');
-      rect.setAttributeNS(null, 'y', entry.startOffsetMins);
-      rect.setAttributeNS(null, 'height', entry.endOffsetMins - entry.startOffsetMins);
+      rect.setAttributeNS(null, 'y', entry.startOffsetMins || 0);
+      rect.setAttributeNS(null, 'height', entry.endOffsetMins - entry.startOffsetMins || 0);
       rect.setAttributeNS(null, 'width', '220');
       rect.setAttributeNS(null, 'fill', '#9aa0c3');
       rect.setAttributeNS(null, 'fill-opacity', '0.45');

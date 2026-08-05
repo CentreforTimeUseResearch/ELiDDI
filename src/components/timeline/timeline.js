@@ -25,7 +25,6 @@ export class Timeline extends TinyBase {
     super.connectedCallback();
     this.assignEventHandlers();
     const state = this.store.getState()
-    console.log(state)
     const timeline = state.timelines[this[INDEX]]
     if (!Array.isArray(timeline)) {
       this.store.dispatch({
@@ -51,8 +50,8 @@ export class Timeline extends TinyBase {
     this.entries.map(entry => {
       const rect = document.createElementNS(SVGNS, 'rect');
       rect.setAttributeNS(null, 'x', '100');
-      rect.setAttributeNS(null, 'y', entry.startOffsetMins);
-      rect.setAttributeNS(null, 'height', entry.endOffsetMins - entry.startOffsetMins);
+      rect.setAttributeNS(null, 'y', entry.startOffsetMins || 0);
+      rect.setAttributeNS(null, 'height', entry.endOffsetMins - entry.startOffsetMins || 0);
       rect.setAttributeNS(null, 'width', '220');
       rect.setAttributeNS(null, 'fill', '#9aa0c3');
       rect.setAttributeNS(null, 'fill-opacity', '0.45');
@@ -81,16 +80,25 @@ export class Timeline extends TinyBase {
   onTimelineClick(e) {
     const { offsetY } = e;
     const startOffsetMins = this.calculateTheTimeSlotClicked(offsetY >= 0 ? offsetY : 0);
-
+    const id = this.entries.length;
+    const timelineIndex = this[INDEX];
     // create entry
     this.store.dispatch({
       type: "ADD_ENTRY",
       payload: {
-        timelineIndex: this[INDEX],
+        timelineIndex,
         startOffsetMins,
         endOffsetMins: startOffsetMins + 10,
-        id: this.entries.length
+        id
       }
+    })
+
+    // state keeps the id and timeline index of the selected entry
+    // this means it can be retrieved without having to itterate to find entry with active flag
+    this.store.dispatch({
+      type: 'SELECT_ENTRY',
+      timelineIndex,
+      id
     })
 
     // open activity panel
@@ -110,7 +118,6 @@ export class Timeline extends TinyBase {
   // }
 
   attributeChangedCallback(name, oldValue, newValue) {
-    console.log(`Attribute ${name} has changed to ${newValue}.`);
     if (this[name] !== newValue) {
       this[name] = newValue;
     }
@@ -118,8 +125,6 @@ export class Timeline extends TinyBase {
 
 
   render() {
-    console.log('render timeline')
-    // this component is a work in progress so this output is for debug purposes
     this.appendChild(this.fragment)
   }
 }

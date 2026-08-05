@@ -1,178 +1,61 @@
-/**
- * autocomplete component
- */
-.autocomplete {
-  .hidden {
-    display: none;
-  }
+el-activitypicker {
+  display: block;
 
   .combobox-wrapper {
-    display: inline-block;
+    margin: 0 16px;
+  }
+
+  label {
+    font-size: 1.6875rem;
+    line-height: 1.1111111111;
+    font-weight: 700;
+    margin-bottom: 15px;
+    color: #fff;
+  }
+
+  .combobox-input-wrapper {
     position: relative;
-    font-size: 16px;
+
+    &::before {
+      position: absolute;
+      content: " \A8FA";
+      top: 28px;
+      right: -11px;
+      height: 50px;
+      width: 50px;
+      font-size: 1.6rem;
+    }
   }
 
-  .combobox-label {
-    font-size: 14px;
-    font-weight: bold;
-    margin-right: 5px;
-  }
-
-  .listbox,
-  .grid {
-    min-width: 230px;
-    background: white;
-    border: 1px solid #ccc;
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    position: absolute;
-    top: auto;
-    z-index: 1;
-  }
-
-  .listbox .result {
-    cursor: default;
-    margin: 0;
-  }
-
-  .grid .result-row {
-    padding: 2px;
-    cursor: default;
-    margin: 0;
-  }
-
-  .listbox .result:hover,
-  .grid .result-row:hover {
-    background: rgb(139 189 225);
-  }
-
-  .listbox .focused,
-  .grid .focused {
-    background: rgb(139 189 225);
-  }
-
-  .grid .focused-cell {
-    outline-style: dotted;
-    outline-color: green;
-  }
 
   .combobox-wrapper input {
-    font-size: inherit;
-    border: 1px solid #aaa;
-    border-radius: 2px;
-    line-height: 1.5em;
-    padding-right: 30px;
-    width: 200px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-weight: 400;
+    font-size: 1.1875rem;
+    line-height: 1.3157894737;
+    box-sizing: border-box;
+    width: 100%;
+    height: 2.5rem;
+    margin-top: 0;
+    padding: 5px;
+    border: 2px solid;
+    border-radius: 0;
+    border-color: var(--govuk-input-border-colour, #0b0c0c);
+    -webkit-appearance: none;
+    appearance: none;
   }
 
-  .combobox-dropdown {
-    position: absolute;
-    right: 0;
-    top: 0;
-    padding: 0 0 2px;
-    height: 1.5em;
-    border-radius: 0 2px 2px 0;
-    border: 1px solid #aaa;
+  #activity-picker-popover {
+    box-sizing: border-box;
+    inset: 0;
+    position-area: bottom;
+    width: calc(100% - 36px);
+    padding: 8px;
+    margin: 0 auto;
+
+    border: 0;
+    max-height: 75%;
+    overflow-y: scroll;
   }
-
-  .grid .result-cell {
-    display: inline-block;
-    cursor: default;
-    margin: 0;
-    padding: 0 5px;
-  }
-
-  .grid .result-cell:last-child {
-    float: right;
-    font-size: 12px;
-    font-weight: 200;
-    color: #333;
-    line-height: 24px;
-  }
-}
-
-.combobox-wrapper {
-  display: inline-block;
-  position: relative;
-  font-size: 16px;
-}
-
-.combobox-label {
-  font-size: 14px;
-  font-weight: bold;
-  margin-right: 5px;
-}
-
-.listbox,
-.grid {
-  min-width: 230px;
-  background: white;
-  border: 1px solid #ccc;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  position: absolute;
-  top: auto;
-  z-index: 1;
-}
-
-.listbox .result {
-  cursor: default;
-  margin: 0;
-}
-
-.grid .result-row {
-  padding: 2px;
-  cursor: default;
-  margin: 0;
-}
-
-.listbox .result:hover,
-.grid .result-row:hover {
-  background: rgb(139 189 225);
-}
-
-.listbox .focused,
-.grid .focused {
-  background: rgb(139 189 225);
-}
-
-.grid .focused-cell {
-  outline-style: dotted;
-  outline-color: green;
-}
-
-.combobox-wrapper input {
-  font-size: inherit;
-  border: 1px solid #aaa;
-  border-radius: 2px;
-  line-height: 1.5em;
-  padding-right: 30px;
-  width: 200px;
-}
-
-.combobox-dropdown {
-  position: absolute;
-  right: 0;
-  top: 0;
-  padding: 0 0 2px;
-  height: 1.5em;
-  border-radius: 0 2px 2px 0;
-  border: 1px solid #aaa;
-}
-
-.grid .result-cell {
-  display: inline-block;
-  cursor: default;
-  margin: 0;
-  padding: 0 5px;
-}
-
-.grid .result-cell:last-child {
-  float: right;
-  font-size: 12px;
-  font-weight: 200;
-  color: #333;
-  line-height: 24px;
 }

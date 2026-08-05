@@ -16,8 +16,7 @@ export class TimelineStack extends TinyBase {
 
 
   connectedCallback() {
-    this.render();
-    this.assignEventHandlers();
+    super.connectedCallback();
   }
 
   assignEventHandlers() {

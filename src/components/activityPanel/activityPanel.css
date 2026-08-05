@@ -6,15 +6,20 @@ activity-panel {
   height: 100vh;
   width: 100vw;
   border: 1px solid green;
-  display: flex;
+  /* display: flex;
   justify-content: top;
-  align-items: flex-start;
+  align-items: flex-start; */
   text-align: center;
   font-size: 3rem;
   transition: 0.3s ease;
 
   a {
     margin-top: 14px;
+  }
+
+  .right {
+    margin-inline-end: 8px;
+    margin-inline-start: auto;
   }
 }
 

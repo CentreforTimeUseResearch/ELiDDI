@@ -1,4 +1,5 @@
 import { ActivityPicker } from '../activityPicker/activityPicker'; // as el-autocomplete
+import { TimePickerPanel } from '../timePickerPanel/timePickerPanel';
 import { TinyBase } from '../base';
 import './activityPanel.css';
 
@@ -8,6 +9,7 @@ export class ActivityPanel extends TinyBase {
   key;
   props;
   popoverElement;
+  open;
 
   constructor() {
     super();
@@ -20,10 +22,12 @@ export class ActivityPanel extends TinyBase {
   }
 
   showPanel() {
+    this.open = true;
     this.classList.add('active');
   }
 
   hidePanel() {
+    this.open = false;
     this.classList.remove('active')
   }
 
@@ -39,10 +43,8 @@ export class ActivityPanel extends TinyBase {
   onFocusCallback() {
     this.showPanel();
   }
-  //<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg>
 
   render() {
-    // this component is a work in progress so this output is for debug purposes
     this.innerHTML = `
             <div>
                 <button class="reset-to-div right">
@@ -52,12 +54,12 @@ export class ActivityPanel extends TinyBase {
                     viewBox="0 0 24 24" 
                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                   >
-                    <polyline points="18 15 12 9 6 15"></polyline>
-                    <!-- <polyline points="6 9 12 15 18 9"></polyline> -->
+                    ${this.open ? `<polyline points="18 15 12 9 6 15"></polyline>` : `<polyline points="6 9 12 15 18 9"></polyline>`}
                   </svg>
                 </button>
             </div>
-            <el-activityPicker ${this.setProps({ onFocusCallback: this.onFocusCallback })}></el-activityPicker>
+            <el-activityPicker ${this.setProps({ onFocusCallback: () => this.onFocusCallback() })}></el-activityPicker>
+            <el-time-picker-panel ${this.setProps({})}></el-time-picker-panel>
             `;
   }
 }

@@ -60,9 +60,9 @@ export class Onboarding extends TinyBase {
   }
 
   onClosePanel() {
-    this.store.dispatch({
-      type: 'HIDE_PANEL'
-    })
+    // this.store.dispatch({
+    //   type: 'HIDE_PANEL'
+    // })
   }
 
   render() {

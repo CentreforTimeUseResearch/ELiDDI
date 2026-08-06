@@ -51,6 +51,11 @@ const entry = (state = {}, action) => {
       return ({
         ...state,
         activity: action.activity
+      });
+    case 'SET_SELECTED_ENTRY_END_OFFSET':
+      return ({
+        ...state,
+        endOffsetMins: action.endOffsetMins
       })
     default:
       return state;

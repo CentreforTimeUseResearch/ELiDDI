@@ -12,21 +12,30 @@ export class DetailsPanel extends TinyBase {
   open;
   selectedEntry;
   timelinePickerPanel;
-  dayBoundary = GLOBALS.DATA.day_boundary;
-  dayBoundaryHours = Number(this.dayBoundary.split(':')[0]);
-  dayBoundaryMinutes = Number(this.dayBoundary.split(':')[1]);
-  dayBoundaryInMinutes = this.dayBoundaryHours * 60 + this.dayBoundaryMinutes;
-
+  saveButton;
+  startTime;
+  endTime;
+  activity;
+  dayBoundaryInMinutes;
+  passInintialStartTime = true;
 
   constructor() {
     super();
+    // set day boundary
+    const dayBoundary = GLOBALS.DATA.day_boundary;
+    const dayBoundaryHours = Number(dayBoundary.split(':')[0]);
+    const dayBoundaryMinutes = Number(dayBoundary.split(':')[1]);
+    this.dayBoundaryInMinutes = dayBoundaryHours * 60 + dayBoundaryMinutes;
   }
 
   connectedCallback() {
     super.connectedCallback();
     this.store.subscribe(this.onStateUpdate.bind(this));
-    this.popoverElement = document.getElementById('popover');
-    this.timelinePickerPanel = this.querySelector('el-time-picker-panel')
+    // this.popoverElement = document.getElementById('popover');
+    this.timelinePickerPanel = this.querySelector('el-time-picker-panel');
+    this.saveButton = this.querySelector('.btn-save-btn')
+
+
   }
 
   showPanel() {
@@ -39,7 +48,7 @@ export class DetailsPanel extends TinyBase {
     this.classList.remove('active')
   }
 
-
+  // destructure selected entry and render in timepicker panel and activity picker
   onStateUpdate() {
 
     const {
@@ -49,34 +58,51 @@ export class DetailsPanel extends TinyBase {
     } = this.store.getState();
 
 
-    if (Array.isArray(timelines) && Array.isArray(timelines[timeline])) {
-      const { startOffsetMins, endOffsetMins, activity } = timelines[timeline][index] || {};
-
-      if (typeof startOffsetMins === 'number') {
-        this.timelinePickerPanel.setAttribute('start-time', startOffsetMins + this.dayBoundaryInMinutes)
-      }
-
-      if (startOffsetMins && endOffsetMins && activity) {
-        console.log('we can save this')
-      }
-    }
-
     if (uipanel === 'activity') {
       this.showPanel();
     } else {
       this.hidePanel();
     }
 
-
-
-
-
+    if (Array.isArray(timelines) && Array.isArray(timelines[timeline])) { // we have a selected entry
+      const { startOffsetMins, endOffsetMins, activity } = timelines[timeline][index] || {};  // destructure the selected entry
+      this.startOffsetMins = startOffsetMins;
+      this.endOffsetMins = endOffsetMins;
+      this.activity = activity;
+      this.updateElements();
+    }
   }
+
+
+  updateElements() {
+    // if the user has clicked the timeline there will be a startOffset
+    // pass this to the timeline picker panel to fill in the start time picker
+    if (typeof this.startOffsetMins === 'number' && this.passInintialStartTime) {
+      this.timelinePickerPanel.setAttribute('start-time', startOffsetMins + this.dayBoundaryInMinutes);
+      this.passInintialStartTime = false;
+    }
+
+
+    // if we have all three bits of information the user can submit
+    if (startOffsetMins && endOffsetMins && activity) {
+      this.saveButton.classList.remove('opaque')
+      console.log('we can save this')
+    }
+  }
+
+
+
+
+
+
+
+
 
   onFocusCallback() {
     this.showPanel();
   }
 
+  // triggered by activity select 
   onSetActivityOnSelectedEntry(activity) {
     const { index, timeline } = this.store.getState().selectedEntry || {};
 
@@ -115,6 +141,25 @@ export class DetailsPanel extends TinyBase {
   }
 
 
+  // triggered by adding a  valid end time to an entry that has a valid start time
+  onSetOffsetMins({ timeField, endTimeInMinutes }) {
+    const endOffsetMins = endTimeInMinutes + this.dayBoundaryInMinutes;
+    switch (timeField) {
+      case 'endTime':
+        this.store.dispatch({
+          type: "SET_SELECTED_ENTRY_END_OFFSET",
+          endOffsetMins: endOffsetMins
+        });
+        break;
+      case 'startTime':
+        this.store.dispatch({
+          type: "SET_SELECTED_ENTRY_START_OFFSET",
+          endOffsetMins: endOffsetMins
+        });
+        break;
+    }
+  }
+
   render() {
     this.innerHTML = `
             <div>
@@ -130,7 +175,8 @@ export class DetailsPanel extends TinyBase {
                 </button>
             </div>
             <el-activityPicker ${this.setProps({ onFocusCallback: () => this.onFocusCallback(), onSetActivityOnSelectedEntry: (activity) => this.onSetActivityOnSelectedEntry(activity) })}></el-activityPicker>
-            <el-time-picker-panel day-boundary="${this.dayBoundaryInMinutes}"></el-time-picker-panel>
+            <el-time-picker-panel ${this.setProps({ onTimeSet: (setTimeProps) => this.onSetOffsetMins(setTimeProps) })} day-boundary="${this.dayBoundaryInMinutes}"></el-time-picker-panel>
+            <button disabled class="btn btn-save-btn opaque">Save</button>
             `;
   }
 }

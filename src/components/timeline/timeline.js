@@ -35,6 +35,13 @@ export class Timeline extends TinyBase {
       this.entries = timeline
     }
     this.renderEntries();
+    this.store.subscribe(() => this.updateState())
+  }
+
+  updateState() {
+    const state = this.store.getState()
+    const timeline = state.timelines[this[INDEX]]
+    this.entries = timeline;
   }
 
   renderEntries() {
@@ -47,11 +54,15 @@ export class Timeline extends TinyBase {
 
     // at some point there are going to have to have their own event handling 
     // and at that point it might be a good idea to shift them into their own class/object
+
+
     this.entries.map(entry => {
       const rect = document.createElementNS(SVGNS, 'rect');
+      const startOffsetPx = (entry.startOffsetMins || 0) * 2;
+      const endOffsetPx = (entry.endOffsetMins || 0) * 2;
       rect.setAttributeNS(null, 'x', '100');
-      rect.setAttributeNS(null, 'y', entry.startOffsetMins || 0);
-      rect.setAttributeNS(null, 'height', entry.endOffsetMins - entry.startOffsetMins || 0);
+      rect.setAttributeNS(null, 'y', startOffsetPx);
+      rect.setAttributeNS(null, 'height', endOffsetPx - startOffsetPx);
       rect.setAttributeNS(null, 'width', '220');
       rect.setAttributeNS(null, 'fill', '#9aa0c3');
       rect.setAttributeNS(null, 'fill-opacity', '0.45');
@@ -62,8 +73,8 @@ export class Timeline extends TinyBase {
   }
 
   calculateTheTimeSlotClicked(y) {
-    const minutesSinceDayStart = y / 2; // round to 10.
-    return Math.floor(minutesSinceDayStart / 10) * 10;
+    // round to 10.
+    return Math.floor(y / 20) * 10;
   }
 
   assignEventHandlers() {
@@ -80,6 +91,7 @@ export class Timeline extends TinyBase {
   onTimelineClick(e) {
     const { offsetY } = e;
     const startOffsetMins = this.calculateTheTimeSlotClicked(offsetY >= 0 ? offsetY : 0);
+    console.log(startOffsetMins)
     const id = this.entries.length;
     const timelineIndex = this[INDEX];
     // create entry
@@ -98,11 +110,10 @@ export class Timeline extends TinyBase {
     this.store.dispatch({
       type: 'SELECT_ENTRY',
       timelineIndex,
-      id
+      index: id // correct because we use the length as id and always add to the end
     })
 
     // open activity panel
-
     this.store.dispatch({
       type: 'SHOW_PANEL',
       payload: 'activity'

@@ -28,8 +28,6 @@ export class TimePicker extends TinyBase {
     return `${hours}:${minutes}`;
   }
 
-
-
   connectedCallback() {
     super.connectedCallback();
     // this.store.subscribe(()=>this.onStateUpdate()));
@@ -37,6 +35,7 @@ export class TimePicker extends TinyBase {
     if (this[CONSTRAINED]) {
       setInterval(this.updateTimeConstraints.bind(this), 30000);
     }
+    this.validate();
   }
 
   updateTimeConstraints() {
@@ -124,13 +123,12 @@ export class TimePicker extends TinyBase {
   render() {
 
     this.innerHTML = `<div id="${this[ID]}-time-error"></div>
-      <label for="${this[ID]}" class="time-label">${this[LABEL]}</label>
+      <label for="${this[ID]}" class="time-label">${this[LABEL]}</label><br />
 
       <input 
         type="time" 
         id="${this[ID]}" 
         name="${this[ID]}"
-        min="00:00"
         max="23:59"
         ${!this[READ_ONLY] ? 'required' : ''}
         ${this[READ_ONLY] ? 'readonly' : ''}
@@ -141,7 +139,6 @@ export class TimePicker extends TinyBase {
       <span id="${this[ID]}-time-hint" class="hint-text">Format: HH:MM (e.g., 14:30)</span>
       <span id="${this[ID]}-time-error" class="error-text" aria-live="polite" hidden></span>
     `;
-
   }
 }
 

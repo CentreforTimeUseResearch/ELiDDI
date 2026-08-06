@@ -83,7 +83,7 @@ const selectedEntry = (state = undefined, action) => {
     case 'SELECT_ENTRY':
       return {
         timeline: action.timelineIndex,
-        id: action.id
+        index: action.index
       }
     default:
       return state;

@@ -1,4 +1,4 @@
-import { ActivityPanel } from '../activityPanel/activityPanel';
+import { DetailsPanel } from '../detailsPanel/detailsPanel';
 import { Navbar } from '../navbar/navbar';
 import { DialogWidget } from '../dialogWidget/dialogWidget';
 import { TimelineStack } from '../timelineStack/timelineStack';
@@ -18,7 +18,7 @@ export class DynamicTimelineUI extends TinyBase {
     this.innerHTML = `
             <nav-bar></nav-bar>
             <el-timeline-stack></el-timeline-stack>
-            <activity-panel></activity-panel>
+            <details-panel></details-panel>
             <el-dialog id="dialog"></el-dialog>
             `;
   }

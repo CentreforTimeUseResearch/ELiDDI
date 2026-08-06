@@ -1,4 +1,4 @@
-activity-panel {
+details-panel {
   position: fixed;
   top: 90vh;
   left: 0;
@@ -23,6 +23,6 @@ activity-panel {
   }
 }
 
-activity-panel.active {
+details-panel.active {
   top: 100px;
 }

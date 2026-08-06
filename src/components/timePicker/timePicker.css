@@ -1,3 +1,11 @@
+el-time-picker-panel {
+  font-size: 12px;
+  label {
+    font-size: 12px;
+  }
+}
+
+
 /* Container layout styling */
 .time-container {
   border: none;

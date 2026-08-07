@@ -74,18 +74,22 @@ export class ActivityPicker extends TinyBase {
     this.input = this.querySelector('input');
     this.grid = this.querySelector('#ex1-grid');
     this.popoverElement = this.querySelector('#activity-picker-popover');
-    this.store.subscribe(this.onStateUpdate.bind(this));
+    // this.store.subscribe(this.onStateUpdate.bind(this));
     this.assignEventHandlers();
   }
 
-  onStateUpdate() {
-    const { selectedEntry: { timeline, index } = {}, timelines
-    } = this.store.getState();
+  // onStateUpdate() {
+  //   const { selectedEntry: { timeline, index } = {}, timelines
+  //   } = this.store.getState();
 
-    if (timeline && index) {
-      const { activity } = timelines[timeline][index];
-      this.input.value = activity || "";
-    }
+  //   if (timeline && index) {
+  //     const { activity } = timelines[timeline][index];
+  //     this.input.value = activity || "";
+  //   }
+  // }
+
+  setInputValue(activity) {
+    this.input.value = activity || "";
   }
 
   assignEventHandlers() {

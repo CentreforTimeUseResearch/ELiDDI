@@ -9,15 +9,13 @@ export class DetailsPanel extends TinyBase {
   state = {};
   key;
   props;
-  popoverElement;
   open;
   selectedEntry;
-  timelinePickerPanel;
   saveButton;
-  startTime;
-  endTime;
-  activity;
   dayBoundaryInMinutes;
+
+  timelinePickerPanel;
+  popoverElement;
 
   constructor() {
     super();
@@ -33,6 +31,7 @@ export class DetailsPanel extends TinyBase {
     this.store.subscribe(this.onStoreUpdate.bind(this));
     // this.popoverElement = document.getElementById('popover');
     this.timelinePickerPanel = this.querySelector('el-time-picker-panel');
+    this.activityPicker = this.querySelector('el-activityPicker')
     this.saveButton = this.querySelector('.btn-save-btn')
     this.assignEventHandlers();
   }
@@ -124,6 +123,8 @@ export class DetailsPanel extends TinyBase {
       ...this.state,
       activity
     });
+
+    this.activityPicker.setInputValue(activity)
 
     // if (timeline, index) {
     //   this.store.dispatch({

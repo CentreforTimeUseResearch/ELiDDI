@@ -68,9 +68,7 @@ export class ActivityPicker extends TinyBase {
 
   connectedCallback() {
     super.connectedCallback();
-    console.log(this.props.onFocusCallback);
     this.render();
-    //  this.searchFn = searchFn;
     this.input = this.querySelector('input');
     this.grid = this.querySelector('#ex1-grid');
     this.popoverElement = this.querySelector('#activity-picker-popover');
@@ -293,17 +291,13 @@ export class ActivityPicker extends TinyBase {
       return {
         name: category.name,
         activities: category.activities.filter(activity => {
-          return activity.name?.includes(searchString.toLowerCase())
+          return activity.name?.toLowerCase().includes(searchString.toLowerCase())
         })
       }
     })
   }
 
   updateResults() {
-    // console.log('ihiuhiuhiuhiuh')
-    // this.content = this.content.slice(1)
-    // console.log(this.content)
-    // this.renderAccordion();
     const searchString = this.input.value;
 
     if (!searchString) {
@@ -356,8 +350,7 @@ export class ActivityPicker extends TinyBase {
 
   onActivitySelect(event) {
     event.stopPropagation();
-
-    const activity = event?.currentTarget?.label;
+    const activity = event.target.dataset.activity
 
     if (!activity) {
       console.log('problem with button to set label')
@@ -369,10 +362,7 @@ export class ActivityPicker extends TinyBase {
   }
 
   renderAccordion(results) {
-    console.log(results)
-    // if (this.accordionDataKey)
-    //   this.accordionDataKey = this.setProps({ content: this.content }, true);
-    this.popoverElement.innerHTML = `<el-accordion ${this.setProps({ content: results })}></el-accordion>`
+    this.popoverElement.innerHTML = `<el-accordion ${this.setProps({ content: results, buttonClick: this.onActivitySelect })}></el-accordion>`
   }
 
 

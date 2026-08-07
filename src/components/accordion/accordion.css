@@ -126,3 +126,52 @@ el-accordion {
   }
 
 }
+
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  /* 1. High contrast accessible colors */
+  background-color: #0066cc;
+  /* Darker blue to pass 4.5:1 contrast against white */
+  color: #ffffff;
+
+  background-color: rgb(235, 235, 235);
+  color: rgb(69, 69, 69);
+
+  font-family: sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  padding: 10px 20px;
+  border: 2px solid transparent;
+  /* Reserve space for a focus border */
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  width: 100%;
+}
+
+.btn:hover {
+  background-color: #004d99;
+}
+
+/* 2. Clear, visible focus indicator for keyboard users */
+.btn:focus-visible {
+  outline: 3px solid #ffcc00;
+  /* High contrast outline color */
+  outline-offset: 2px;
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+/* 3. Ensures button scales nicely if a user increases text size */
+@media (prefers-reduced-motion: reduce) {
+  .btn {
+    transition: none;
+  }
+}

@@ -1,4 +1,3 @@
-import { ActivityButton } from '../activityButton/activityButton';
 import { TinyBase } from '../base';
 import './accordion.css';
 
@@ -11,11 +10,12 @@ export class Accordion extends TinyBase {
 
   connectedCallback() {
     super.connectedCallback();
-    console.log(this.props)
-    // this.assignEventHandlers();
+    this.assignEventHandlers();
   }
 
-  assignEventHandlers() { }
+  assignEventHandlers() {
+    this.addEventListener('click', this.props.buttonClick)
+  }
 
   createAccordionEntry({ name, activities }) {
     const { buttonClick } = this.props;
@@ -30,13 +30,20 @@ export class Accordion extends TinyBase {
   </h3>
   <div id="sect1" role="region" aria-labelledby="accordion1id" class="accordion-panel">
     <div style="display: flex; flex-direction: column">
-            ${activities.map(activity => `
-                <el-activity-button 
-                  label=${activity.name} 
-                  color=${activity.color} 
-                  ${this.setProps({ onClick: (event) => { buttonClick(event) } })}
-                >
-                </el-activity-button>`).join(" ")}
+    ${activities.map(activity => `
+      <span>
+        <button 
+          type="button" 
+          class="btn" 
+          style="border-left: 10px solid ${activity.color};" aria-label="${activity.label}" 
+          data-activity="${activity.label}"
+        >
+          ${activity.label}
+        </button>
+      </span>`
+    ).join(" ")}
+
+
     </div>
   </div>`;
   }
@@ -44,22 +51,15 @@ export class Accordion extends TinyBase {
 
   render() {
     const { content } = this.props;
-
-
-
-
-    const first = content[0]; // just for test
-    // this component is a work in progress so this output is for debug purposes
     this.innerHTML = `
-<div id="accordionGroup" class="accordion">
-  <!-- -->
+      <div id="accordionGroup" class="accordion">
+        <!-- -->
     ${content.map((entry) => {
       return this.createAccordionEntry(entry)
     }).join('')};
-  <!-- -->
- </div>
-        
-        `;
+        <!-- -->
+      </div>
+    `;
   }
 }
 

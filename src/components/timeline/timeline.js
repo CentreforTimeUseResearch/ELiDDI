@@ -54,8 +54,6 @@ export class Timeline extends TinyBase {
 
     // at some point there are going to have to have their own event handling 
     // and at that point it might be a good idea to shift them into their own class/object
-
-
     this.entries.map(entry => {
       const rect = document.createElementNS(SVGNS, 'rect');
       const startOffsetPx = (entry.startOffsetMins || 0) * 2;
@@ -91,7 +89,6 @@ export class Timeline extends TinyBase {
   onTimelineClick(e) {
     const { offsetY } = e;
     const startOffsetMins = this.calculateTheTimeSlotClicked(offsetY >= 0 ? offsetY : 0);
-    console.log(startOffsetMins)
     const id = this.entries.length;
     const timelineIndex = this[INDEX];
     // create entry

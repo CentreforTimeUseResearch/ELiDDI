@@ -6,6 +6,7 @@ import './detailsPanel.css';
 export class DetailsPanel extends TinyBase {
 
   store = super.getStore();
+  state = {};
   key;
   props;
   popoverElement;
@@ -17,7 +18,6 @@ export class DetailsPanel extends TinyBase {
   endTime;
   activity;
   dayBoundaryInMinutes;
-  passInintialStartTime = true;
 
   constructor() {
     super();
@@ -30,13 +30,29 @@ export class DetailsPanel extends TinyBase {
 
   connectedCallback() {
     super.connectedCallback();
-    this.store.subscribe(this.onStateUpdate.bind(this));
+    this.store.subscribe(this.onStoreUpdate.bind(this));
     // this.popoverElement = document.getElementById('popover');
     this.timelinePickerPanel = this.querySelector('el-time-picker-panel');
     this.saveButton = this.querySelector('.btn-save-btn')
-
-
+    this.assignEventHandlers();
   }
+
+  assignEventHandlers() {
+    this.saveButton.addEventListener('click', () => this.onSaveButtonClick())
+  }
+
+
+  isEntryComplete() {
+    return typeof this.state.startOffsetMins === 'number' && typeof this.state.endOffsetMins === 'number' && this.state.activity
+  }
+
+  updateState(newState) {
+    this.state = newState;
+    if (this.isEntryComplete()) {
+      this.showSaveButton();
+    }
+  }
+
 
   showPanel() {
     this.open = true;
@@ -48,113 +64,118 @@ export class DetailsPanel extends TinyBase {
     this.classList.remove('active')
   }
 
-  // destructure selected entry and render in timepicker panel and activity picker
-  onStateUpdate() {
+  setStartTime(starttime) {
+    this.startOffsetMins = starttime;
+    this.updateState({
+      ...this.state,
+      startOffsetMins: starttime
+    })
+    this.setTimePanelStartTime();
+  }
 
-    const {
-      selectedEntry: { timeline, index } = {},
-      timelines,
-      uipanel
-    } = this.store.getState();
+  setTimePanelStartTime() {
+    if (typeof this.state.startOffsetMins === 'number') {
+      this.timelinePickerPanel.setAttribute('start-time', this.state.startOffsetMins + this.dayBoundaryInMinutes);
+      this.passInintialStartTime = false;
+    }
+  }
 
 
+  onStoreUpdate() {
+    const { uipanel } = this.store.getState();
     if (uipanel === 'activity') {
       this.showPanel();
     } else {
       this.hidePanel();
     }
-
-    if (Array.isArray(timelines) && Array.isArray(timelines[timeline])) { // we have a selected entry
-      const { startOffsetMins, endOffsetMins, activity } = timelines[timeline][index] || {};  // destructure the selected entry
-      this.startOffsetMins = startOffsetMins;
-      this.endOffsetMins = endOffsetMins;
-      this.activity = activity;
-      this.updateElements();
-    }
   }
 
-
-  updateElements() {
-    // if the user has clicked the timeline there will be a startOffset
-    // pass this to the timeline picker panel to fill in the start time picker
-    if (typeof this.startOffsetMins === 'number' && this.passInintialStartTime) {
-      this.timelinePickerPanel.setAttribute('start-time', startOffsetMins + this.dayBoundaryInMinutes);
-      this.passInintialStartTime = false;
-    }
-
-
-    // if we have all three bits of information the user can submit
-    if (startOffsetMins && endOffsetMins && activity) {
-      this.saveButton.classList.remove('opaque')
-      console.log('we can save this')
-    }
+  onSaveButtonClick() {
+    //create a new entry.
+    if (!this.isEntryComplete()) return;
+    this.props.saveEntry(this.state)
   }
 
+  showSaveButton() {
+    this.saveButton.classList.remove('opaque')
+  }
 
-
-
-
-
-
-
+  hideSaveButton() {
+    this.saveButton.classList.add('opaque');
+  }
 
   onFocusCallback() {
     this.showPanel();
   }
 
+
+  // getTimelineIndex() {
+  //   return this.store.getState().selectedEntry || {};
+  // }
+
+  // getSelectedEntryId(timelineIndex) {
+  //   return this.store.getState().timelines[timelineIndex].length;
+  // }
+
   // triggered by activity select 
   onSetActivityOnSelectedEntry(activity) {
-    const { index, timeline } = this.store.getState().selectedEntry || {};
 
-    if (timeline, index) {
-      this.store.dispatch({
-        type: 'SET_SELECTED_ENTRY_ACTIVITY',
-        timeline_id: timeline,
-        selected_id: index,
-        activity
-      })
-    } else {
-      // what is there is no selected entry?
-      // create entry
-      const timelineIndex = this.store.getState().currentTimelineIndex;
-      const newId = this.store.getState().timelines[timelineIndex].length
+    this.updateState({
+      ...this.state,
+      activity
+    });
 
-      this.store.dispatch({
-        type: "ADD_ENTRY",
-        payload: {
-          timelineIndex,
-          activity,
-          id: newId // how do we make an entry
-        }
-      })
+    // if (timeline, index) {
+    //   this.store.dispatch({
+    //     type: 'SET_ENTRY_ACTIVITY',
+    //     timeline_id: timeline,
+    //     selected_id: index,
+    //     activity
+    //   })
+    // } else {
+    // what is there is no selected entry?
+    // create entry
+    // const timelineIndex = this.store.getState().currentTimelineIndex;
+    // const newId = this.getSelectedEntryId(timelineIndex)
 
-      // state keeps the id and timeline index of the selected entry
-      // this means it can be retrieved without having to itterate to find entry with active flag
-      this.store.dispatch({
-        type: 'SELECT_ENTRY',
-        timelineIndex,
-        index: newId // how do we make an entry
-      })
-    }
+    // this.store.dispatch({
+    //   type: "ADD_ENTRY",
+    //   payload: {
+    //     timelineIndex,
+    //     activity,
+    //     id: newId // how do we make an entry
+    //   }
+    // })
+
+    // // state keeps the id and timeline index of the selected entry
+    // // this means it can be retrieved without having to itterate to find entry with active flag
+    // this.store.dispatch({
+    //   type: 'SELECT_ENTRY',
+    //   timelineIndex,
+    //   index: newId // how do we make an entry
+    // })
+    // }
 
 
   }
 
 
   // triggered by adding a  valid end time to an entry that has a valid start time
-  onSetOffsetMins({ timeField, endTimeInMinutes }) {
-    const endOffsetMins = endTimeInMinutes + this.dayBoundaryInMinutes;
+  onSetOffsetMins({ timeField, timeInMinutes }) {
+
+    const offsetMins = timeInMinutes - this.dayBoundaryInMinutes;
+
     switch (timeField) {
       case 'endTime':
-        this.store.dispatch({
-          type: "SET_SELECTED_ENTRY_END_OFFSET",
-          endOffsetMins: endOffsetMins
+        this.updateState({
+          ...this.state,
+          endOffsetMins: offsetMins,
         });
         break;
       case 'startTime':
-        this.store.dispatch({
-          type: "SET_SELECTED_ENTRY_START_OFFSET",
-          endOffsetMins: endOffsetMins
+        this.updateState({
+          ...this.state,
+          startOffsetMins: offsetMins
         });
         break;
     }
@@ -176,7 +197,7 @@ export class DetailsPanel extends TinyBase {
             </div>
             <el-activityPicker ${this.setProps({ onFocusCallback: () => this.onFocusCallback(), onSetActivityOnSelectedEntry: (activity) => this.onSetActivityOnSelectedEntry(activity) })}></el-activityPicker>
             <el-time-picker-panel ${this.setProps({ onTimeSet: (setTimeProps) => this.onSetOffsetMins(setTimeProps) })} day-boundary="${this.dayBoundaryInMinutes}"></el-time-picker-panel>
-            <button disabled class="btn btn-save-btn opaque">Save</button>
+            <button class="btn btn-save-btn opaque">Save</button>
             `;
   }
 }

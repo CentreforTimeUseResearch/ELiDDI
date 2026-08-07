@@ -15,6 +15,7 @@
       "autoscrollSpeed": 32
     }
   },
+  "day_boundary": "04:00",
   "instructions": [
     {
       "title": "1. Select a Timeline",

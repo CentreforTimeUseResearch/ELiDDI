@@ -11,8 +11,9 @@ export class Timeline extends TinyBase {
   ready = false;
   store = super.getStore();
   fragment;
-  timeLineElement
+  timeLineElement;
   entries = [];
+  detailsPanel;
 
   constructor() {
     super();
@@ -22,8 +23,6 @@ export class Timeline extends TinyBase {
 
 
   connectedCallback() {
-    super.connectedCallback();
-    this.assignEventHandlers();
     const state = this.store.getState()
     const timeline = state.timelines[this[INDEX]]
     if (!Array.isArray(timeline)) {
@@ -34,8 +33,14 @@ export class Timeline extends TinyBase {
     } else {
       this.entries = timeline
     }
+    super.connectedCallback();
+    this.store.subscribe(() => this.updateState());
+    this.timeLineElement = this.querySelector('svg');
+    this.entriesLayer = this.timeLineElement.querySelector('#events');
+    // get a handle on the details-panel as you need to communicate with it
+    this.detailsPanel = this.querySelector('details-panel');
     this.renderEntries();
-    this.store.subscribe(() => this.updateState())
+    this.assignEventHandlers();
   }
 
   updateState() {
@@ -50,21 +55,39 @@ export class Timeline extends TinyBase {
     //   <rect class="event-block" x="105" y="800" width="230" height="450" fill="#9aa0c3" fill-opacity="0.45" />
     //   <text x="220" y="1025" text-anchor="middle" dominant-baseline="middle" font-size="13" fill="#3a3d4d">c/ch</text>
     // </g>
-    // debugger;
+    this.entriesLayer.innerHTML = "";
 
     // at some point there are going to have to have their own event handling 
     // and at that point it might be a good idea to shift them into their own class/object
-    this.entries.map(entry => {
+    this.entries.forEach(entry => {
+      const entryGroup = document.createElementNS(SVGNS, 'g');
       const rect = document.createElementNS(SVGNS, 'rect');
       const startOffsetPx = (entry.startOffsetMins || 0) * 2;
       const endOffsetPx = (entry.endOffsetMins || 0) * 2;
+      const height = endOffsetPx - startOffsetPx
       rect.setAttributeNS(null, 'x', '100');
       rect.setAttributeNS(null, 'y', startOffsetPx);
-      rect.setAttributeNS(null, 'height', endOffsetPx - startOffsetPx);
+      rect.setAttributeNS(null, 'height', height > 0 ? height : 20);
       rect.setAttributeNS(null, 'width', '220');
       rect.setAttributeNS(null, 'fill', '#9aa0c3');
       rect.setAttributeNS(null, 'fill-opacity', '0.45');
-      this.timeLineElement.appendChild(rect)
+      entryGroup.appendChild(rect);
+
+      const text = document.createElementNS(SVGNS, 'text');
+      const textX = 220;
+      const textY = startOffsetPx + 50;
+      const fontSize = 13;
+      const fill = "#3a3d4d"
+      text.setAttributeNS(null, 'x', textX);
+      text.setAttributeNS(null, 'y', textY);
+      text.setAttributeNS(null, 'text-anchor', 'middle');
+      text.setAttributeNS(null, 'dominant-baseline', 'middle');
+      text.setAttributeNS(null, 'font-size', fontSize);
+      text.setAttributeNS(null, 'fill', fill);
+      text.textContent = entry.activity;
+      entryGroup.appendChild(text)
+
+      this.entriesLayer.appendChild(entryGroup)
     })
 
 
@@ -77,9 +100,6 @@ export class Timeline extends TinyBase {
 
   assignEventHandlers() {
     if (!this.ready) {
-      this.timeLineElement = this.querySelector("svg");
-
-
       // are there times when we don't want the timeline to be clickable?
       this.timeLineElement?.addEventListener('click', (e) => this.onTimelineClick(e))
       this.ready = true;
@@ -89,6 +109,15 @@ export class Timeline extends TinyBase {
   onTimelineClick(e) {
     const { offsetY } = e;
     const startOffsetMins = this.calculateTheTimeSlotClicked(offsetY >= 0 ? offsetY : 0);
+    this.detailsPanel.setStartTime(startOffsetMins);
+    // open activity panel
+    this.store.dispatch({
+      type: 'SHOW_PANEL',
+      payload: 'activity'
+    })
+  }
+
+  createEntry(entry) {
     const id = this.entries.length;
     const timelineIndex = this[INDEX];
     // create entry
@@ -96,26 +125,10 @@ export class Timeline extends TinyBase {
       type: "ADD_ENTRY",
       payload: {
         timelineIndex,
-        startOffsetMins,
-        endOffsetMins: startOffsetMins + 10,
+        ...entry,
         id
       }
     })
-
-    // state keeps the id and timeline index of the selected entry
-    // this means it can be retrieved without having to itterate to find entry with active flag
-    this.store.dispatch({
-      type: 'SELECT_ENTRY',
-      timelineIndex,
-      index: id // correct because we use the length as id and always add to the end
-    })
-
-    // open activity panel
-    this.store.dispatch({
-      type: 'SHOW_PANEL',
-      payload: 'activity'
-    })
-
   }
 
   // switchTimeline(payload) {
@@ -131,9 +144,17 @@ export class Timeline extends TinyBase {
     }
   }
 
+  saveEntry(entry) {
+    this.createEntry(entry)
+    this.store.dispatch({
+      type: 'HIDE_PANEL'
+    })
+    this.renderEntries();
+  }
 
   render() {
-    this.appendChild(this.fragment)
+    this.appendChild(this.fragment);
+    this.innerHTML += `<details-panel ${this.setProps({ saveEntry: (entry) => this.saveEntry(entry) })}  timeline=${this.timeLineElement}></details-panel>`
   }
 }
 

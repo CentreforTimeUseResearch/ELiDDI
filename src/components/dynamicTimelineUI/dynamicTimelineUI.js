@@ -18,7 +18,6 @@ export class DynamicTimelineUI extends TinyBase {
     this.innerHTML = `
             <nav-bar></nav-bar>
             <el-timeline-stack></el-timeline-stack>
-            <details-panel></details-panel>
             <el-dialog id="dialog"></el-dialog>
             `;
   }

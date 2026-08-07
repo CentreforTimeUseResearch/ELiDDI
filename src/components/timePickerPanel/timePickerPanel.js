@@ -53,9 +53,7 @@ export class TimePickerPanel extends TinyBase {
       })
     }
     if (name === DAY_BOUNDARY) {
-      console.log(this[DAY_BOUNDARY])
       this.dayBoundaryInMinutes = (Number(this[DAY_BOUNDARY]) - 1) + (24 * 60)
-      console.log(this.dayBoundaryInMinutes)
     }
   }
 
@@ -132,7 +130,7 @@ export class TimePickerPanel extends TinyBase {
         break;
       case 'endTime':
         this.endInputMinutes = valueInMinutes;
-        this.props.onTimeSet('endTime', this.endInputMinutes);
+        this.props.onTimeSet({ timeField: 'endTime', timeInMinutes: this.endInputMinutes });
         if (this.startInputMinutes) {
           this.recalculateDuration(this.startInputMinutes, this.endInputMinutes);
         }

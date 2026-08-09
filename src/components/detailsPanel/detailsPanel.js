@@ -52,6 +52,12 @@ export class DetailsPanel extends TinyBase {
     }
   }
 
+  reset() {
+    this.state = {}
+    this.render();
+    this.assignEventHandlers();
+  }
+
 
   showPanel() {
     this.open = true;

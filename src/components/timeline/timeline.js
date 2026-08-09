@@ -149,6 +149,7 @@ export class Timeline extends TinyBase {
     this.store.dispatch({
       type: 'HIDE_PANEL'
     })
+    this.detailsPanel.reset();
     this.renderEntries();
   }
 

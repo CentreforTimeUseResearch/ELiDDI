@@ -29,17 +29,26 @@ export class TimelinePicker extends TinyBase {
   assignEventHandlers() {
     if (!this.ready) {
       this.timelinePicker = this.querySelector('[data-timeline-picker]');
-      this.timelinePicker?.addEventListener('change', (e) => this.switchTimeline(e.target.value));
+      this.timelinePicker?.addEventListener('change', (e) => {
+        e.stopPropagation();
+        this.switchTimeline(Number(e.target.value))
+      });
 
       this.ready = true;
     }
   }
 
   switchTimeline(payload) {
+    if (typeof payload !== "number") {
+      console.error('Problem with timeline picker value');
+      return;
+    }
+
     this.store.dispatch({
-      action: 'SWITCH_TIMELINE',
+      type: 'SWITCH_TIMELINE',
       payload,
     });
+
   }
 
   createOptions() {

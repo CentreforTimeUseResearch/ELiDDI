@@ -14,13 +14,13 @@ export class Timeline extends TinyBase {
   timeLineElement;
   entries = [];
   detailsPanel;
+  selectedID;
+  index;
 
   constructor() {
     super();
     this.fragment = document.getElementById("svg-timeline").content.cloneNode(true);
   }
-
-
 
   connectedCallback() {
     const state = this.store.getState()
@@ -71,6 +71,7 @@ export class Timeline extends TinyBase {
       rect.setAttributeNS(null, 'width', '220');
       rect.setAttributeNS(null, 'fill', '#9aa0c3');
       rect.setAttributeNS(null, 'fill-opacity', '0.45');
+      rect.setAttributeNS(null, 'data-id', entry.id);
       entryGroup.appendChild(rect);
 
       const text = document.createElementNS(SVGNS, 'text');
@@ -84,6 +85,7 @@ export class Timeline extends TinyBase {
       text.setAttributeNS(null, 'dominant-baseline', 'middle');
       text.setAttributeNS(null, 'font-size', fontSize);
       text.setAttributeNS(null, 'fill', fill);
+      text.setAttributeNS(null, 'data-id', entry.id);
       text.textContent = entry.activity;
       entryGroup.appendChild(text)
 
@@ -107,9 +109,27 @@ export class Timeline extends TinyBase {
   }
 
   onTimelineClick(e) {
-    const { offsetY } = e;
-    const startOffsetMins = this.calculateTheTimeSlotClicked(offsetY >= 0 ? offsetY : 0);
-    this.detailsPanel.setStartTime(startOffsetMins);
+    const element_id = e.target?.dataset?.id
+    if (element_id !== undefined) {
+      // set selected 
+      const entry_id = Number(e.target?.dataset?.id)
+      if (typeof entry_id !== 'number') {
+        console.error('Problem with identifying entry from click', e.target)
+        return;
+      }
+      this.selectedID = entry_id;
+      // fetch the 
+      const entry = this.entries.find((entry) => entry.id === entry_id)
+      // set up the panel
+      this.detailsPanel.setStartTime(entry.startOffsetMins);
+      this.detailsPanel.setEndTime(entry.endOffsetMins);
+      this.detailsPanel.setActivity(entry.activity);
+      // we need to do soemthing different on save
+    } else {
+      const { offsetY } = e;
+      const startOffsetMins = this.calculateTheTimeSlotClicked(offsetY >= 0 ? offsetY : 0);
+      this.detailsPanel.setStartTime(startOffsetMins);
+    }
     // open activity panel
     this.store.dispatch({
       type: 'SHOW_PANEL',
@@ -119,7 +139,11 @@ export class Timeline extends TinyBase {
 
   createEntry(entry) {
     const id = this.entries.length;
-    const timelineIndex = this[INDEX];
+    const timelineIndex = Number(this[INDEX]);
+    if (typeof timelineIndex !== 'number') {
+      console.error('Problem with identifying timeline index', e.target)
+      return;
+    }
     // create entry
     this.store.dispatch({
       type: "ADD_ENTRY",
@@ -129,6 +153,25 @@ export class Timeline extends TinyBase {
         id
       }
     })
+  }
+
+  updateEntry(entry) {
+    const timelineIndex = Number(this[INDEX]);
+    if (typeof timelineIndex !== 'number') {
+      console.error('Problem with identifying timeline index', e.target)
+      return;
+    }
+    const index = this.entries.findIndex((entry) => entry.id === this.selectedID);
+    this.store.dispatch({
+      type: "UPDATE_ENTRY",
+      payload: {
+        id: this.selectedID,
+        timelineIndex,
+        index,
+        ...entry
+      }
+    })
+    this.selectedID = undefined
   }
 
   // switchTimeline(payload) {
@@ -145,7 +188,11 @@ export class Timeline extends TinyBase {
   }
 
   saveEntry(entry) {
-    this.createEntry(entry)
+    if (this.selectedID === undefined) {
+      this.createEntry(entry)
+    } else {
+      this.updateEntry(entry);
+    }
     this.store.dispatch({
       type: 'HIDE_PANEL'
     })

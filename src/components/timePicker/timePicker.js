@@ -7,9 +7,10 @@ const LABEL = 'label';
 const VALUE = 'value';
 const CONSTRAINED = 'constrained';
 const READ_ONLY = "read-only";
+const REQUIRED = "required"
 
 export class TimePicker extends TinyBase {
-  static observedAttributes = [ID, LABEL, VALUE, CONSTRAINED, READ_ONLY];
+  static observedAttributes = [ID, LABEL, VALUE, CONSTRAINED, READ_ONLY, REQUIRED];
 
   store = super.getStore();
   timeInput;
@@ -114,9 +115,11 @@ export class TimePicker extends TinyBase {
   attributeChangedCallback(name, oldValue, newValue) {
     if (this[name] !== newValue) {
       this[name] = (newValue === "undefined") ? undefined : newValue;
-      this.render();
-      this.assignEventHandlers();
-      this.validate();
+      if (name === "value") {
+        this.render();
+        this.assignEventHandlers();
+        this.validate();
+      }
     }
   }
 
@@ -127,18 +130,18 @@ export class TimePicker extends TinyBase {
 
       <input 
         type="time" 
+        value="${this[VALUE]}"
         id="${this[ID]}" 
         name="${this[ID]}"
         max="23:59"
-        ${!this[READ_ONLY] ? 'required' : ''}
+        ${this[REQUIRED] ? 'required' : ''}
         ${this[READ_ONLY] ? 'readonly' : ''}
-        ${this[VALUE] ? `value="${this[VALUE]}"` : ''}
         aria-describedby="${this[ID]}-time-hint time-error">
         
       <!-- Accessible descriptions: Status hints and errors -->
       <span id="${this[ID]}-time-hint" class="hint-text">Format: HH:MM (e.g., 14:30)</span>
       <span id="${this[ID]}-time-error" class="error-text" aria-live="polite" hidden></span>
-    `;
+    `
   }
 }
 

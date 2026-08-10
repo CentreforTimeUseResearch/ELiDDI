@@ -9,7 +9,7 @@ export class DetailsPanel extends TinyBase {
   state = {};
   key;
   props;
-  open;
+  open = false;
   selectedEntry;
   saveButton;
   dayBoundaryInMinutes;
@@ -38,10 +38,18 @@ export class DetailsPanel extends TinyBase {
     this.timelinePickerPanel = this.querySelector('el-time-picker-panel');
     this.activityPicker = this.querySelector('el-activityPicker')
     this.saveButton = this.querySelector('.btn-save-btn')
+    this.openCloseButton = this.querySelector('[data-openCloseButton]');
   }
 
   assignEventHandlers() {
     this.saveButton.addEventListener('click', () => this.onSaveButtonClick())
+    this.openCloseButton.addEventListener('click', () => {
+      if (this.open) {
+        this.hidePanel()
+      } else {
+        this.showPanel()
+      }
+    })
   }
 
 
@@ -218,14 +226,14 @@ export class DetailsPanel extends TinyBase {
   render() {
     this.innerHTML = `
             <div>
-                <button class="reset-to-div right">
+                <button class="reset-to-div right" data-openCloseButton>
                   <svg 
                     xmlns="http://www.w3.org/2000/svg" 
                     width="24" height="24" 
                     viewBox="0 0 24 24" 
                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                   >
-                    ${this.open ? `<polyline points="18 15 12 9 6 15"></polyline>` : `<polyline points="6 9 12 15 18 9"></polyline>`}
+                    <polyline points="18 15 12 9 6 15"></polyline>
                   </svg>
                 </button>
             </div>
@@ -233,6 +241,7 @@ export class DetailsPanel extends TinyBase {
             <el-time-picker-panel ${this.setProps({ onTimeSet: (setTimeProps) => this.onSetOffsetMins(setTimeProps) })} day-boundary="${this.dayBoundaryInMinutes}"></el-time-picker-panel>
             <button class="btn btn-save-btn opaque">Save</button>
             `;
+
   }
 }
 

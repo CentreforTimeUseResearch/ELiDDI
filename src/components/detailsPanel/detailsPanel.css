@@ -23,8 +23,17 @@ details-panel {
   }
 }
 
+button svg {
+  transition: transform 0.3s;
+}
+
 details-panel.active {
   top: 100px;
+
+  button svg {
+    transform: rotate(180deg);
+  }
+
 }
 
 .btn-save-btn {

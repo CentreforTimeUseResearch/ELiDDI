@@ -130,7 +130,7 @@ export class TimePicker extends TinyBase {
 
       <input 
         type="time" 
-        value="${this[VALUE]}"
+        ${this[VALUE] ? `value="${this[VALUE]}"` : ''}
         id="${this[ID]}" 
         name="${this[ID]}"
         max="23:59"

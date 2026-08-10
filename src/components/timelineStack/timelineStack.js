@@ -8,6 +8,7 @@ export class TimelineStack extends TinyBase {
   store = super.getStore();
   timelinesData = GLOBALS.DATA.timeline;
   numTimelines = GLOBALS.DATA.timeline.length
+  timelineIndex = 0;
 
   constructor() {
     super();
@@ -16,7 +17,17 @@ export class TimelineStack extends TinyBase {
 
 
   connectedCallback() {
+
     super.connectedCallback();
+    this.store.subscribe(() => this.updateState());
+  }
+
+  updateState() {
+    const { currentTimelineIndex } = this.store.getState();
+    if (currentTimelineIndex !== this.timelineIndex) {
+      this.timelineIndex = currentTimelineIndex
+      this.render();
+    }
   }
 
   assignEventHandlers() {
@@ -26,20 +37,10 @@ export class TimelineStack extends TinyBase {
     }
   }
 
-  // switchTimeline(payload) {
-  //   this.store.dispatch({
-  //     action: 'SWITCH_TIMELINE',
-  //     payload,
-  //   });
-  // }
-
-
-
   render() {
-    // this component is a work in progress so this output is for debug purposes
     this.innerHTML = `
             <div class="" style=" ">
-            <el-timeline index="0"></el-timeline>
+            <el-timeline index="${this.timelineIndex}"></el-timeline>
             </div>
         `;
   }

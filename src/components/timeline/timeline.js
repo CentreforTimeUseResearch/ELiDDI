@@ -35,12 +35,16 @@ export class Timeline extends TinyBase {
     }
     super.connectedCallback();
     this.store.subscribe(() => this.updateState());
+    this.getChildElementReferences();
+    this.renderEntries();
+    this.assignEventHandlers();
+  }
+
+  getChildElementReferences() {
     this.timeLineElement = this.querySelector('svg');
     this.entriesLayer = this.timeLineElement.querySelector('#events');
     // get a handle on the details-panel as you need to communicate with it
     this.detailsPanel = this.querySelector('details-panel');
-    this.renderEntries();
-    this.assignEventHandlers();
   }
 
   updateState() {
@@ -103,7 +107,7 @@ export class Timeline extends TinyBase {
   assignEventHandlers() {
     if (!this.ready) {
       // are there times when we don't want the timeline to be clickable?
-      this.timeLineElement?.addEventListener('click', (e) => this.onTimelineClick(e))
+      this.timeLineElement?.addEventListener('click', (e) => { this.onTimelineClick(e) })
       this.ready = true;
     }
   }
@@ -130,6 +134,7 @@ export class Timeline extends TinyBase {
       const startOffsetMins = this.calculateTheTimeSlotClicked(offsetY >= 0 ? offsetY : 0);
       this.detailsPanel.setStartTime(startOffsetMins);
     }
+
     // open activity panel
     this.store.dispatch({
       type: 'SHOW_PANEL',

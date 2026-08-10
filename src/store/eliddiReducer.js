@@ -47,35 +47,22 @@ const currentTimelineIndex = (state = 0, action) => {
 
 const entry = (state = {}, action) => {
   switch (action?.type) {
-    case 'SET_SELECTED_ENTRY_ACTIVITY':
-      return ({
-        ...state,
-        activity: action.activity
-      });
-    case 'SET_SELECTED_ENTRY_END_OFFSET':
-      return ({
-        ...state,
-        endOffsetMins: action.endOffsetMins
-      })
     default:
       return state;
   }
 }
 
 const timeline = (state = [], action) => {
+  const { startOffsetMins, endOffsetMins, id, activity, timelineIndex, index } = action.payload;
   switch (action?.type) {
     case 'ADD_ENTRY':
-      const { startOffsetMins, endOffsetMins, id, activity } = action.payload;
       return [...state, {
         startOffsetMins, endOffsetMins, id, activity
       }]
-    case 'SET_SELECTED_ENTRY_ACTIVITY':
-      // find index of select entry using id
-      const index = state.findIndex((entry) => entry.id === action.selected_id)
-
+    case "UPDATE_ENTRY":
       return [
         ...state.slice(0, index),
-        entry(state[index], action),
+        { startOffsetMins, endOffsetMins, id, activity },
         ...state.slice(index + 1)
       ]
     default:
@@ -99,6 +86,7 @@ const timelines = (state = [], action) => {
   const index = action?.payload?.timelineIndex
   switch (action?.type) {
     case 'ADD_ENTRY':
+    case "UPDATE_ENTRY":
       return [
         ...state.slice(0, index),
         [...timeline(state[index], action)],
@@ -109,14 +97,6 @@ const timelines = (state = [], action) => {
         ...state.slice(0, index),
         [],
         ...state.slice(index + 1)
-      ]
-    case 'SET_SELECTED_ENTRY_ACTIVITY':
-
-      const { timeline_id } = action;
-      return [
-        ...state.slice(0, timeline_id),
-        [...timeline(state[timeline_id], action)],
-        ...state.slice(timeline_id + 1)
       ]
     default:
       return state;

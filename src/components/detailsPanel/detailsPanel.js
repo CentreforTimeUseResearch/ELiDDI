@@ -29,11 +29,15 @@ export class DetailsPanel extends TinyBase {
   connectedCallback() {
     super.connectedCallback();
     this.store.subscribe(this.onStoreUpdate.bind(this));
+    this.getChildElementReferences();
+    this.assignEventHandlers();
+  }
+
+  getChildElementReferences() {
     // this.popoverElement = document.getElementById('popover');
     this.timelinePickerPanel = this.querySelector('el-time-picker-panel');
     this.activityPicker = this.querySelector('el-activityPicker')
     this.saveButton = this.querySelector('.btn-save-btn')
-    this.assignEventHandlers();
   }
 
   assignEventHandlers() {
@@ -55,6 +59,7 @@ export class DetailsPanel extends TinyBase {
   reset() {
     this.state = {}
     this.render();
+    this.getChildElementReferences();
     this.assignEventHandlers();
   }
 
@@ -70,7 +75,6 @@ export class DetailsPanel extends TinyBase {
   }
 
   setStartTime(starttime) {
-    this.startOffsetMins = starttime;
     this.updateState({
       ...this.state,
       startOffsetMins: starttime
@@ -78,10 +82,33 @@ export class DetailsPanel extends TinyBase {
     this.setTimePanelStartTime();
   }
 
+
+  setEndTime(endtime) {
+    this.updateState({
+      ...this.state,
+      endOffsetMins: endtime
+    })
+    this.setTimePanelEndTime();
+  }
+
+  setActivity(activity) {
+    this.updateState({
+      ...this.state,
+      activity
+    })
+    this.activityPicker.setInputValue(activity)
+  }
+
+
   setTimePanelStartTime() {
     if (typeof this.state.startOffsetMins === 'number') {
       this.timelinePickerPanel.setAttribute('start-time', this.state.startOffsetMins + this.dayBoundaryInMinutes);
-      this.passInintialStartTime = false;
+    }
+  }
+
+  setTimePanelEndTime() {
+    if (typeof this.state.endOffsetMins === 'number') {
+      this.timelinePickerPanel.setAttribute('end-time', this.state.endOffsetMins + this.dayBoundaryInMinutes);
     }
   }
 

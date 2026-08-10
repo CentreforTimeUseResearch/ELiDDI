@@ -5,8 +5,9 @@ import './timePickerPanel.css';
 
 const DAY_BOUNDARY = 'day-boundary';
 const START_TIME = 'start-time'
+const END_TIME = 'end-time';
 export class TimePickerPanel extends TinyBase {
-  static observedAttributes = [DAY_BOUNDARY, START_TIME];
+  static observedAttributes = [DAY_BOUNDARY, START_TIME, END_TIME];
 
   store = super.getStore();
   startInputMinutes;
@@ -49,6 +50,11 @@ export class TimePickerPanel extends TinyBase {
     }
     if (name === START_TIME) {
       this.onTimeInputChange('startTime', {
+        value: this.convertMinutesToTimePickerFormat(newValue)
+      })
+    }
+    if (name === END_TIME) {
+      this.onTimeInputChange('endTime', {
         value: this.convertMinutesToTimePickerFormat(newValue)
       })
     }

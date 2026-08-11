@@ -6,10 +6,12 @@ export class TimelinePicker extends TinyBase {
   timelines;
   timelinePicker;
   store = super.getStore();
+  currentTimelineIndex;
 
   constructor() {
     super();
     this.parseTimelinesFromData();
+    this.store.subscribe(() => this.update());
   }
 
   parseTimelinesFromData() {
@@ -22,7 +24,7 @@ export class TimelinePicker extends TinyBase {
   }
 
   connectedCallback() {
-    this.render();
+    super.connectedCallback();
     this.assignEventHandlers();
   }
 
@@ -34,6 +36,16 @@ export class TimelinePicker extends TinyBase {
         this.switchTimeline(Number(e.target.value))
       });
       this.ready = true;
+    }
+  }
+
+  update() {
+    const { currentTimelineIndex } = this.store.getState();
+    if (this.currentTimelineIndex !== currentTimelineIndex) {
+
+      this.currentTimelineIndex = currentTimelineIndex;
+      this.render();
+      this.assignEventHandlers();
     }
   }
 
@@ -60,7 +72,7 @@ export class TimelinePicker extends TinyBase {
       return;
     }
     return this.timelines
-      .map((timelineName, index) => `<option value=${index}>${timelineName}</option>`)
+      .map((timelineName, index) => `<option value=${index} ${index === this.currentTimelineIndex ? 'selected' : ''}>${timelineName}</option>`)
       .join('');
   }
 
@@ -74,7 +86,7 @@ export class TimelinePicker extends TinyBase {
                   name="timeline-picker" 
                   aria-describedby="timeline-picker-hint"
                 >
-                    <option value="choose" selected>Choose timeline</option>
+                    <!--<option value="choose" selected>Choose timeline</option>-->
                     ${this.createOptions()}
                 </select>
             </div>

@@ -3,6 +3,13 @@ el-timeline-stack {
     border: 2px solid yellow;
     flex-grow: 1;
     overflow-y: auto;
+    display: flex;
+    overflow-x: scroll;
+    scroll-snap-type: x mandatory;
+
     /* background-image: url(../../assets/images/timeline.png);
     background-size: contain; */
+    &>* {
+        scroll-snap-align: start;
+    }
 }

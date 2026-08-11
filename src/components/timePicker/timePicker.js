@@ -52,9 +52,8 @@ export class TimePicker extends TinyBase {
   }
 
   assignEventHandlers() {
-    this.timeInput = document.getElementById(this[ID]);
-    this.errorDisplay = document.getElementById(`${this[ID]}-time-error`);
-
+    this.timeInput = this.querySelector(`[data-id=${this[ID]}]`);
+    this.errorDisplay = this.querySelector(`[data-id=${this[ID]}-time-error]`);
     // Feature detection: Check if browser downgrades "time" to "text"
     const isTimeSupported = this.timeInput.type === "time";
     if (!isTimeSupported) {
@@ -77,9 +76,7 @@ export class TimePicker extends TinyBase {
     this.timeInput.addEventListener("blur", () => this.validate());
     this.timeInput.addEventListener('change', (e) => {
       this.value = e.target.value;
-      this.props.change({
-        value: this.value
-      })
+      this.props.change(this.value)
     });
   }
 
@@ -124,14 +121,13 @@ export class TimePicker extends TinyBase {
   }
 
   render() {
-
     this.innerHTML = `<div id="${this[ID]}-time-error"></div>
       <label for="${this[ID]}" class="time-label">${this[LABEL]}</label><br />
 
       <input 
         type="time" 
         ${this[VALUE] ? `value="${this[VALUE]}"` : ''}
-        id="${this[ID]}" 
+        data-id="${this[ID]}" 
         name="${this[ID]}"
         max="23:59"
         ${this[REQUIRED] ? 'required' : ''}
@@ -139,8 +135,8 @@ export class TimePicker extends TinyBase {
         aria-describedby="${this[ID]}-time-hint time-error">
         
       <!-- Accessible descriptions: Status hints and errors -->
-      <span id="${this[ID]}-time-hint" class="hint-text">Format: HH:MM (e.g., 14:30)</span>
-      <span id="${this[ID]}-time-error" class="error-text" aria-live="polite" hidden></span>
+      <span data-id="${this[ID]}-time-hint" class="hint-text">Format: HH:MM (e.g., 14:30)</span>
+      <span data-id="${this[ID]}-time-error" class="error-text" aria-live="polite" hidden></span>
     `
   }
 }

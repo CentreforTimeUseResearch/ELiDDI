@@ -3,7 +3,11 @@ import { TimePickerPanel } from '../timePickerPanel/timePickerPanel';
 import { TinyBase } from '../base';
 import './detailsPanel.css';
 
+const TIME_LINE_INDEX = 'timelineindex';
+const HEADING = 'heading';
+
 export class DetailsPanel extends TinyBase {
+  static observedAttributes = [TIME_LINE_INDEX, HEADING];
 
   store = super.getStore();
   state = {};
@@ -13,6 +17,7 @@ export class DetailsPanel extends TinyBase {
   selectedEntry;
   saveButton;
   dayBoundaryInMinutes;
+  currentTimelineIndex;
 
   timelinePickerPanel;
   popoverElement;
@@ -27,10 +32,18 @@ export class DetailsPanel extends TinyBase {
   }
 
   connectedCallback() {
+    const { currentTimelineIndex } = this.store.getState();
+    this.currentTimelineIndex = currentTimelineIndex;
     super.connectedCallback();
     this.store.subscribe(this.onStoreUpdate.bind(this));
     this.getChildElementReferences();
     this.assignEventHandlers();
+  }
+
+  attributeChangedCallback(name, oldValue, newValue) {
+    if (this[name] !== newValue) {
+      this[name] = newValue;
+    }
   }
 
   getChildElementReferences() {
@@ -51,7 +64,6 @@ export class DetailsPanel extends TinyBase {
       }
     })
   }
-
 
   isEntryComplete() {
     return typeof this.state.startOffsetMins === 'number' && typeof this.state.endOffsetMins === 'number' && this.state.activity
@@ -122,11 +134,21 @@ export class DetailsPanel extends TinyBase {
 
 
   onStoreUpdate() {
-    const { uipanel } = this.store.getState();
-    if (uipanel === 'activity') {
+    const { uipanel, currentTimelineIndex } = this.store.getState();
+    this.currentTimelineIndex = currentTimelineIndex
+    const isMyTimeline = Number(this[TIME_LINE_INDEX]) === this.currentTimelineIndex
+    const showActivityPanel = uipanel === 'activity'
+
+    if (showActivityPanel) {
       this.showPanel();
     } else {
       this.hidePanel();
+    }
+
+    if (isMyTimeline) {
+      this.classList.remove('hide');
+    } else {
+      this.classList.add('hide')
     }
   }
 
@@ -204,7 +226,6 @@ export class DetailsPanel extends TinyBase {
 
   // triggered by adding a  valid end time to an entry that has a valid start time
   onSetOffsetMins({ timeField, timeInMinutes }) {
-
     const offsetMins = timeInMinutes - this.dayBoundaryInMinutes;
 
     switch (timeField) {
@@ -224,6 +245,14 @@ export class DetailsPanel extends TinyBase {
   }
 
   render() {
+    if (Number(this[TIME_LINE_INDEX]) !== this.currentTimelineIndex) {
+      // hide
+      this.classList.add('hide')
+    } else {
+      this.classList.remove('hide')
+      //show
+    }
+
     this.innerHTML = `
             <div>
                 <button class="reset-to-div right" data-openCloseButton>
@@ -237,7 +266,7 @@ export class DetailsPanel extends TinyBase {
                   </svg>
                 </button>
             </div>
-            <el-activityPicker ${this.setProps({ onFocusCallback: () => this.onFocusCallback(), onSetActivityOnSelectedEntry: (activity) => this.onSetActivityOnSelectedEntry(activity) })}></el-activityPicker>
+            <el-activityPicker heading="${this[HEADING]}" ${this.setProps({ onFocusCallback: () => this.onFocusCallback(), onSetActivityOnSelectedEntry: (activity) => this.onSetActivityOnSelectedEntry(activity) })}></el-activityPicker>
             <el-time-picker-panel ${this.setProps({ onTimeSet: (setTimeProps) => this.onSetOffsetMins(setTimeProps) })} day-boundary="${this.dayBoundaryInMinutes}"></el-time-picker-panel>
             <button class="btn btn-save-btn opaque">Save</button>
             `;

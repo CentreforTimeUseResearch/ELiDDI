@@ -207,7 +207,11 @@ export class Timeline extends TinyBase {
 
   render() {
     this.appendChild(this.fragment);
-    this.innerHTML += `<details-panel ${this.setProps({ saveEntry: (entry) => this.saveEntry(entry) })}  timeline=${this.timeLineElement}></details-panel>`
+    this.innerHTML += `<details-panel 
+      ${this.setProps({ saveEntry: (entry) => this.saveEntry(entry) })} 
+      timelineindex=${this[INDEX]} 
+      heading="${GLOBALS.DATA.timeline[this[INDEX]]?.description}"
+    ></details-panel>`
   }
 }
 

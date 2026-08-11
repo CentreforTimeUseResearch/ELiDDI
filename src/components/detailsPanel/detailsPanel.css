@@ -11,7 +11,19 @@ details-panel {
   align-items: flex-start; */
   text-align: center;
   font-size: 3rem;
-  transition: 0.3s ease;
+  transition: all 0.3s ease;
+  transition-behavior: allow-discrete;
+  opacity: 1;
+
+  @starting-style {
+    opacity: 0;
+  }
+
+  &.hide {
+    visibility: hidden;
+    /* display: none; */
+    opacity: 0;
+  }
 
   a {
     margin-top: 14px;

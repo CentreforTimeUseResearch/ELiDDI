@@ -61,7 +61,7 @@
   "timeline": [
     {
       "name": "Primary activity",
-      "description": "What were you doing? Please write down one main activity",
+      "description": "What were you doing? Please select down one main activity",
       "mode": "single-choice",
       "min_coverage": "10",
       "allow_free_text": true,

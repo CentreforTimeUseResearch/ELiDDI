@@ -27,7 +27,19 @@ export class TimelineStack extends TinyBase {
     const { currentTimelineIndex } = this.store.getState();
     if (currentTimelineIndex !== this.timelineIndex) {
       this.timelineIndex = currentTimelineIndex
+      this.scrollToTimeline();
     }
+  }
+
+  scrollToTimeline() {
+    const timeline = this.children[this.timelineIndex];
+    // get the element
+    timeline.scrollIntoView({
+      behavior: 'smooth',
+      block: 'nearest', // Prevents the whole page from jumping vertically
+      inline: 'start'   // Aligns item to the start edge to match CSS snapping
+    });
+
   }
 
   switchTimeLine(index) {

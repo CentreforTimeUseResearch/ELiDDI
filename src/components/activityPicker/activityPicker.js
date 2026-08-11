@@ -2,7 +2,9 @@ import { Accordion } from '../accordion/accordion';
 import { TinyBase } from '../base';
 import './activityPicker.css';
 
+const HEADING = 'heading';
 export class ActivityPicker extends TinyBase {
+  static observedAttributes = [HEADING];
 
   store = super.getStore();
 
@@ -365,11 +367,16 @@ export class ActivityPicker extends TinyBase {
     this.popoverElement.innerHTML = `<el-accordion ${this.setProps({ content: results, buttonClick: this.onActivitySelect })}></el-accordion>`
   }
 
+  attributeChangedCallback(name, oldValue, newValue) {
+    if (this[name] !== newValue) {
+      this[name] = newValue;
+    }
+  }
 
   render() {
     this.innerHTML = `
         <label class="govuk-label govuk-label--l" for="activity-input">
-          What did you do?
+          ${this[HEADING]}
         </label>
         <div class="combobox-wrapper">
             <div class="combobox-input-wrapper">

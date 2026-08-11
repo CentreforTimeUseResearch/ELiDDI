@@ -19,6 +19,7 @@ export class TimelineStack extends TinyBase {
   connectedCallback() {
 
     super.connectedCallback();
+    this.assignEventHandlers();
     this.store.subscribe(() => this.updateState());
   }
 
@@ -26,23 +27,51 @@ export class TimelineStack extends TinyBase {
     const { currentTimelineIndex } = this.store.getState();
     if (currentTimelineIndex !== this.timelineIndex) {
       this.timelineIndex = currentTimelineIndex
-      this.render();
+      this.scrollToTimeline();
     }
+  }
+
+  scrollToTimeline() {
+    const timeline = this.children[this.timelineIndex];
+    // get the element
+    timeline.scrollIntoView({
+      behavior: 'smooth',
+      block: 'nearest', // Prevents the whole page from jumping vertically
+      inline: 'start'   // Aligns item to the start edge to match CSS snapping
+    });
+
+  }
+
+  switchTimeLine(index) {
+    if (index === this.timelineIndex) {
+      return;
+    }
+    this.store.dispatch({
+      type: 'SWITCH_TIMELINE',
+      payload: index,
+    });
   }
 
   assignEventHandlers() {
     if (!this.ready) {
+      this.addEventListener("scrollsnapchange", (event) => {
+        if (!event.snapTargetInline) {
+          console.error('problem getting timeline index from scroll')
+          return
+        }
+        this.switchTimeLine(Number(event.snapTargetInline.index))
+      });
 
       this.ready = true;
     }
   }
 
   render() {
-    this.innerHTML = `
-            <div class="" style=" ">
-            <el-timeline index="${this.timelineIndex}"></el-timeline>
-            </div>
-        `;
+    for (let i = 0; i <= this.numTimelines; i++) {
+      const myCustomInstance = new Timeline();
+      myCustomInstance.setAttribute('index', i);
+      this.appendChild(myCustomInstance);
+    }
   }
 }
 

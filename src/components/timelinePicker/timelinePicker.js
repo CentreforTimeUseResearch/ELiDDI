@@ -33,7 +33,6 @@ export class TimelinePicker extends TinyBase {
         e.stopPropagation();
         this.switchTimeline(Number(e.target.value))
       });
-
       this.ready = true;
     }
   }
@@ -43,6 +42,10 @@ export class TimelinePicker extends TinyBase {
       console.error('Problem with timeline picker value');
       return;
     }
+
+    this.store.dispatch({
+      type: 'HIDE_PANEL'
+    })
 
     this.store.dispatch({
       type: 'SWITCH_TIMELINE',

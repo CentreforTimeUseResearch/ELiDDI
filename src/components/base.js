@@ -12,7 +12,7 @@ const props = {};
 const persistedState = localStoreLoad();
 let store = createStore(eliddiReducer, persistedState);
 store.subscribe(() => {
-  localStoreSave(store.getState())
+  localStoreSave({ ...store.getState(), uipanel: undefined, currentTimelineIndex: undefined })
 })
 
 export class TinyBase extends HTMLElement {

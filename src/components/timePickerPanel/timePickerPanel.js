@@ -36,12 +36,12 @@ export class TimePickerPanel extends TinyBase {
   }
 
   assignEventHandlers() {
+    this.startInputElement = this.querySelector('[input-id="startTime"]');
     this.endInputElement = this.querySelector('[input-id="endTime"]');
-    this.durationInputElement = this.querySelector('[input-id="duration"]')
-    this.restOfDayElement = this.querySelector('#timepicker-rest-of-day')
+    this.durationInputElement = this.querySelector('[input-id="duration"]');
+    this.restOfDayElement = this.querySelector('#timepicker-rest-of-day');
 
     this.restOfDayElement.addEventListener('change', (e) => this.handleRestOfDayCheckboxClick(e));
-
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
@@ -49,14 +49,10 @@ export class TimePickerPanel extends TinyBase {
       this[name] = newValue;
     }
     if (name === START_TIME) {
-      this.onTimeInputChange('startTime', {
-        value: this.convertMinutesToTimePickerFormat(newValue)
-      })
+      this.onTimeInputChange('startTime', newValue)
     }
     if (name === END_TIME) {
-      this.onTimeInputChange('endTime', {
-        value: this.convertMinutesToTimePickerFormat(newValue)
-      })
+      this.onTimeInputChange('endTime', newValue)
     }
     if (name === DAY_BOUNDARY) {
       this.dayBoundaryInMinutes = (Number(this[DAY_BOUNDARY]) - 1) + (24 * 60)
@@ -84,9 +80,7 @@ export class TimePickerPanel extends TinyBase {
   handleRestOfDayCheckboxClick(e) {
     if (event.target.checked) {
       this.endofday = true
-      this.onTimeInputChange('endTime', {
-        value: this.convertMinutesToTimePickerFormat(this.dayBoundaryInMinutes)
-      })
+      this.onTimeInputChange('endTime', this.dayBoundaryInMinutes)
     } else {
       this.endofday = false;
       this.render();
@@ -122,9 +116,7 @@ export class TimePickerPanel extends TinyBase {
     this.endInputElement.setAttribute('value', this.convertMinutesToTimePickerFormat(endMinutes))
   }
 
-  onTimeInputChange(fieldId, timeProps) {
-    const { value } = timeProps;
-    const valueInMinutes = this.convertTimePickerFormatToMinutes(value)
+  onTimeInputChange(fieldId, valueInMinutes) {
 
     switch (fieldId) {
       case 'startTime':
@@ -148,7 +140,14 @@ export class TimePickerPanel extends TinyBase {
         }
         break;
     }
-    this.render()
+    this.update();
+  }
+
+  update() {
+    this.restOfDayElement.checked = this.endofday;
+    this.startInputElement.setAttribute('value', this.startInputMinutes ? this.convertMinutesToTimePickerFormat(this.startInputMinutes) : undefined)
+    this.endInputElement.setAttribute('value', this.endInputMinutes ? this.convertMinutesToTimePickerFormat(this.endInputMinutes) : undefined)
+    this.durationInputElement.setAttribute('value', this.durationInputMinutes ? this.convertMinutesToTimePickerFormat(this.durationInputMinutes) : undefined)
   }
 
   render() {
@@ -156,21 +155,21 @@ export class TimePickerPanel extends TinyBase {
     <fieldset class="time-container">
       <legend class="sr-only">Schedule Settings</legend>
       
-      <el-time-picker ${this.setProps({ change: (timeProps) => this.onTimeInputChange("startTime", timeProps) })} 
+      <el-time-picker ${this.setProps({ change: (timeInHHMMFormat) => this.onTimeInputChange("startTime", this.convertTimePickerFormatToMinutes(timeInHHMMFormat)) })} 
         input-id="startTime" 
         label="Start time (24-hour format)" 
         value="${this.startInputMinutes ? this.convertMinutesToTimePickerFormat(this.startInputMinutes) : undefined}" 
         constrained="true"
         error=${this.startTimeError}
       ></el-time-picker>
-      <el-time-picker ${this.setProps({ change: (timeProps) => this.onTimeInputChange("endTime", timeProps) })} 
+      <el-time-picker ${this.setProps({ change: (timeInHHMMFormat) => this.onTimeInputChange("endTime", this.convertTimePickerFormatToMinutes(timeInHHMMFormat)) })} 
         input-id="endTime" 
         label="End time (24-hour format)" 
         value="${this.endInputMinutes ? this.convertMinutesToTimePickerFormat(this.endInputMinutes) : undefined}" 
         constrained="true"
         error="${this.endTimeError}"
       ></el-time-picker>
-      <input type="checkbox" id="timepicker-rest-of-day" ${this.endofday ? 'checked' : ''}>
+      <input type="checkbox" id="timepicker-rest-of-day">
       
       <label for="timepicker-rest-of-day">Continue this activity to the end of the day</label>
       <el-time-picker input-id="duration" label="Duration" value="${this.durationInputMinutes ? this.convertMinutesToTimePickerFormat(this.durationInputMinutes) : undefined}" read-only="true"></el-time-picker>

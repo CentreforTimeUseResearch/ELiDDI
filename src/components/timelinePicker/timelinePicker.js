@@ -2,7 +2,7 @@ import { TinyBase } from '../base';
 import './timelinePicker.css';
 
 export class TimelinePicker extends TinyBase {
-  ready = false;
+
   timelines;
   timelinePicker;
   store = super.getStore();
@@ -25,18 +25,17 @@ export class TimelinePicker extends TinyBase {
 
   connectedCallback() {
     super.connectedCallback();
-    this.assignEventHandlers();
   }
 
   assignEventHandlers() {
-    if (!this.ready) {
-      this.timelinePicker = this.querySelector('[data-timeline-picker]');
-      this.timelinePicker?.addEventListener('change', (e) => {
-        e.stopPropagation();
-        this.switchTimeline(Number(e.target.value))
-      });
-      this.ready = true;
-    }
+
+    this.timelinePicker = this.querySelector('[data-timeline-picker]');
+    this.timelinePicker?.addEventListener('change', (e) => {
+      e.stopPropagation();
+      this.switchTimeline(Number(e.target.value))
+    });
+
+
   }
 
   update() {
@@ -45,7 +44,6 @@ export class TimelinePicker extends TinyBase {
 
       this.currentTimelineIndex = currentTimelineIndex;
       this.render();
-      this.assignEventHandlers();
     }
   }
 
@@ -93,6 +91,7 @@ export class TimelinePicker extends TinyBase {
                 </select>
             </div>
         `;
+    this.assignEventHandlers();
   }
 }
 

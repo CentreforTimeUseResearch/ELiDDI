@@ -6,12 +6,12 @@ el-timeline-stack {
     display: flex;
     overflow-x: scroll;
     scroll-behavior: smooth !important;
-    scroll-snap-type: x mandatory;
+    scroll-snap-type: x mandatory !important;
 
     /* background-image: url(../../assets/images/timeline.png);
     background-size: contain; */
     &>* {
-        scroll-snap-align: start;
-        scroll-snap-stop: always;
+        scroll-snap-align: start !important;
+        scroll-snap-stop: always !important;
     }
 }

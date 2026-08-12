@@ -15,6 +15,7 @@
   --mono: ui-monospace, Consolas, monospace; */
 
   --y-gap: 1.1rem;
+  --2y-gap: 2.2rem;
 
   font: 18px/145% var(--sans);
   letter-spacing: 0.18px;

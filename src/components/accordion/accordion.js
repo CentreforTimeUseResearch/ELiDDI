@@ -35,7 +35,8 @@ export class Accordion extends TinyBase {
         <button 
           type="button" 
           class="btn" 
-          style="border-left: 10px solid ${activity.color};" aria-label="${activity.label}" 
+          style="border-left: 10px solid ${activity.color}; margin-top: 4px;" 
+          aria-label="${activity.label}" 
           data-activity="${activity.label}"
         >
           ${activity.label}

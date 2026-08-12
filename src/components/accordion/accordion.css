@@ -6,7 +6,7 @@ el-accordion {
     padding: 0;
     border: 2px solid hsl(0deg 0% 52%);
     border-radius: 7px;
-
+    background-color: white;
   }
 
   .accordion h3 {

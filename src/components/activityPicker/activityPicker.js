@@ -3,8 +3,9 @@ import { TinyBase } from '../base';
 import './activityPicker.css';
 
 const HEADING = 'heading';
+const INSTRUCTION = 'instruction';
 export class ActivityPicker extends TinyBase {
-  static observedAttributes = [HEADING];
+  static observedAttributes = [HEADING, INSTRUCTION];
 
   store = super.getStore();
 
@@ -94,9 +95,10 @@ export class ActivityPicker extends TinyBase {
 
   assignEventHandlers() {
     this.input.addEventListener('focus', (event) => {
-      this.popoverElement.showPopover({ source: this.input });
+      this.showPopover({ source: this.input });
       this.handleInputFocus()
     });
+
 
 
     document.addEventListener('click', (event) => {
@@ -104,13 +106,13 @@ export class ActivityPicker extends TinyBase {
       const clickedInput = this.input.parentNode.contains(event.target);
       const clickedPopover = this.popoverElement.contains(event.target);
       if (!clickedInput && !clickedPopover) {
-        this.popoverElement.hidePopover();
+        this.hidePopover();
       }
     })
 
     document.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') {
-        this.popoverElement.hidePopover();
+        this.hidePopover();
         this.input.blur();
       }
     })
@@ -121,9 +123,20 @@ export class ActivityPicker extends TinyBase {
   }
 
   handleInputFocus() {
-    // this.props.onFocusCallback?.();
+    this.props.onFocusCallback?.();
     // this.updateResults();
   }
+
+  showPopover() {
+    // this.props.onPopOverShowing(true)
+    this.popoverElement.showPopover({ source: this.input });
+  }
+
+  hidePopover() {
+    // this.props.onPopOverShowing(false)
+    this.popoverElement.hidePopover();
+  }
+
 
   // handleBodyClick(evt) {
   //     if (evt.target === this.input || this.grid.contains(evt.target)) {
@@ -360,7 +373,7 @@ export class ActivityPicker extends TinyBase {
     }
 
     this.props.onSetActivityOnSelectedEntry(activity)
-    this.popoverElement.hidePopover();
+    this.hidePopover();
   }
 
   renderAccordion(results) {
@@ -375,8 +388,9 @@ export class ActivityPicker extends TinyBase {
 
   render() {
     this.innerHTML = `
-        <label class="govuk-label govuk-label--l" for="activity-input">
+        <label class="el-label el-label--l" for="activity-input">
           ${this[HEADING]}
+       
         </label>
         <div class="combobox-wrapper">
             <div class="combobox-input-wrapper">
@@ -390,6 +404,7 @@ export class ActivityPicker extends TinyBase {
                     id="activity-input"
                     value=""
                 >
+                 <span class="instruction"> ${this[INSTRUCTION]} </span>
                 <div id="activity-picker-popover" popover="manual" class="activity-picker-popover">
                   <el-accordion ${this.setProps({ content: this.content, buttonClick: this.onActivitySelect })}></el-accordion>
                 </div>

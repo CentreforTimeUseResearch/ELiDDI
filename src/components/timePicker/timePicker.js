@@ -135,7 +135,7 @@ export class TimePicker extends TinyBase {
         aria-describedby="${this[ID]}-time-hint time-error">
         
       <!-- Accessible descriptions: Status hints and errors -->
-      <span data-id="${this[ID]}-time-hint" class="hint-text">Format: HH:MM (e.g., 14:30)</span>
+      <span data-id="${this[ID]}-time-hint" class="hint-text" hidden>Format: HH:MM (e.g., 14:30)</span>
       <span data-id="${this[ID]}-time-error" class="error-text" aria-live="polite" hidden></span>
     `
   }

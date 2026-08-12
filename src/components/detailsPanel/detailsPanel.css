@@ -1,19 +1,15 @@
 details-panel {
   position: fixed;
-  top: 90vh;
+  top: calc(100dvh - 8rem);
   left: 0;
   background-color: rgb(34, 37, 49);
   height: 100vh;
-  width: 100%;
   border: 1px solid green;
-  /* display: flex;
-  justify-content: top;
-  align-items: flex-start; */
   text-align: center;
-  font-size: 3rem;
   transition: all 0.3s ease;
   transition-behavior: allow-discrete;
   opacity: 1;
+  z-index: 1;
 
   @starting-style {
     opacity: 0;
@@ -30,6 +26,8 @@ details-panel {
   }
 
   .right {
+    position: absolute;
+    right: 0;
     margin-inline-end: 8px;
     margin-inline-start: auto;
   }
@@ -37,20 +35,32 @@ details-panel {
 
 button svg {
   transition: transform 0.3s;
+  color: white;
 }
 
 details-panel.active {
-  top: 100px;
+  top: calc(100dvh - 35.25rem);
 
   button svg {
     transform: rotate(180deg);
   }
 
+  &.higher {
+    top: 10px;
+  }
+
 }
+
+.details-panel-content {
+  padding: var(--2y-gap) var(--y-gap);
+}
+
 
 .btn-save-btn {
   margin: 0 16px;
   width: calc(100% - 32px);
+  background-color: #28a745;
+  color: black;
 }
 
 .opaque {

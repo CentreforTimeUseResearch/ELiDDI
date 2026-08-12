@@ -1,25 +1,30 @@
 el-activitypicker {
   display: block;
 
+
+
   .combobox-wrapper {
-    margin: 0 16px;
+    margin: 0 var(--y-gap);
   }
 
   label {
-    font-size: 1.6875rem;
-    line-height: 1.1111111111;
-    font-weight: 700;
-    margin-bottom: 15px;
+    font-size: x-large;
     color: #fff;
+  }
+
+  .instruction {
+    color: lightgrey;
+    font-size: 0.75rem;
   }
 
   .combobox-input-wrapper {
     position: relative;
+    margin: var(--y-gap);
 
     &::before {
       position: absolute;
       content: " \A8FA";
-      top: 28px;
+      top: 16px;
       right: -11px;
       height: 50px;
       width: 50px;
@@ -50,12 +55,14 @@ el-activitypicker {
     box-sizing: border-box;
     inset: 0;
     position-area: bottom;
-    width: calc(100% - 36px);
-    padding: 8px;
+    padding: 0 8px;
     margin: 0 auto;
-
+    background-color: transparent;
     border: 0;
     max-height: 75%;
     overflow-y: scroll;
+    margin: 0 var(--2y-gap);
+    min-width: 75vw;
+    max-width: 75vw;
   }
 }

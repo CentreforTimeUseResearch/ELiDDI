@@ -5,9 +5,10 @@ import './detailsPanel.css';
 
 const TIME_LINE_INDEX = 'timelineindex';
 const HEADING = 'heading';
+const INSTRUCTION = 'instruction'
 
 export class DetailsPanel extends TinyBase {
-  static observedAttributes = [TIME_LINE_INDEX, HEADING];
+  static observedAttributes = [TIME_LINE_INDEX, HEADING, INSTRUCTION];
 
   store = super.getStore();
   state = {};
@@ -88,6 +89,8 @@ export class DetailsPanel extends TinyBase {
     this.open = true;
     this.classList.add('active');
   }
+
+
 
   hidePanel() {
     this.open = false;
@@ -170,14 +173,14 @@ export class DetailsPanel extends TinyBase {
     this.showPanel();
   }
 
-
-  // getTimelineIndex() {
-  //   return this.store.getState().selectedEntry || {};
-  // }
-
-  // getSelectedEntryId(timelineIndex) {
-  //   return this.store.getState().timelines[timelineIndex].length;
-  // }
+  onPopOverShowing(isPopoverShowing) {
+    // leave for now
+    // if (isPopoverShowing) {
+    //   this.classList.add('higher')
+    // } else {
+    //   this.classList.remove('higher')
+    // }
+  }
 
   // triggered by activity select 
   onSetActivityOnSelectedEntry(activity) {
@@ -188,38 +191,6 @@ export class DetailsPanel extends TinyBase {
     });
 
     this.activityPicker.setInputValue(activity)
-
-    // if (timeline, index) {
-    //   this.store.dispatch({
-    //     type: 'SET_ENTRY_ACTIVITY',
-    //     timeline_id: timeline,
-    //     selected_id: index,
-    //     activity
-    //   })
-    // } else {
-    // what is there is no selected entry?
-    // create entry
-    // const timelineIndex = this.store.getState().currentTimelineIndex;
-    // const newId = this.getSelectedEntryId(timelineIndex)
-
-    // this.store.dispatch({
-    //   type: "ADD_ENTRY",
-    //   payload: {
-    //     timelineIndex,
-    //     activity,
-    //     id: newId // how do we make an entry
-    //   }
-    // })
-
-    // // state keeps the id and timeline index of the selected entry
-    // // this means it can be retrieved without having to itterate to find entry with active flag
-    // this.store.dispatch({
-    //   type: 'SELECT_ENTRY',
-    //   timelineIndex,
-    //   index: newId // how do we make an entry
-    // })
-    // }
-
 
   }
 
@@ -266,9 +237,15 @@ export class DetailsPanel extends TinyBase {
                   </svg>
                 </button>
             </div>
-            <el-activityPicker heading="${this[HEADING]}" ${this.setProps({ onFocusCallback: () => this.onFocusCallback(), onSetActivityOnSelectedEntry: (activity) => this.onSetActivityOnSelectedEntry(activity) })}></el-activityPicker>
-            <el-time-picker-panel ${this.setProps({ onTimeSet: (setTimeProps) => this.onSetOffsetMins(setTimeProps) })} day-boundary="${this.dayBoundaryInMinutes}"></el-time-picker-panel>
-            <button class="btn btn-save-btn opaque">Save</button>
+            <div class="details-panel-content">
+              <el-activityPicker 
+                instruction="${this[INSTRUCTION]}" 
+                heading="${this[HEADING]}" 
+                ${this.setProps({ onPopOverShowing: (isPopoverShowing) => this.onPopOverShowing(isPopoverShowing), onFocusCallback: () => this.onFocusCallback(), onSetActivityOnSelectedEntry: (activity) => this.onSetActivityOnSelectedEntry(activity) })}
+              ></el-activityPicker>
+              <el-time-picker-panel ${this.setProps({ onTimeSet: (setTimeProps) => this.onSetOffsetMins(setTimeProps) })} day-boundary="${this.dayBoundaryInMinutes}"></el-time-picker-panel>
+              <button class="btn btn-save-btn opaque">Save</button>
+            </div>
             `;
 
   }

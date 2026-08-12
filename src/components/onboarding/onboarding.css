@@ -25,7 +25,7 @@ el-onboarding {
     }
 
     .button-bar {
-        margin-top: calc(2 * var(--y-gap));
+        margin-top: var(--2y-gap);
         display: flex;
         gap: 8px;
     }

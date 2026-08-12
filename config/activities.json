@@ -61,7 +61,8 @@
   "timeline": [
     {
       "name": "Primary activity",
-      "description": "What were you doing? Please select one main activity",
+      "description": "What were you doing?",
+      "instruction": "Please select one main activity",
       "mode": "single-choice",
       "min_coverage": "10",
       "allow_free_text": true,
@@ -1248,6 +1249,7 @@
     {
       "name": "Secondary activity",
       "description": "If you did something else at the same time, what else did you do?",
+      "instruction": "Please select one main activity",
       "mode": "single-choice",
       "min_coverage": "10",
       "allow_free_text": true,

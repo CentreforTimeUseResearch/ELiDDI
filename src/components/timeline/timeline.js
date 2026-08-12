@@ -211,6 +211,7 @@ export class Timeline extends TinyBase {
       ${this.setProps({ saveEntry: (entry) => this.saveEntry(entry) })} 
       timelineindex=${this[INDEX]} 
       heading="${GLOBALS.DATA.timeline[this[INDEX]]?.description}"
+      instruction="${GLOBALS.DATA.timeline[this[INDEX]]?.instruction}"
     ></details-panel>`
   }
 }

@@ -5,7 +5,7 @@ el-timeline-stack {
     overflow-y: auto;
     display: flex;
     overflow-x: scroll;
-    scroll-behavior: smooth;
+    scroll-behavior: smooth !important;
     scroll-snap-type: x mandatory;
 
     /* background-image: url(../../assets/images/timeline.png);

@@ -18,50 +18,50 @@
   "day_boundary": "04:00",
   "instructions": [
     {
-      "title": "1. Select a Timeline",
+      "title": "Select a Timeline",
       "text": "Use the <strong>timeline picker</strong> to switch timelines. Each timeline records different information about your day. When you switch you will see information about what each timeline is for.",
       "spotlight": [
         50,
-        2,
-        18
+        6,
+        15
       ],
       "image": "timeline-picker.png"
     },
     {
-      "title": "2. Pick a start time",
+      "title": "Pick a start time",
       "text": "Click or tap on the timeline to indicate the start time, you can always adjust this in the next step",
       "spotlight": [
         50,
-        50,
+        40,
         40
       ],
-      "modalTop": "450"
+      "modalTop": "220"
     },
     {
-      "title": "3. Add activity details",
+      "title": "Add activity details",
       "text": "Use the activity picker to fill out the activity details",
       "spotlight": [
         50,
-        90,
-        20
+        70,
+        35
       ],
-      "modalTop": "-450",
+      "modalTop": "-290",
       "showPanel": "activity"
     },
     {
-      "title": "4. Submit your diary",
-      "text": "Once you've recorded all your activities for the day, click the Submit button to complete your diary.",
+      "title": "Submit your diary",
+      "text": "Once you've recorded all your activities for the day, click the completed button to complete your diary.",
       "spotlight": [
-        50,
-        10,
-        20
+        86,
+        7,
+        9
       ]
     }
   ],
   "timeline": [
     {
       "name": "Primary activity",
-      "description": "What were you doing? Please select down one main activity",
+      "description": "What were you doing? Please select one main activity",
       "mode": "single-choice",
       "min_coverage": "10",
       "allow_free_text": true,

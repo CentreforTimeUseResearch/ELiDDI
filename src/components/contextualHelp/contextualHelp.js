@@ -1,4 +1,6 @@
-import contextualIconSVGSource from '../../assets/icons/help-252.svg?raw';
+import helpIconSource from '../../assets/icons/help-252.svg?raw';
+import doneIconSource from '../../assets/icons/check-252.svg?raw';
+
 import { TinyBase } from '../base';
 
 import './contextualHelp.css';
@@ -16,6 +18,7 @@ export class ContextualHelp extends TinyBase {
   popover;
   helpButton;
   store;
+  done = true;
   // contentWindow;
 
   constructor() {
@@ -65,7 +68,9 @@ export class ContextualHelp extends TinyBase {
   render() {
     // this component is a work in progress so this output is for debug purposes
     this.innerHTML = `
-            <button id="help-button-${this[ID]}" class="reset-to-div" popovertarget="help-popover-${this[ID]}">${contextualIconSVGSource}</button>
+            <button id="help-button-${this[ID]}" class="reset-to-div" popovertarget="help-popover-${this[ID]}">
+            ${this.done ? doneIconSource : helpIconSource}
+            </button>
             `;
   }
 }

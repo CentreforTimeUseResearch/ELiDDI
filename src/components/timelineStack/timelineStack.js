@@ -67,7 +67,7 @@ export class TimelineStack extends TinyBase {
   }
 
   render() {
-    for (let i = 0; i <= this.numTimelines; i++) {
+    for (let i = 0; i < this.numTimelines; i++) {
       const myCustomInstance = new Timeline();
       myCustomInstance.setAttribute('index', i);
       this.appendChild(myCustomInstance);

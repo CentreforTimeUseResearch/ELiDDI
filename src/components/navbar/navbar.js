@@ -46,8 +46,10 @@ export class Navbar extends HTMLElement {
                     <span></span>
                 </button>
             </div>
-            <div class="right-pane">
+            <div class="middle-pane">
                 <el-timeline-picker></el-timeline-picker>
+            </div>
+            <div class="right-pane">
                 <el-contextual-help 
                     id="timeline-picker" 
                 ></el-contextual-help>

@@ -90,7 +90,7 @@ export class DialogWidget extends TinyBase {
                     ${this.onboarding ? `<el-onboarding ${this.setProps({ moveSpotlight: this.moveSpotlight, moveModalTop: this.moveModalTop })}></el-onboarding>` : `<div></div>`}
                 </div>
                 <div class="dialog-actions">
-                      <button data-skip>skip</button>
+                      <button class="reset-to-div" data-skip>skip</button>
                 </div>
             </div>
         </dialog>

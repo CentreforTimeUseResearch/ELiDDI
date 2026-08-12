@@ -21,9 +21,11 @@ el-onboarding {
     .navigation {
         flex-grow: 0;
         flex-shrink: 0;
+        margin-top: var(--y-gap)
     }
 
     .button-bar {
+        margin-top: calc(2 * var(--y-gap));
         display: flex;
         gap: 8px;
     }

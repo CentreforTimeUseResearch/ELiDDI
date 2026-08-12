@@ -32,9 +32,20 @@ nav {
   background-color: rgb(34, 37, 49);
 }
 
+.left-pane {
+  flex: 0 0 auto;
+  align-self: center;
+}
+
+.middle-pane {
+  padding-left: 12px;
+  flex: 1 1 0%
+}
+
 .right-pane {
   display: flex;
-  flex-grow: 0;
+  flex: 0 0 auto;
+  align-self: center;
 }
 
 .ham-menu {

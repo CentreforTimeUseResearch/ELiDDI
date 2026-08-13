@@ -31,7 +31,11 @@ export class Accordion extends TinyBase {
     const element = e.target;
     const activity = element.dataset?.activity
     if (activity) {
-      this.props.activitySelect(activity);
+      if (this.props.multi) {
+        this.toggleActivityButton(element, activity);
+      } else {
+        this.props.activitySelect(activity);
+      }
       return
     }
     // something else was clicked!
@@ -40,6 +44,13 @@ export class Accordion extends TinyBase {
       this.toggleAccordionSectionOpenState(element, section)
     }
 
+  }
+
+  toggleActivityButton(element, activity) {
+    const isNowSelected = element.getAttribute('aria-pressed') !== 'true';
+    element.setAttribute('aria-pressed', `${isNowSelected}`);
+    element.classList.toggle('selected', isNowSelected);
+    this.props.activityToggle(activity, isNowSelected);
   }
 
   toggleAccordionSectionOpenState(element, section) {
@@ -56,7 +67,7 @@ export class Accordion extends TinyBase {
 
 
   createAccordionEntry({ name, activities }, section) {
-    const { buttonClick } = this.props;
+    const { multi, selected = [] } = this.props;
     if (activities.length === 0) return
 
     return `
@@ -75,14 +86,16 @@ export class Accordion extends TinyBase {
     <div style="display: flex; flex-direction: column">
     ${activities.map(activity => {
       const displayName = getActivityDisplayName(activity);
+      const isSelected = multi && selected.includes(displayName);
       return `
       <span>
         <button
           type="button"
-          class="btn activity-button"
+          class="btn activity-button${isSelected ? ' selected' : ''}"
           style="border-left: 10px solid ${activity.color};"
           aria-label="${displayName}"
           data-activity="${displayName}"
+          ${multi ? `aria-pressed="${isSelected}"` : ''}
         >
           ${displayName}
         </button>

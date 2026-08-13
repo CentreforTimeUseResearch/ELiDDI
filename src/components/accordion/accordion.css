@@ -168,6 +168,18 @@ el-accordion {
     transform: scale(0.95);
   }
 
+  .activity-button.selected {
+    background-color: var(--color-canvas-parchment);
+    border-color: var(--color-primary);
+    font-weight: var(--text-caption-strong-weight, 600);
+  }
+
+  .activity-button.selected::after {
+    content: "\2713";
+    margin-left: auto;
+    color: var(--color-primary);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .activity-button {
       transition: none;

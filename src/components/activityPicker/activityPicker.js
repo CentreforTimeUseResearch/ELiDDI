@@ -10,6 +10,8 @@ export class ActivityPicker extends TinyBase {
 
   store = super.getStore();
   content;
+  mode;
+  selectedActivities = [];
 
   input;
   grid;
@@ -56,6 +58,11 @@ export class ActivityPicker extends TinyBase {
     // by its id attribute, not the globally-active currentDimensionIndex
     const dimensionIndex = Number(this.getAttribute(ID));
     this.content = GLOBALS.DATA.timeline[dimensionIndex].categories;
+    this.mode = GLOBALS.DATA.timeline[dimensionIndex].mode;
+  }
+
+  get isMulti() {
+    return this.mode === 'multiple-choice';
   }
 
   connectedCallback() {
@@ -66,7 +73,7 @@ export class ActivityPicker extends TinyBase {
 
 
   setInputValue(activity) {
-    this.input.value = activity || "";
+    this.input.value = Array.isArray(activity) ? activity.join(', ') : (activity || "");
   }
 
   assignEventHandlers() {
@@ -349,8 +356,39 @@ export class ActivityPicker extends TinyBase {
     this.hidePopover();
   }
 
+  // multi-choice only: called on every toggle, popover stays open
+  onActivityToggle(activity, isSelected) {
+    if (isSelected) {
+      this.selectedActivities = [...this.selectedActivities, activity];
+    } else {
+      this.selectedActivities = this.selectedActivities.filter((name) => name !== activity);
+    }
+    this.setInputValue(this.selectedActivities);
+    this.props.onSetActivitiesOnSelectedEntry([...this.selectedActivities])
+  }
+
+  // called by DetailsPanel when opening the panel for an existing multi-choice
+  // entry, so the picker shows the previously-selected activities as pressed
+  setSelectedActivities(activities) {
+    this.selectedActivities = [...(activities || [])];
+    this.renderAccordion(this.content);
+  }
+
+  accordionProps() {
+    return { multi: this.isMulti, selected: this.selectedActivities };
+  }
+
+  doneButtonHtml() {
+    return this.isMulti ? `<button type="button" class="btn activity-picker-done-btn" data-done>Done</button>` : '';
+  }
+
+  assignDoneButtonHandler() {
+    this.popoverElement.querySelector('[data-done]')?.addEventListener('click', () => this.hidePopover());
+  }
+
   renderAccordion(results) {
-    this.popoverElement.innerHTML = `<el-accordion ${this.setProps({ content: results, activitySelect: this.onActivitySelect })}></el-accordion>`
+    this.popoverElement.innerHTML = `<el-accordion ${this.setProps({ content: results, activitySelect: this.onActivitySelect, activityToggle: (activity, isSelected) => this.onActivityToggle(activity, isSelected), ...this.accordionProps() })}></el-accordion>${this.doneButtonHtml()}`
+    this.assignDoneButtonHandler();
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
@@ -378,12 +416,14 @@ export class ActivityPicker extends TinyBase {
                 >
                  <span class="instruction"> ${this[INSTRUCTION]} </span>
                 <div id="activity-picker-popover" popover="manual" class="activity-picker-popover">
-                  <el-accordion dimensionindex=${this[ID]} ${this.setProps({ content: this.content, activitySelect: this.onActivitySelect })}></el-accordion>
+                  <el-accordion dimensionindex=${this[ID]} ${this.setProps({ content: this.content, activitySelect: this.onActivitySelect, activityToggle: (activity, isSelected) => this.onActivityToggle(activity, isSelected), ...this.accordionProps() })}></el-accordion>
+                  ${this.doneButtonHtml()}
                 </div>
             </div>
         </div>
         `;
     this.assignEventHandlers();
+    this.assignDoneButtonHandler();
   }
 }
 

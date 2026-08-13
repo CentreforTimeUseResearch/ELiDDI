@@ -69,7 +69,10 @@ export class DetailsPanel extends TinyBase {
   }
 
   isEntryComplete() {
-    return typeof this.state.startOffsetMins === 'number' && typeof this.state.endOffsetMins === 'number' && this.state.activity
+    const hasActivity = Array.isArray(this.state.activity)
+      ? this.state.activity.length > 0
+      : !!this.state.activity;
+    return typeof this.state.startOffsetMins === 'number' && typeof this.state.endOffsetMins === 'number' && hasActivity
   }
 
   updateState(newState) {
@@ -120,6 +123,10 @@ export class DetailsPanel extends TinyBase {
       activity
     })
     this.activityPicker.setInputValue(activity)
+    if (Array.isArray(activity)) {
+      // pre-fill the picker so previously-selected activities show as pressed
+      this.activityPicker.setSelectedActivities(activity)
+    }
   }
 
   setEntryId(id) {
@@ -203,7 +210,7 @@ export class DetailsPanel extends TinyBase {
     // }
   }
 
-  // triggered by activity select 
+  // triggered by activity select
   onSetActivityOnSelectedEntry(activity) {
 
     this.updateState({
@@ -213,6 +220,15 @@ export class DetailsPanel extends TinyBase {
 
     this.activityPicker.setInputValue(activity)
 
+  }
+
+  // triggered on every toggle in a multiple-choice picker; popover stays open
+  // so the activity picker itself handles its own display, this just tracks state
+  onSetActivitiesOnSelectedEntry(activities) {
+    this.updateState({
+      ...this.state,
+      activity: activities
+    });
   }
 
 
@@ -263,7 +279,7 @@ export class DetailsPanel extends TinyBase {
                 id="${this[DIMENSION_INDEX]}"
                 instruction="${this[INSTRUCTION]}" 
                 heading="${this[HEADING]}" 
-                ${this.setProps({ onPopOverShowing: (isPopoverShowing) => this.onPopOverShowing(isPopoverShowing), onFocusCallback: () => this.onFocusCallback(), onSetActivityOnSelectedEntry: (activity) => this.onSetActivityOnSelectedEntry(activity) })}
+                ${this.setProps({ onPopOverShowing: (isPopoverShowing) => this.onPopOverShowing(isPopoverShowing), onFocusCallback: () => this.onFocusCallback(), onSetActivityOnSelectedEntry: (activity) => this.onSetActivityOnSelectedEntry(activity), onSetActivitiesOnSelectedEntry: (activities) => this.onSetActivitiesOnSelectedEntry(activities) })}
               ></el-activityPicker>
               <el-time-picker-panel ${this.setProps({ onTimeSet: (setTimeProps) => this.onSetOffsetMins(setTimeProps) })} day-boundary="${this.dayBoundaryInMinutes}"></el-time-picker-panel>
               <button class="btn btn-save-btn opaque">Save</button>

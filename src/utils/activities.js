@@ -34,8 +34,15 @@ export function findActivityInDimension(dimensionData, activityName) {
   return undefined;
 }
 
+// multiple-choice entries store activity as string[]; use the first selection
+// for the block's fill color (no blending of multiple colors)
+export function getPrimaryActivityName(activityOrActivities) {
+  return Array.isArray(activityOrActivities) ? activityOrActivities[0] : activityOrActivities;
+}
+
 const FALLBACK_COLOR = '#9aa0c3';
 
-export function getActivityColor(dimensionData, activityName) {
+export function getActivityColor(dimensionData, activityOrActivities) {
+  const activityName = getPrimaryActivityName(activityOrActivities);
   return findActivityInDimension(dimensionData, activityName)?.color || FALLBACK_COLOR;
 }

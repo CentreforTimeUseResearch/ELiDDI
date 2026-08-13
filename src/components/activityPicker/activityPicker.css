@@ -104,4 +104,33 @@ el-activitypicker {
   .activity-picker-done-btn:active {
     transform: scale(0.95);
   }
+
+  .activity-picker-freetext-btn {
+    display: block;
+    width: 100%;
+    margin-bottom: var(--space-sm);
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-text);
+    font-size: var(--text-caption-size);
+    font-weight: var(--text-caption-weight);
+    padding: var(--space-sm) var(--space-md);
+    border: 1px dashed var(--color-ink-muted-48);
+    border-radius: var(--radius-pill);
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .activity-picker-freetext-btn:hover {
+    background-color: var(--color-canvas-parchment);
+  }
+
+  .activity-picker-freetext-btn:focus-visible {
+    outline: 2px solid var(--color-primary-focus);
+    outline-offset: 2px;
+  }
+
+  .activity-picker-freetext-btn:active {
+    transform: scale(0.95);
+  }
 }

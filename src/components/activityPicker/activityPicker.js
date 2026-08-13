@@ -9,15 +9,14 @@ export class ActivityPicker extends TinyBase {
   static observedAttributes = [HEADING, INSTRUCTION, ID];
 
   store = super.getStore();
+  content;
 
-  // properties
   input;
   grid;
   popoverElement;
 
   options;
   accordionDataKey;
-  // searchFn = props.searchFn;
   onFocusCallback;
 
   activeRowIndex = -1;
@@ -27,6 +26,7 @@ export class ActivityPicker extends TinyBase {
   gridFocused = false;
   shown = false;
   selectionCol = 0;
+
   keyCode = {
     BACKSPACE: 8,
     TAB: 9,
@@ -45,21 +45,6 @@ export class ActivityPicker extends TinyBase {
     DELETE: 46,
   }
 
-
-  // dummy content for now
-  content = [{
-    header: 'test header',
-    body: 'test body'
-  }, {
-    header: 'another header',
-    body: 'another body'
-  }, {
-    header: 'third header',
-    body: 'third body'
-  }
-  ]
-
-
   constructor() {
     super();
     this.extractActivities()
@@ -73,19 +58,9 @@ export class ActivityPicker extends TinyBase {
   connectedCallback() {
     super.connectedCallback();
     this.render();
-    // this.store.subscribe(this.onStateUpdate.bind(this));
-
   }
 
-  // onStateUpdate() {
-  //   const { selectedEntry: { timeline, index } = {}, timelines
-  //   } = this.store.getState();
 
-  //   if (timeline && index) {
-  //     const { activity } = timelines[timeline][index];
-  //     this.input.value = activity || "";
-  //   }
-  // }
 
   setInputValue(activity) {
     this.input.value = activity || "";
@@ -96,24 +71,22 @@ export class ActivityPicker extends TinyBase {
     this.grid = this.querySelector('#ex1-grid');
     this.popoverElement = this.querySelector('#activity-picker-popover');
 
-    this.input.addEventListener('focus', (event) => {
-      this.handleInputFocus()
-    });
-
     document.addEventListener('click', (event) => {
       this.handleClickOutside();
-    })
+    });
 
-    document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape') {
-        this.hidePopover();
-        this.input.blur();
-      }
-    })
     this.input.addEventListener('keyup', (event) => this.handleInputKeyUp(event));
     this.input.addEventListener('keydown', (event) => this.handleInputKeyDown(event));
+    this.input.addEventListener('focus', (event) => this.handleInputFocus());
+
     // this.grid.addEventListener('click', this.handleGridClick.bind(this));
-    // document.body.addEventListener('click', this.handleBodyClick.bind(this));
+
+    // document.addEventListener('keydown', (event) => {
+    //   if (event.key === 'Escape') {
+    //     this.hidePopover();
+    //     this.input.blur();
+    //   }
+    // })
   }
 
   handleClickOutside() {
@@ -155,126 +128,126 @@ export class ActivityPicker extends TinyBase {
     var key = evt.which || evt.keyCode;
 
     switch (key) {
-      // case this.KeyCode.UP:
-      // case this.KeyCode.DOWN:
-      // case this.KeyCode.ESC:
-      // case this.KeyCode.RETURN:
-      //   evt.preventDefault();
-      //   return;
-      // case this.KeyCode.LEFT:
-      // case this.KeyCode.RIGHT:
-      //   if (this.gridFocused) {
-      //     evt.preventDefault();
-      //     return;
-      //   }
-      //   break;
+      case this.keyCode.UP:
+      case this.keyCode.DOWN:
+      case this.keyCode.ESC:
+      case this.keyCode.RETURN:
+        evt.preventDefault();
+        return;
+      case this.keyCode.LEFT:
+      case this.keyCode.RIGHT:
+        if (this.gridFocused) {
+          evt.preventDefault();
+          return;
+        }
+        break;
       default:
         this.updateResults();
     }
   }
 
   handleInputKeyDown(evt) {
-    //     var key = evt.which || evt.keyCode;
-    //     var activeRowIndex = this.activeRowIndex;
-    //     var activeColIndex = this.activeColIndex;
+    const key = evt.which || evt.keyCode;
+    let activeRowIndex = this.activeRowIndex;
+    let activeColIndex = this.activeColIndex;
 
-    //     if (key === aria.KeyCode.ESC) {
-    //         if (this.gridFocused) {
-    //             this.gridFocused = false;
-    //             this.removeFocusCell(this.activeRowIndex, this.activeColIndex);
-    //             this.activeRowIndex = -1;
-    //             this.activeColIndex = 0;
-    //             this.input.setAttribute('aria-activedescendant', '');
-    //         } else {
-    //             if (!this.shown) {
-    //                 setTimeout(
-    //                     function () {
-    //                         // On Firefox, input does not get cleared here unless wrapped in
-    //                         // a setTimeout
-    //                         this.input.value = '';
-    //                     }.bind(this),
-    //                     1
-    //                 );
-    //             }
-    //         }
-    //         if (this.shown) {
-    //             this.hideResults();
-    //         }
-    //         return;
-    //     }
+    if (key === this.keyCode.ESC) {
+      if (this.gridFocused) {
+        this.gridFocused = false;
+        // this.removeFocusCell(this.activeRowIndex, this.activeColIndex);
+        this.activeRowIndex = -1;
+        this.activeColIndex = 0;
+        this.input.setAttribute('aria-activedescendant', '');
+      } else {
+        if (!this.shown) {
+          setTimeout(
+            function () {
+              // On Firefox, input does not get cleared here unless wrapped in
+              // a setTimeout
+              this.input.value = '';
+            }.bind(this),
+            1
+          );
+        }
+      }
+      if (this.shown) {
+        this.hideResults();
+      }
+      return;
+    }
 
-    //     if (this.rowsCount < 1) {
-    //         return;
-    //     }
+    if (this.rowsCount < 1) {
+      return;
+    }
 
-    //     var prevActive = this.getItemAt(activeRowIndex, this.selectionCol);
-    //     var activeItem;
+    const prevActive = this.getItemAt(activeRowIndex, this.selectionCol);
+    let activeItem;
 
-    //     switch (key) {
-    //         case aria.KeyCode.UP:
-    //             this.gridFocused = true;
-    //             activeRowIndex = this.getRowIndex(key);
-    //             evt.preventDefault();
-    //             break;
-    //         case aria.KeyCode.DOWN:
-    //             this.gridFocused = true;
-    //             activeRowIndex = this.getRowIndex(key);
-    //             evt.preventDefault();
-    //             break;
-    //         case aria.KeyCode.LEFT:
-    //             if (activeColIndex <= 0) {
-    //                 activeColIndex = this.colsCount - 1;
-    //                 activeRowIndex = this.getRowIndex(key);
-    //             } else {
-    //                 activeColIndex--;
-    //             }
-    //             if (this.gridFocused) {
-    //                 evt.preventDefault();
-    //             }
-    //             break;
-    //         case aria.KeyCode.RIGHT:
-    //             if (activeColIndex === -1 || activeColIndex >= this.colsCount - 1) {
-    //                 activeColIndex = 0;
-    //                 activeRowIndex = this.getRowIndex(key);
-    //             } else {
-    //                 activeColIndex++;
-    //             }
-    //             if (this.gridFocused) {
-    //                 evt.preventDefault();
-    //             }
-    //             break;
-    //         case aria.KeyCode.RETURN:
-    //             activeItem = this.getItemAt(activeRowIndex, this.selectionCol);
-    //             this.selectItem(activeItem);
-    //             this.gridFocused = false;
-    //             return;
-    //         case aria.KeyCode.TAB:
-    //             this.hideResults();
-    //             return;
-    //         default:
-    //             return;
-    //     }
+    switch (key) {
+      case this.keyCode.UP:
+        this.gridFocused = true;
+        // activeRowIndex = this.getRowIndex(key);
+        evt.preventDefault();
+        break;
+      case this.keyCode.DOWN:
+        this.gridFocused = true;
+        // activeRowIndex = this.getRowIndex(key);
+        evt.preventDefault();
+        break;
+      case this.keyCode.LEFT:
+        if (activeColIndex <= 0) {
+          activeColIndex = this.colsCount - 1;
+          // activeRowIndex = this.getRowIndex(key);
+        } else {
+          activeColIndex--;
+        }
+        if (this.gridFocused) {
+          evt.preventDefault();
+        }
+        break;
+      case this.keyCode.RIGHT:
+        if (activeColIndex === -1 || activeColIndex >= this.colsCount - 1) {
+          activeColIndex = 0;
+          // activeRowIndex = this.getRowIndex(key);
+        } else {
+          activeColIndex++;
+        }
+        if (this.gridFocused) {
+          evt.preventDefault();
+        }
+        break;
+      case this.keyCode.RETURN:
+        // activeItem = this.getItemAt(activeRowIndex, this.selectionCol);
+        // this.selectItem(activeItem);
+        this.gridFocused = false;
+        return;
+      case this.keyCode.TAB:
+        // this.hideResults();
+        return;
+      default:
+        return;
+    }
 
-    //     if (prevActive) {
-    //         this.removeFocusCell(this.activeRowIndex, this.activeColIndex);
-    //         prevActive.setAttribute('aria-selected', 'false');
-    //     }
+    if (prevActive) {
+      // this.removeFocusCell(this.activeRowIndex, this.activeColIndex);
+      // prevActive.setAttribute('aria-selected', 'false');
+    }
 
-    //     activeItem = this.getItemAt(activeRowIndex, activeColIndex);
-    //     this.activeRowIndex = activeRowIndex;
-    //     this.activeColIndex = activeColIndex;
+    // activeItem = this.getItemAt(activeRowIndex, activeColIndex);
+    this.activeRowIndex = activeRowIndex;
+    this.activeColIndex = activeColIndex;
 
-    //     if (activeItem) {
-    //         this.input.setAttribute(
-    //             'aria-activedescendant',
-    //             'result-item-' + activeRowIndex + 'x' + activeColIndex
-    //         );
-    //         this.focusCell(activeRowIndex, activeColIndex);
-    //         var selectedItem = this.getItemAt(activeRowIndex, this.selectionCol);
-    //         selectedItem.setAttribute('aria-selected', 'true');
-    //     } else {
-    //         this.input.setAttribute('aria-activedescendant', '');
-    //     }
+    if (activeItem) {
+      this.input.setAttribute(
+        'aria-activedescendant',
+        'result-item-' + activeRowIndex + 'x' + activeColIndex
+      );
+      // this.focusCell(activeRowIndex, activeColIndex);
+      // var selectedItem = this.getItemAt(activeRowIndex, this.selectionCol);
+      selectedItem.setAttribute('aria-selected', 'true');
+    } else {
+      this.input.setAttribute('aria-activedescendant', '');
+    }
   }
 
   // handleGridClick(evt) {
@@ -360,9 +333,9 @@ export class ActivityPicker extends TinyBase {
     this.renderAccordion(results)
   }
 
-  onActivitySelect(event) {
-    event.stopPropagation();
-    const activity = event.target.dataset.activity
+  onActivitySelect(activity) {
+
+
 
     if (!activity) {
       console.log('problem with button to set label')
@@ -374,7 +347,7 @@ export class ActivityPicker extends TinyBase {
   }
 
   renderAccordion(results) {
-    this.popoverElement.innerHTML = `<el-accordion ${this.setProps({ content: results, buttonClick: this.onActivitySelect })}></el-accordion>`
+    this.popoverElement.innerHTML = `<el-accordion ${this.setProps({ content: results, activitySelect: this.onActivitySelect })}></el-accordion>`
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
@@ -402,7 +375,7 @@ export class ActivityPicker extends TinyBase {
                 >
                  <span class="instruction"> ${this[INSTRUCTION]} </span>
                 <div id="activity-picker-popover" popover="manual" class="activity-picker-popover">
-                  <el-accordion ${this.setProps({ content: this.content, buttonClick: this.onActivitySelect })}></el-accordion>
+                  <el-accordion timelineindex=${this[ID]} ${this.setProps({ content: this.content, activitySelect: this.onActivitySelect })}></el-accordion>
                 </div>
             </div>
         </div>

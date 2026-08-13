@@ -34,11 +34,11 @@ const uipanel = (state = undefined, action) => {
   }
 }
 
-const currentTimelineIndex = (state = 0, action) => {
+const currentDimensionIndex = (state = 0, action) => {
   switch (action?.type) {
-    case 'SWITCH_TIMELINE':
+    case 'SWITCH_DIMENSION':
       return action.payload;
-    case 'RESET_TIMELINE_INDEX':
+    case 'RESET_DIMENSION_INDEX':
       return 0;
     default:
       return state;
@@ -53,7 +53,7 @@ const entry = (state = {}, action) => {
 }
 
 const timeline = (state = [], action) => {
-  const { startOffsetMins, endOffsetMins, id, activity, timelineIndex, index } = action.payload;
+  const { startOffsetMins, endOffsetMins, id, activity, index } = action.payload;
   switch (action?.type) {
     case 'ADD_ENTRY':
       return [...state, {
@@ -74,7 +74,7 @@ const selectedEntry = (state = undefined, action) => {
   switch (action?.type) {
     case 'SELECT_ENTRY':
       return {
-        timeline: action.timelineIndex,
+        dimension: action.dimensionIndex,
         index: action.index
       }
     default:
@@ -83,7 +83,7 @@ const selectedEntry = (state = undefined, action) => {
 }
 
 const timelines = (state = [], action) => {
-  const index = action?.payload?.timelineIndex
+  const index = action?.payload?.dimensionIndex
   switch (action?.type) {
     case 'ADD_ENTRY':
     case "UPDATE_ENTRY":
@@ -103,11 +103,25 @@ const timelines = (state = [], action) => {
   }
 }
 
+const status = (state = 0, action) => {
+  switch (action.type) {
+    case 'SET_STATUS':
+      break;
+    case 'RESET_STATUS':
+      return 0;
+    case 'SET_COMPLETE':
+      return '100'
+    default:
+      return state;
+  }
+}
+
 export const eliddiReducer = combineReducers({
   onboarding,
   onboardingStep,
   uipanel,
-  currentTimelineIndex,
+  currentDimensionIndex,
   timelines,
-  selectedEntry
+  selectedEntry,
+  status,
 });

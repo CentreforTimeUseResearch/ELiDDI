@@ -28,7 +28,7 @@ export class Timeline extends TinyBase {
     if (!Array.isArray(timeline)) {
       this.store.dispatch({
         type: "ADD_TIMELINE",
-        payload: { timelineIndex: this[INDEX] }
+        payload: { dimensionIndex: this[INDEX] }
       })
     } else {
       this.entries = timeline
@@ -144,16 +144,16 @@ export class Timeline extends TinyBase {
 
   createEntry(entry) {
     const id = this.entries.length;
-    const timelineIndex = Number(this[INDEX]);
-    if (typeof timelineIndex !== 'number') {
-      console.error('Problem with identifying timeline index', e.target)
+    const dimensionIndex = Number(this[INDEX]);
+    if (typeof dimensionIndex !== 'number') {
+      console.error('Problem with identifying dimension index', e.target)
       return;
     }
     // create entry
     this.store.dispatch({
       type: "ADD_ENTRY",
       payload: {
-        timelineIndex,
+        dimensionIndex,
         ...entry,
         id
       }
@@ -161,9 +161,9 @@ export class Timeline extends TinyBase {
   }
 
   updateEntry(entry) {
-    const timelineIndex = Number(this[INDEX]);
-    if (typeof timelineIndex !== 'number') {
-      console.error('Problem with identifying timeline index', e.target)
+    const dimensionIndex = Number(this[INDEX]);
+    if (typeof dimensionIndex !== 'number') {
+      console.error('Problem with identifying dimension index', e.target)
       return;
     }
     const index = this.entries.findIndex((entry) => entry.id === this.selectedID);
@@ -171,20 +171,13 @@ export class Timeline extends TinyBase {
       type: "UPDATE_ENTRY",
       payload: {
         id: this.selectedID,
-        timelineIndex,
+        dimensionIndex,
         index,
         ...entry
       }
     })
     this.selectedID = undefined
   }
-
-  // switchTimeline(payload) {
-  //   this.store.dispatch({
-  //     action: 'SWITCH_TIMELINE',
-  //     payload,
-  //   });
-  // }
 
   attributeChangedCallback(name, oldValue, newValue) {
     if (this[name] !== newValue) {
@@ -207,9 +200,9 @@ export class Timeline extends TinyBase {
 
   render() {
     this.appendChild(this.fragment);
-    this.innerHTML += `<details-panel 
-      ${this.setProps({ saveEntry: (entry) => this.saveEntry(entry) })} 
-      timelineindex=${this[INDEX]} 
+    this.innerHTML += `<details-panel
+      ${this.setProps({ saveEntry: (entry) => this.saveEntry(entry) })}
+      dimensionindex=${this[INDEX]}
       heading="${GLOBALS.DATA.timeline[this[INDEX]]?.description}"
       instruction="${GLOBALS.DATA.timeline[this[INDEX]]?.instruction}"
     ></details-panel>`

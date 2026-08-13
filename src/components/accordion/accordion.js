@@ -1,7 +1,7 @@
 import { TinyBase } from '../base';
 import './accordion.css';
 
-const ID = 'timelineindex';
+const ID = 'dimensionindex';
 
 export class Accordion extends TinyBase {
   static observedAttributes = [ID];

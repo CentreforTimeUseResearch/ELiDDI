@@ -155,36 +155,36 @@ function createCardHTML(data, timeSlot, cardNum, chunk) {
   const firstHeader = cardNum === 1 ? 'firstHeader' : '';
 
   data.forEach(
-    (timelineObject) =>
-      (timelineObject.uniqueRef = timelineObject.timeline.replace(' ', '-').toLowerCase())
+    (dimensionObject) =>
+      (dimensionObject.uniqueRef = dimensionObject.dimension.replace(' ', '-').toLowerCase())
   );
 
   return `
   <li id="${chunk}_${cardNum}" class="card-tenMinutes gridRow ${firstHeader}">
     <h3>${timeSlot}</h3>
 
-            
+
   ${data
-      .map((timeline, index) => {
-        if (timeline.mode === 'single-choice') {
-          if (timeline.allow_free_text) {
-            return generateTextFieldInput(chunk, cardNum, timeline.uniqueRef, timeline.description);
+      .map((dimension, index) => {
+        if (dimension.mode === 'single-choice') {
+          if (dimension.allow_free_text) {
+            return generateTextFieldInput(chunk, cardNum, dimension.uniqueRef, dimension.description);
           } else {
             return generateSelectDropDown(
               chunk,
               cardNum,
-              timeline.uniqueRef,
-              timeline.options,
-              timeline.description
+              dimension.uniqueRef,
+              dimension.options,
+              dimension.description
             );
           }
-        } else if (timeline.mode === 'multiple-choice') {
+        } else if (dimension.mode === 'multiple-choice') {
           return generateMultiCheckboxInput(
             chunk,
             cardNum,
-            timeline.uniqueRef,
-            timeline.options,
-            timeline.description
+            dimension.uniqueRef,
+            dimension.options,
+            dimension.description
           );
         }
       })
@@ -232,9 +232,9 @@ function generateFooter() {
     `;
 }
 
-function createTimelinesWithFlattenedActivities(timelines) {
-  const timelinesWithFlattenedActivities = timelines.map((timeline) => {
-    const categoryObjectList = timeline.categories;
+function createDimensionsWithFlattenedActivities(dimensions) {
+  const dimensionsWithFlattenedActivities = dimensions.map((dimension) => {
+    const categoryObjectList = dimension.categories;
 
     const categoriesWithFlattenedActivityList = categoryObjectList.reduce((acc, categoryObject) => {
       const categoryName = categoryObject.name;
@@ -255,7 +255,7 @@ function createTimelinesWithFlattenedActivities(timelines) {
       return acc;
     }, {});
 
-    // now flatten this into one list per timeline
+    // now flatten this into one list per dimension
 
     const options = [];
     Object.keys(categoriesWithFlattenedActivityList).forEach((categoryName) => {
@@ -269,27 +269,27 @@ function createTimelinesWithFlattenedActivities(timelines) {
     });
 
     return {
-      timeline: timeline.name,
-      mode: timeline.mode,
-      description: timeline.description,
-      allow_free_text: timeline.allow_free_text,
+      dimension: dimension.name,
+      mode: dimension.mode,
+      description: dimension.description,
+      allow_free_text: dimension.allow_free_text,
       options,
     };
   });
 
-  return timelinesWithFlattenedActivities;
+  return dimensionsWithFlattenedActivities;
 }
 
-function generateDataLists(timelinesWithFlattenedActivities) {
-  return timelinesWithFlattenedActivities
-    .map(({ timeline, options }) => {
-      return generateDataList(timeline, options);
+function generateDataLists(dimensionsWithFlattenedActivities) {
+  return dimensionsWithFlattenedActivities
+    .map(({ dimension, options }) => {
+      return generateDataList(dimension, options);
     })
     .join('');
 }
 
-function generateDataList(timeline, options) {
-  return `<datalist id="${timeline.replace(' ', '-').toLowerCase()}">${options
+function generateDataList(dimensionName, options) {
+  return `<datalist id="${dimensionName.replace(' ', '-').toLowerCase()}">${options
     .map((option) => {
       return `<option value="${option}"></option>`;
     })
@@ -304,18 +304,18 @@ function generateScriptBlockForEnvironmentVariables(jsonData) {
 
 function processJsonToHTML(jsonData) {
   const data = JSON.parse(jsonData);
-  const timelinesWithFlattenedActivities = createTimelinesWithFlattenedActivities(data.timeline);
+  const dimensionsWithFlattenedActivities = createDimensionsWithFlattenedActivities(data.timeline);
 
   let html = generateScriptBlockForEnvironmentVariables(jsonData);
 
-  html += generateDataLists(timelinesWithFlattenedActivities);
+  html += generateDataLists(dimensionsWithFlattenedActivities);
   html += '<dynamic-timeline><header><h1>Time use diary</h1></header>';
   html += '<form method="post" action="/">';
   for (let i = 0; i < numChunks; i++) {
     // break the table into chunks of 18 (3 hours = 3 * (60 / 10))
     const chunkTimeSlots = timeSlots.slice(i * rowsChunkSize, (i + 1) * rowsChunkSize);
 
-    html += `${createCardsHTML(timelinesWithFlattenedActivities, chunkTimeSlots, i)}`;
+    html += `${createCardsHTML(dimensionsWithFlattenedActivities, chunkTimeSlots, i)}`;
   }
   html += generateFooter();
 

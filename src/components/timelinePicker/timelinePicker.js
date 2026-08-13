@@ -3,24 +3,24 @@ import './timelinePicker.css';
 
 export class TimelinePicker extends TinyBase {
 
-  timelines;
+  dimensionNames;
   timelinePicker;
   store = super.getStore();
-  currentTimelineIndex = 0;
+  currentDimensionIndex = 0;
 
   constructor() {
     super();
-    this.parseTimelinesFromData();
+    this.parseDimensionNamesFromData();
     this.store.subscribe(() => this.update());
   }
 
-  parseTimelinesFromData() {
-    const timelinesData = GLOBALS.DATA.timeline;
-    if (!Array.isArray(timelinesData)) {
-      console.error('invalid timeline array');
+  parseDimensionNamesFromData() {
+    const dimensionsData = GLOBALS.DATA.timeline;
+    if (!Array.isArray(dimensionsData)) {
+      console.error('invalid dimension array');
       return;
     }
-    this.timelines = timelinesData.map((timeline) => timeline.name);
+    this.dimensionNames = dimensionsData.map((dimension) => dimension.name);
   }
 
   connectedCallback() {
@@ -32,22 +32,22 @@ export class TimelinePicker extends TinyBase {
     this.timelinePicker = this.querySelector('[data-timeline-picker]');
     this.timelinePicker?.addEventListener('change', (e) => {
       e.stopPropagation();
-      this.switchTimeline(Number(e.target.value))
+      this.switchDimension(Number(e.target.value))
     });
 
 
   }
 
   update() {
-    const { currentTimelineIndex } = this.store.getState();
-    if (this.currentTimelineIndex !== currentTimelineIndex) {
+    const { currentDimensionIndex } = this.store.getState();
+    if (this.currentDimensionIndex !== currentDimensionIndex) {
 
-      this.currentTimelineIndex = currentTimelineIndex;
+      this.currentDimensionIndex = currentDimensionIndex;
       this.render();
     }
   }
 
-  switchTimeline(payload) {
+  switchDimension(payload) {
     if (typeof payload !== "number") {
       console.error('Problem with timeline picker value');
       return;
@@ -58,19 +58,19 @@ export class TimelinePicker extends TinyBase {
     })
 
     this.store.dispatch({
-      type: 'SWITCH_TIMELINE',
+      type: 'SWITCH_DIMENSION',
       payload,
     });
 
   }
 
   createOptions() {
-    if (!Array.isArray(this.timelines)) {
+    if (!Array.isArray(this.dimensionNames)) {
       console.error('problem in timeline picker ');
       return;
     }
-    return this.timelines
-      .map((timelineName, index) => `<option value=${index} ${index === this.currentTimelineIndex ? 'selected' : ''}>${timelineName} timeline</option>`)
+    return this.dimensionNames
+      .map((dimensionName, index) => `<option value=${index} ${index === this.currentDimensionIndex ? 'selected' : ''}>${dimensionName}</option>`)
       .join('');
   }
 
@@ -78,7 +78,7 @@ export class TimelinePicker extends TinyBase {
     // this component is a work in progress so this output is for debug purposes
     this.innerHTML = `
             <div class="el-form-group width-adjust">
-               <!-- <label class="el-label" for="timeline-picker">Choose timeline:</label> -->
+               <!-- <label class="el-label" for="timeline-picker">Choose dimension:</label> -->
                 <select 
                   id="timeline-picker"
                   class="el-select" 

@@ -8,7 +8,7 @@ export class TimelineStack extends TinyBase {
   store = super.getStore();
   timelinesData = GLOBALS.DATA.timeline;
   numTimelines = GLOBALS.DATA.timeline.length
-  timelineIndex = 0;
+  dimensionIndex = 0;
 
   constructor() {
     super();
@@ -24,15 +24,15 @@ export class TimelineStack extends TinyBase {
   }
 
   updateState() {
-    const { currentTimelineIndex } = this.store.getState();
-    if (currentTimelineIndex !== this.timelineIndex) {
-      this.timelineIndex = currentTimelineIndex
+    const { currentDimensionIndex } = this.store.getState();
+    if (currentDimensionIndex !== this.dimensionIndex) {
+      this.dimensionIndex = currentDimensionIndex
       this.scrollToTimeline();
     }
   }
 
   scrollToTimeline() {
-    const timeline = this.children[this.timelineIndex];
+    const timeline = this.children[this.dimensionIndex];
     // get the element
     timeline.scrollIntoView({
       behavior: 'smooth',
@@ -42,12 +42,12 @@ export class TimelineStack extends TinyBase {
 
   }
 
-  switchTimeLine(index) {
-    if (index === this.timelineIndex) {
+  switchDimension(index) {
+    if (index === this.dimensionIndex) {
       return;
     }
     this.store.dispatch({
-      type: 'SWITCH_TIMELINE',
+      type: 'SWITCH_DIMENSION',
       payload: index,
     });
   }
@@ -56,10 +56,10 @@ export class TimelineStack extends TinyBase {
     if (!this.ready) {
       this.addEventListener("scrollsnapchange", (event) => {
         if (!event.snapTargetInline) {
-          console.error('problem getting timeline index from scroll')
+          console.error('problem getting dimension index from scroll')
           return
         }
-        this.switchTimeLine(Number(event.snapTargetInline.index))
+        this.switchDimension(Number(event.snapTargetInline.index))
       });
 
       this.ready = true;

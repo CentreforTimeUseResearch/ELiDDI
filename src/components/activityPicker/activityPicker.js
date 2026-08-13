@@ -51,8 +51,11 @@ export class ActivityPicker extends TinyBase {
   }
 
   extractActivities() {
-    const { currentDimensionIndex } = this.store.getState();
-    this.content = GLOBALS.DATA.timeline[currentDimensionIndex].categories;
+    // read the attribute directly (not this[ID]) since attributeChangedCallback
+    // hasn't run yet at construction time; this picker's own dimension is fixed
+    // by its id attribute, not the globally-active currentDimensionIndex
+    const dimensionIndex = Number(this.getAttribute(ID));
+    this.content = GLOBALS.DATA.timeline[dimensionIndex].categories;
   }
 
   connectedCallback() {

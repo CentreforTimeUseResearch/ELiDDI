@@ -1,4 +1,5 @@
 import { TinyBase } from '../base';
+import { getActivityColor } from '../../utils/activities';
 import './timeline.css';
 
 const SVGNS = "http://www.w3.org/2000/svg";
@@ -63,6 +64,8 @@ export class Timeline extends TinyBase {
 
     // at some point there are going to have to have their own event handling 
     // and at that point it might be a good idea to shift them into their own class/object
+    const dimensionData = GLOBALS.DATA.timeline[this[INDEX]];
+
     this.entries.forEach(entry => {
       const entryGroup = document.createElementNS(SVGNS, 'g');
       const rect = document.createElementNS(SVGNS, 'rect');
@@ -73,14 +76,14 @@ export class Timeline extends TinyBase {
       rect.setAttributeNS(null, 'y', startOffsetPx);
       rect.setAttributeNS(null, 'height', height > 0 ? height : 20);
       rect.setAttributeNS(null, 'width', '220');
-      rect.setAttributeNS(null, 'fill', '#9aa0c3');
+      rect.setAttributeNS(null, 'fill', getActivityColor(dimensionData, entry.activity));
       rect.setAttributeNS(null, 'fill-opacity', '0.45');
       rect.setAttributeNS(null, 'data-id', entry.id);
       entryGroup.appendChild(rect);
 
       const text = document.createElementNS(SVGNS, 'text');
       const textX = 220;
-      const textY = startOffsetPx + 50;
+      const textY = startOffsetPx + 5;
       const fontSize = 13;
       const fill = "#3a3d4d"
       text.setAttributeNS(null, 'x', textX);

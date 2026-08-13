@@ -61,6 +61,9 @@ details-panel.active {
   width: calc(100% - 32px);
   background-color: #28a745;
   color: black;
+  padding: 10px 20px;
+  border-radius: 6px;
+  border: 2px solid transparent;
 }
 
 .opaque {

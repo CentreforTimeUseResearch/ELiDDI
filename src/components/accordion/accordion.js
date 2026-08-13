@@ -1,8 +1,10 @@
 import { TinyBase } from '../base';
 import './accordion.css';
 
+const ID = 'timelineindex';
+
 export class Accordion extends TinyBase {
-  // properties
+  static observedAttributes = [ID];
 
   constructor() {
     super();
@@ -13,29 +15,69 @@ export class Accordion extends TinyBase {
     this.assignEventHandlers();
   }
 
-  assignEventHandlers() {
-    this.addEventListener('click', this.props.buttonClick)
+  attributeChangedCallback(name, oldValue, newValue) {
+    if (this[name] !== newValue) {
+      this[name] = newValue;
+    }
   }
 
-  createAccordionEntry({ name, activities }) {
+  assignEventHandlers() {
+    this.addEventListener('click', (e) => this.handleClick(e))
+  }
+
+  handleClick(e) {
+    e.stopPropagation();
+    const element = e.target;
+    const activity = element.dataset?.activity
+    if (activity) {
+      this.props.activitySelect(activity);
+      return
+    }
+    // something else was clicked!
+    const section = element.ariaControlsElements[0];
+    if (section) {
+      this.toggleAccordionSectionOpenState(element, section)
+    }
+
+  }
+
+  toggleAccordionSectionOpenState(element, section) {
+    const openState = element.ariaExpanded === 'true';
+    element.setAttribute('aria-expanded', `${!openState}`)
+    if (openState) {
+      // its open so need to close it
+      section.setAttribute('hidden', '');
+    } else {
+      section.removeAttribute('hidden')
+    }
+
+  }
+
+
+  createAccordionEntry({ name, activities }, section) {
     const { buttonClick } = this.props;
     if (activities.length === 0) return
-    return `<h3>
-    <button type="button" aria-expanded="true" class="accordion-trigger" aria-controls="sect1" id="accordion1id">
+
+    return `
+  <!-- accordion section header -->
+  <h3>
+    <button type="button" aria-expanded="true" class="accordion-trigger" aria-controls="sect${section}_${this[ID]}" id="accordion${section}id_${this[ID]}">
       <span class="accordion-title">
         ${name}
         <span class="accordion-icon"></span>
       </span>
     </button>
   </h3>
-  <div id="sect1" role="region" aria-labelledby="accordion1id" class="accordion-panel">
+
+  <!-- accordion section body -->
+  <div id="sect${section}_${this[ID]}" role="region" aria-labelledby="accordion${section}id_${this[ID]}" class="accordion-panel">
     <div style="display: flex; flex-direction: column">
     ${activities.map(activity => `
       <span>
         <button 
           type="button" 
-          class="btn" 
-          style="border-left: 10px solid ${activity.color}; margin-top: 4px;" 
+          class="btn activity-button" 
+          style="border-left: 10px solid ${activity.color};" 
           aria-label="${activity.label}" 
           data-activity="${activity.label}"
         >
@@ -55,8 +97,8 @@ export class Accordion extends TinyBase {
     this.innerHTML = `
       <div id="accordionGroup" class="accordion">
         <!-- -->
-    ${content.map((entry) => {
-      return this.createAccordionEntry(entry)
+    ${content.map((entry, index) => {
+      return this.createAccordionEntry(entry, index)
     }).join('')};
         <!-- -->
       </div>

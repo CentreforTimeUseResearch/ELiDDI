@@ -52,11 +52,13 @@ export class DetailsPanel extends TinyBase {
     this.timelinePickerPanel = this.querySelector('el-time-picker-panel');
     this.activityPicker = this.querySelector('el-activityPicker')
     this.saveButton = this.querySelector('.btn-save-btn')
+    this.deleteButton = this.querySelector('.btn-delete-btn')
     this.openCloseButton = this.querySelector('[data-openCloseButton]');
   }
 
   assignEventHandlers() {
     this.saveButton.addEventListener('click', () => this.onSaveButtonClick())
+    this.deleteButton.addEventListener('click', () => this.onDeleteButtonClick())
     this.openCloseButton.addEventListener('click', () => {
       if (this.open) {
         this.hidePanel()
@@ -120,6 +122,14 @@ export class DetailsPanel extends TinyBase {
     this.activityPicker.setInputValue(activity)
   }
 
+  setEntryId(id) {
+    this.updateState({
+      ...this.state,
+      id
+    })
+    this.showDeleteButton();
+  }
+
 
   setTimePanelStartTime() {
     if (typeof this.state.startOffsetMins === 'number') {
@@ -159,12 +169,25 @@ export class DetailsPanel extends TinyBase {
     this.props.saveEntry(this.state)
   }
 
+  onDeleteButtonClick() {
+    if (this.state.id === undefined) return;
+    this.props.deleteEntry(this.state.id)
+  }
+
   showSaveButton() {
     this.saveButton.classList.remove('opaque')
   }
 
   hideSaveButton() {
     this.saveButton.classList.add('opaque');
+  }
+
+  showDeleteButton() {
+    this.deleteButton.classList.remove('hide')
+  }
+
+  hideDeleteButton() {
+    this.deleteButton.classList.add('hide');
   }
 
   onFocusCallback() {
@@ -244,6 +267,7 @@ export class DetailsPanel extends TinyBase {
               ></el-activityPicker>
               <el-time-picker-panel ${this.setProps({ onTimeSet: (setTimeProps) => this.onSetOffsetMins(setTimeProps) })} day-boundary="${this.dayBoundaryInMinutes}"></el-time-picker-panel>
               <button class="btn btn-save-btn opaque">Save</button>
+              <button class="btn btn-delete-btn hide">Delete</button>
             </div>
             `;
 

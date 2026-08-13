@@ -4,8 +4,9 @@ import './activityPicker.css';
 
 const HEADING = 'heading';
 const INSTRUCTION = 'instruction';
+const ID = 'id';
 export class ActivityPicker extends TinyBase {
-  static observedAttributes = [HEADING, INSTRUCTION];
+  static observedAttributes = [HEADING, INSTRUCTION, ID];
 
   store = super.getStore();
 
@@ -72,11 +73,8 @@ export class ActivityPicker extends TinyBase {
   connectedCallback() {
     super.connectedCallback();
     this.render();
-    this.input = this.querySelector('input');
-    this.grid = this.querySelector('#ex1-grid');
-    this.popoverElement = this.querySelector('#activity-picker-popover');
     // this.store.subscribe(this.onStateUpdate.bind(this));
-    this.assignEventHandlers();
+
   }
 
   // onStateUpdate() {
@@ -94,20 +92,16 @@ export class ActivityPicker extends TinyBase {
   }
 
   assignEventHandlers() {
+    this.input = this.querySelector('input');
+    this.grid = this.querySelector('#ex1-grid');
+    this.popoverElement = this.querySelector('#activity-picker-popover');
+
     this.input.addEventListener('focus', (event) => {
-      this.showPopover({ source: this.input });
       this.handleInputFocus()
     });
 
-
-
     document.addEventListener('click', (event) => {
-      if (!this.popoverElement.matches(':popover-open')) return;
-      const clickedInput = this.input.parentNode.contains(event.target);
-      const clickedPopover = this.popoverElement.contains(event.target);
-      if (!clickedInput && !clickedPopover) {
-        this.hidePopover();
-      }
+      this.handleClickOutside();
     })
 
     document.addEventListener('keydown', (event) => {
@@ -122,7 +116,17 @@ export class ActivityPicker extends TinyBase {
     // document.body.addEventListener('click', this.handleBodyClick.bind(this));
   }
 
+  handleClickOutside() {
+    if (!this.popoverElement.matches(':popover-open')) return;
+    const clickedInput = this.input.parentNode.contains(event.target);
+    const clickedPopover = this.popoverElement.contains(event.target);
+    if (!clickedInput && !clickedPopover) {
+      this.hidePopover();
+    }
+  }
+
   handleInputFocus() {
+    this.showPopover({ source: this.input });
     this.props.onFocusCallback?.();
     // this.updateResults();
   }
@@ -319,13 +323,6 @@ export class ActivityPicker extends TinyBase {
       return;
     }
 
-    //   // this.dispatchEvent(new CustomEvent(
-    //   //     'activitySearch',
-    //   //     { bubbles: true, detail: { searchString } }
-    //   // ));
-
-    //   // return
-
     var results = this.searchActivities(searchString);
 
     //   debugger;
@@ -388,9 +385,8 @@ export class ActivityPicker extends TinyBase {
 
   render() {
     this.innerHTML = `
-        <label class="el-label el-label--l" for="activity-input">
+        <label class="el-label el-label--l" for="activity-input_${this[ID]}">
           ${this[HEADING]}
-       
         </label>
         <div class="combobox-wrapper">
             <div class="combobox-input-wrapper">
@@ -401,7 +397,7 @@ export class ActivityPicker extends TinyBase {
                     aria-expanded="false" 
                     aria-autocomplete="list" 
                     aria-controls="ex1-grid" 
-                    id="activity-input"
+                    id="activity-input_${this[ID]}"
                     value=""
                 >
                  <span class="instruction"> ${this[INSTRUCTION]} </span>
@@ -411,7 +407,7 @@ export class ActivityPicker extends TinyBase {
             </div>
         </div>
         `;
-
+    this.assignEventHandlers();
   }
 }
 

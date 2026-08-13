@@ -1,4 +1,5 @@
 import { TinyBase } from '../base';
+import { getActivityDisplayName } from '../../utils/activities';
 import './accordion.css';
 
 const ID = 'dimensionindex';
@@ -72,18 +73,21 @@ export class Accordion extends TinyBase {
   <!-- accordion section body -->
   <div id="sect${section}_${this[ID]}" role="region" aria-labelledby="accordion${section}id_${this[ID]}" class="accordion-panel">
     <div style="display: flex; flex-direction: column">
-    ${activities.map(activity => `
+    ${activities.map(activity => {
+      const displayName = getActivityDisplayName(activity);
+      return `
       <span>
-        <button 
-          type="button" 
-          class="btn activity-button" 
-          style="border-left: 10px solid ${activity.color};" 
-          aria-label="${activity.label}" 
-          data-activity="${activity.label}"
+        <button
+          type="button"
+          class="btn activity-button"
+          style="border-left: 10px solid ${activity.color};"
+          aria-label="${displayName}"
+          data-activity="${displayName}"
         >
-          ${activity.label}
+          ${displayName}
         </button>
-      </span>`
+      </span>`;
+    }
     ).join(" ")}
 
 

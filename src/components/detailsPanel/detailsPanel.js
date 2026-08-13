@@ -53,6 +53,7 @@ export class DetailsPanel extends TinyBase {
     this.activityPicker = this.querySelector('el-activityPicker')
     this.saveButton = this.querySelector('.btn-save-btn')
     this.deleteButton = this.querySelector('.btn-delete-btn')
+    this.errorDisplay = this.querySelector('.entry-error')
     this.openCloseButton = this.querySelector('[data-openCloseButton]');
   }
 
@@ -76,6 +77,9 @@ export class DetailsPanel extends TinyBase {
   }
 
   updateState(newState) {
+    // any field change is an attempt to fix things, so clear a stale
+    // rejection message from a previous save attempt
+    this.clearError();
     this.state = newState;
     if (this.isEntryComplete()) {
       this.showSaveButton();
@@ -197,6 +201,16 @@ export class DetailsPanel extends TinyBase {
     this.deleteButton.classList.add('hide');
   }
 
+  showError(message) {
+    this.errorDisplay.textContent = message;
+    this.errorDisplay.removeAttribute('hidden');
+  }
+
+  clearError() {
+    this.errorDisplay.textContent = '';
+    this.errorDisplay.setAttribute('hidden', '');
+  }
+
   onFocusCallback() {
     this.showPanel();
   }
@@ -282,6 +296,7 @@ export class DetailsPanel extends TinyBase {
                 ${this.setProps({ onPopOverShowing: (isPopoverShowing) => this.onPopOverShowing(isPopoverShowing), onFocusCallback: () => this.onFocusCallback(), onSetActivityOnSelectedEntry: (activity) => this.onSetActivityOnSelectedEntry(activity), onSetActivitiesOnSelectedEntry: (activities) => this.onSetActivitiesOnSelectedEntry(activities) })}
               ></el-activityPicker>
               <el-time-picker-panel ${this.setProps({ onTimeSet: (setTimeProps) => this.onSetOffsetMins(setTimeProps) })} day-boundary="${this.dayBoundaryInMinutes}"></el-time-picker-panel>
+              <div class="entry-error" aria-live="polite" hidden></div>
               <button class="btn btn-save-btn opaque">Save</button>
               <button class="btn btn-delete-btn hide">Delete</button>
             </div>

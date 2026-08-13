@@ -1,5 +1,7 @@
 import { TinyBase } from '../base';
 import { getActivityColor } from '../../utils/activities';
+import { findOverlappingEntry } from '../../utils/entries';
+import { formatOffsetAsClockTime } from '../../utils/time';
 import './timeline.css';
 
 const SVGNS = "http://www.w3.org/2000/svg";
@@ -173,6 +175,16 @@ export class Timeline extends TinyBase {
     })
   }
 
+  get isSingleChoiceDimension() {
+    return GLOBALS.DATA.timeline[Number(this[INDEX])].mode !== 'multiple-choice';
+  }
+
+  formatOverlapMessage(conflict) {
+    const start = formatOffsetAsClockTime(conflict.startOffsetMins);
+    const end = formatOffsetAsClockTime(conflict.endOffsetMins);
+    return `This overlaps with your existing "${conflict.activity}" entry (${start}–${end}). Adjust the time, or edit/delete that entry first.`;
+  }
+
   getNextEntryId() {
     // not entries.length - deleting an entry can leave gaps, so length would
     // eventually collide with an id that's still in use
@@ -241,6 +253,13 @@ export class Timeline extends TinyBase {
   }
 
   saveEntry(entry) {
+    if (this.isSingleChoiceDimension) {
+      const conflict = findOverlappingEntry(this.entries, entry, this.selectedID);
+      if (conflict) {
+        this.detailsPanel.showError(this.formatOverlapMessage(conflict));
+        return;
+      }
+    }
     if (this.selectedID === undefined) {
       this.createEntry(entry)
     } else {

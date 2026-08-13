@@ -3,12 +3,12 @@ import { TimePickerPanel } from '../timePickerPanel/timePickerPanel';
 import { TinyBase } from '../base';
 import './detailsPanel.css';
 
-const TIME_LINE_INDEX = 'timelineindex';
+const DIMENSION_INDEX = 'dimensionindex';
 const HEADING = 'heading';
 const INSTRUCTION = 'instruction'
 
 export class DetailsPanel extends TinyBase {
-  static observedAttributes = [TIME_LINE_INDEX, HEADING, INSTRUCTION];
+  static observedAttributes = [DIMENSION_INDEX, HEADING, INSTRUCTION];
 
   store = super.getStore();
   state = {};
@@ -18,7 +18,7 @@ export class DetailsPanel extends TinyBase {
   selectedEntry;
   saveButton;
   dayBoundaryInMinutes;
-  currentTimelineIndex;
+  currentDimensionIndex;
 
   timelinePickerPanel;
   popoverElement;
@@ -33,8 +33,8 @@ export class DetailsPanel extends TinyBase {
   }
 
   connectedCallback() {
-    const { currentTimelineIndex } = this.store.getState();
-    this.currentTimelineIndex = currentTimelineIndex;
+    const { currentDimensionIndex } = this.store.getState();
+    this.currentDimensionIndex = currentDimensionIndex;
     super.connectedCallback();
     this.store.subscribe(this.onStoreUpdate.bind(this));
     this.getChildElementReferences();
@@ -135,9 +135,9 @@ export class DetailsPanel extends TinyBase {
 
 
   onStoreUpdate() {
-    const { uipanel, currentTimelineIndex } = this.store.getState();
-    this.currentTimelineIndex = currentTimelineIndex
-    const isMyTimeline = Number(this[TIME_LINE_INDEX]) === this.currentTimelineIndex
+    const { uipanel, currentDimensionIndex } = this.store.getState();
+    this.currentDimensionIndex = currentDimensionIndex
+    const isMyDimension = Number(this[DIMENSION_INDEX]) === this.currentDimensionIndex
     const showActivityPanel = uipanel === 'activity'
 
     if (showActivityPanel) {
@@ -146,7 +146,7 @@ export class DetailsPanel extends TinyBase {
       this.hidePanel();
     }
 
-    if (isMyTimeline) {
+    if (isMyDimension) {
       this.classList.remove('hide');
     } else {
       this.classList.add('hide')
@@ -214,7 +214,7 @@ export class DetailsPanel extends TinyBase {
   }
 
   render() {
-    if (Number(this[TIME_LINE_INDEX]) !== this.currentTimelineIndex) {
+    if (Number(this[DIMENSION_INDEX]) !== this.currentDimensionIndex) {
       // hide
       this.classList.add('hide')
     } else {
@@ -236,8 +236,8 @@ export class DetailsPanel extends TinyBase {
                 </button>
             </div>
             <div class="details-panel-content">
-              <el-activityPicker 
-                id="${this[TIME_LINE_INDEX]}"
+              <el-activityPicker
+                id="${this[DIMENSION_INDEX]}"
                 instruction="${this[INSTRUCTION]}" 
                 heading="${this[HEADING]}" 
                 ${this.setProps({ onPopOverShowing: (isPopoverShowing) => this.onPopOverShowing(isPopoverShowing), onFocusCallback: () => this.onFocusCallback(), onSetActivityOnSelectedEntry: (activity) => this.onSetActivityOnSelectedEntry(activity) })}

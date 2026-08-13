@@ -51,8 +51,8 @@ export class ActivityPicker extends TinyBase {
   }
 
   extractActivities() {
-    const { currentTimelineIndex } = this.store.getState();
-    this.content = GLOBALS.DATA.timeline[currentTimelineIndex].categories;
+    const { currentDimensionIndex } = this.store.getState();
+    this.content = GLOBALS.DATA.timeline[currentDimensionIndex].categories;
   }
 
   connectedCallback() {
@@ -375,7 +375,7 @@ export class ActivityPicker extends TinyBase {
                 >
                  <span class="instruction"> ${this[INSTRUCTION]} </span>
                 <div id="activity-picker-popover" popover="manual" class="activity-picker-popover">
-                  <el-accordion timelineindex=${this[ID]} ${this.setProps({ content: this.content, activitySelect: this.onActivitySelect })}></el-accordion>
+                  <el-accordion dimensionindex=${this[ID]} ${this.setProps({ content: this.content, activitySelect: this.onActivitySelect })}></el-accordion>
                 </div>
             </div>
         </div>

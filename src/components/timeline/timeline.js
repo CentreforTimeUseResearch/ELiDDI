@@ -125,14 +125,19 @@ export class Timeline extends TinyBase {
         return;
       }
       this.selectedID = entry_id;
-      // fetch the 
+      // fetch the
       const entry = this.entries.find((entry) => entry.id === entry_id)
       // set up the panel
       this.detailsPanel.setStartTime(entry.startOffsetMins);
       this.detailsPanel.setEndTime(entry.endOffsetMins);
       this.detailsPanel.setActivity(entry.activity);
+      this.detailsPanel.setEntryId(entry_id);
       // we need to do soemthing different on save
     } else {
+      // starting a brand new entry - clear out anything left over from a
+      // previous edit that was opened but never saved/deleted
+      this.selectedID = undefined;
+      this.detailsPanel.reset();
       const { offsetY } = e;
       const startOffsetMins = this.calculateTheTimeSlotClicked(offsetY >= 0 ? offsetY : 0);
       this.detailsPanel.setStartTime(startOffsetMins);
@@ -145,8 +150,14 @@ export class Timeline extends TinyBase {
     })
   }
 
+  getNextEntryId() {
+    // not entries.length - deleting an entry can leave gaps, so length would
+    // eventually collide with an id that's still in use
+    return this.entries.reduce((maxId, entry) => Math.max(maxId, entry.id), -1) + 1;
+  }
+
   createEntry(entry) {
-    const id = this.entries.length;
+    const id = this.getNextEntryId();
     const dimensionIndex = Number(this[INDEX]);
     if (typeof dimensionIndex !== 'number') {
       console.error('Problem with identifying dimension index', e.target)
@@ -182,6 +193,24 @@ export class Timeline extends TinyBase {
     this.selectedID = undefined
   }
 
+  deleteEntry(id) {
+    const dimensionIndex = Number(this[INDEX]);
+    if (!this.entries.some((entry) => entry.id === id)) {
+      // already gone (e.g. a stray double-click) - nothing to do
+      return;
+    }
+    this.store.dispatch({
+      type: 'DELETE_ENTRY',
+      payload: { dimensionIndex, id }
+    })
+    this.store.dispatch({
+      type: 'HIDE_PANEL'
+    })
+    this.selectedID = undefined;
+    this.detailsPanel.reset();
+    this.renderEntries();
+  }
+
   attributeChangedCallback(name, oldValue, newValue) {
     if (this[name] !== newValue) {
       this[name] = newValue;
@@ -204,7 +233,7 @@ export class Timeline extends TinyBase {
   render() {
     this.appendChild(this.fragment);
     this.innerHTML += `<details-panel
-      ${this.setProps({ saveEntry: (entry) => this.saveEntry(entry) })}
+      ${this.setProps({ saveEntry: (entry) => this.saveEntry(entry), deleteEntry: (id) => this.deleteEntry(id) })}
       dimensionindex=${this[INDEX]}
       heading="${GLOBALS.DATA.timeline[this[INDEX]]?.description}"
       instruction="${GLOBALS.DATA.timeline[this[INDEX]]?.instruction}"

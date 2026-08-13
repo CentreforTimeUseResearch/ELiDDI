@@ -92,3 +92,30 @@ details-panel.active {
   color: var(--color-ink-muted-48);
   pointer-events: none;
 }
+
+.btn-delete-btn {
+  margin: var(--space-sm) var(--space-md) 0;
+  width: calc(100% - (var(--space-md) * 2));
+  background-color: transparent;
+  color: var(--color-danger);
+  font-family: var(--font-text);
+  font-size: var(--text-body-size);
+  font-weight: var(--text-body-weight);
+  padding: 11px 22px;
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--color-danger);
+  cursor: pointer;
+}
+
+.btn-delete-btn:focus-visible {
+  outline: 2px solid var(--color-danger);
+  outline-offset: 2px;
+}
+
+.btn-delete-btn:active {
+  transform: scale(0.95);
+}
+
+.btn-delete-btn.hide {
+  display: none;
+}

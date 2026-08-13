@@ -65,6 +65,8 @@ const timeline = (state = [], action) => {
         { startOffsetMins, endOffsetMins, id, activity },
         ...state.slice(index + 1)
       ]
+    case 'DELETE_ENTRY':
+      return state.filter((entry) => entry.id !== id)
     default:
       return state
   }
@@ -87,6 +89,7 @@ const timelines = (state = [], action) => {
   switch (action?.type) {
     case 'ADD_ENTRY':
     case "UPDATE_ENTRY":
+    case 'DELETE_ENTRY':
       return [
         ...state.slice(0, index),
         [...timeline(state[index], action)],

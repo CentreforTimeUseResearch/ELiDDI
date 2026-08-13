@@ -1,10 +1,19 @@
 import { Accordion } from '../accordion/accordion';
 import { TinyBase } from '../base';
+import { getActivityDisplayName } from '../../utils/activities';
 import './activityPicker.css';
 
 const HEADING = 'heading';
 const INSTRUCTION = 'instruction';
 const ID = 'id';
+
+function escapeHtml(str) {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
 export class ActivityPicker extends TinyBase {
   static observedAttributes = [HEADING, INSTRUCTION, ID];
 
@@ -59,6 +68,7 @@ export class ActivityPicker extends TinyBase {
     const dimensionIndex = Number(this.getAttribute(ID));
     this.content = GLOBALS.DATA.timeline[dimensionIndex].categories;
     this.mode = GLOBALS.DATA.timeline[dimensionIndex].mode;
+    this.allowFreeText = GLOBALS.DATA.timeline[dimensionIndex].allow_free_text === true;
   }
 
   get isMulti() {
@@ -340,7 +350,7 @@ export class ActivityPicker extends TinyBase {
     //     this.colsCount = results.length ? results[0].length : 0;
     //     this.shown = true;
     //   }
-    this.renderAccordion(results)
+    this.renderAccordion(results, searchString)
   }
 
   onActivitySelect(activity) {
@@ -386,9 +396,34 @@ export class ActivityPicker extends TinyBase {
     this.popoverElement.querySelector('[data-done]')?.addEventListener('click', () => this.hidePopover());
   }
 
-  renderAccordion(results) {
-    this.popoverElement.innerHTML = `<el-accordion ${this.setProps({ content: results, activitySelect: this.onActivitySelect, activityToggle: (activity, isSelected) => this.onActivityToggle(activity, isSelected), ...this.accordionProps() })}></el-accordion>${this.doneButtonHtml()}`
+  // true if searchString exactly matches an already-listed activity's
+  // display name - used to avoid offering free text as a redundant duplicate
+  hasKnownActivity(searchString) {
+    const lower = searchString.toLowerCase();
+    return this.content.some((category) =>
+      category.activities.some((activity) => getActivityDisplayName(activity)?.toLowerCase() === lower)
+    );
+  }
+
+  freeTextOptionHtml(searchString = '') {
+    const trimmed = searchString.trim();
+    if (!this.allowFreeText || !trimmed || this.hasKnownActivity(trimmed)) {
+      return '';
+    }
+    const safeText = escapeHtml(trimmed);
+    return `<button type="button" class="btn activity-picker-freetext-btn" data-free-text="${safeText}">Use &quot;${safeText}&quot;</button>`;
+  }
+
+  assignFreeTextHandler() {
+    this.popoverElement.querySelector('[data-free-text]')?.addEventListener('click', (e) => {
+      this.onActivitySelect(e.currentTarget.dataset.freeText);
+    });
+  }
+
+  renderAccordion(results, searchString = '') {
+    this.popoverElement.innerHTML = `${this.freeTextOptionHtml(searchString)}<el-accordion ${this.setProps({ content: results, activitySelect: this.onActivitySelect, activityToggle: (activity, isSelected) => this.onActivityToggle(activity, isSelected), ...this.accordionProps() })}></el-accordion>${this.doneButtonHtml()}`
     this.assignDoneButtonHandler();
+    this.assignFreeTextHandler();
   }
 
   attributeChangedCallback(name, oldValue, newValue) {

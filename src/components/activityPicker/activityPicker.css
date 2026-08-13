@@ -1,20 +1,25 @@
 el-activitypicker {
   display: block;
 
-
-
   .combobox-wrapper {
     margin: 0 var(--y-gap);
   }
 
   label {
-    font-size: x-large;
-    color: #fff;
+    font-family: var(--font-display);
+    font-size: var(--text-tagline-size);
+    font-weight: var(--text-tagline-weight);
+    line-height: var(--text-tagline-lh);
+    letter-spacing: var(--text-tagline-ls);
+    color: var(--color-body-on-dark);
   }
 
   .instruction {
-    color: lightgrey;
-    font-size: 0.75rem;
+    color: var(--color-body-muted);
+    font-family: var(--font-text);
+    font-size: var(--text-fine-print-size);
+    line-height: var(--text-fine-print-lh);
+    letter-spacing: var(--text-fine-print-ls);
   }
 
   .combobox-input-wrapper {
@@ -29,35 +34,44 @@ el-activitypicker {
       height: 50px;
       width: 50px;
       font-size: 1.6rem;
+      color: var(--color-ink-muted-48);
     }
   }
-
 
   .combobox-wrapper input {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    font-weight: 400;
-    font-size: 1.1875rem;
-    line-height: 1.3157894737;
+    font-family: var(--font-text);
+    font-weight: var(--text-body-weight);
+    font-size: var(--text-body-size);
+    line-height: var(--text-body-lh);
+    letter-spacing: var(--text-body-ls);
     box-sizing: border-box;
     width: 100%;
-    height: 2.5rem;
+    height: 44px;
     margin-top: 0;
-    padding: 5px;
-    border: 2px solid;
-    border-radius: 0;
-    border-color: var(--govuk-input-border-colour, #0b0c0c);
+    padding: 12px 20px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: var(--radius-pill);
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
     -webkit-appearance: none;
     appearance: none;
+  }
+
+  .combobox-wrapper input:focus {
+    outline: 2px solid var(--color-primary-focus);
+    outline-offset: 2px;
   }
 
   #activity-picker-popover {
     box-sizing: border-box;
     inset: 0;
     position-area: bottom;
-    padding: 0 8px;
+    padding: var(--space-xs);
     margin: 0 auto;
-    background-color: transparent;
+    background-color: var(--color-canvas-parchment);
+    border-radius: var(--radius-lg);
     border: 0;
     max-height: 75%;
     overflow-y: scroll;

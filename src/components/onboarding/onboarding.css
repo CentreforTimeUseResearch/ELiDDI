@@ -27,39 +27,48 @@ el-onboarding {
     .button-bar {
         margin-top: var(--2y-gap);
         display: flex;
-        gap: 8px;
+        gap: var(--space-xs);
     }
 
     button {
-        padding: 8px 16px;
+        font-family: var(--font-text);
+        padding: var(--space-xs) var(--space-md);
+        border-radius: var(--radius-pill);
+        border: 1px solid transparent;
+        cursor: pointer;
+    }
+
+    button:focus-visible {
+        outline: 2px solid var(--color-primary-focus);
+        outline-offset: 2px;
+    }
+
+    button:active {
+        transform: scale(0.95);
     }
 
     button[data-next] {
         flex: 4 1 auto;
-        font-size: 1rem;
-        color: #fff;
-
-        background-color: var(--border-color);
-        border-color: var(--border-color);
-
-        &.last {
-            background-color: #28a745;
-            border-color: #28a745;
-        }
+        font-size: var(--text-body-size);
+        color: var(--color-on-primary);
+        background-color: var(--color-primary);
+        border-color: var(--color-primary);
     }
 
     button[data-back] {
         flex: 0 1 auto;
-        font-size: 1rem;
-        color: #fff;
-        background-color: #6c757d;
-        border-color: #6c757d;
+        font-size: var(--text-button-utility-size);
+        letter-spacing: var(--text-button-utility-ls);
+        color: var(--color-on-dark);
+        background-color: var(--color-ink);
+        border-color: var(--color-ink);
+        border-radius: var(--radius-sm);
     }
 
 
     progress {
         width: 100%;
-        padding: 0 32px;
+        padding: 0 var(--space-xl);
         accent-color: var(--border-color);
 
         &::-moz-progress-bar {

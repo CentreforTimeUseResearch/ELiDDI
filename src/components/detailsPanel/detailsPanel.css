@@ -2,9 +2,8 @@ details-panel {
   position: fixed;
   top: calc(100dvh - 8rem);
   left: 0;
-  background-color: rgb(34, 37, 49);
+  background-color: var(--color-surface-tile);
   height: 100vh;
-  border: 1px solid green;
   text-align: center;
   transition: all 0.3s ease;
   transition-behavior: allow-discrete;
@@ -27,21 +26,29 @@ details-panel {
 
   .right {
     position: absolute;
+    top: var(--space-sm);
     right: 0;
-    margin-inline-end: 8px;
+    margin-inline-end: var(--space-sm);
     margin-inline-start: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-full);
+    background-color: rgba(210, 210, 215, 0.64);
   }
-}
 
-button svg {
-  transition: transform 0.3s;
-  color: white;
+  .right svg {
+    color: var(--color-ink);
+    transition: transform 0.3s;
+  }
 }
 
 details-panel.active {
   top: calc(100dvh - 35.25rem);
 
-  button svg {
+  .right svg {
     transform: rotate(180deg);
   }
 
@@ -57,15 +64,31 @@ details-panel.active {
 
 
 .btn-save-btn {
-  margin: 0 16px;
-  width: calc(100% - 32px);
-  background-color: #28a745;
-  color: black;
-  padding: 10px 20px;
-  border-radius: 6px;
+  margin: 0 var(--space-md);
+  width: calc(100% - (var(--space-md) * 2));
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+  font-family: var(--font-text);
+  font-size: var(--text-body-size);
+  font-weight: var(--text-body-weight);
+  padding: 11px 22px;
+  border-radius: var(--radius-pill);
   border: 2px solid transparent;
+  cursor: pointer;
+}
+
+.btn-save-btn:focus-visible {
+  outline: 2px solid var(--color-primary-focus);
+  outline-offset: 2px;
+}
+
+.btn-save-btn:active {
+  transform: scale(0.95);
 }
 
 .opaque {
-  opacity: 0.1;
+  opacity: 1;
+  background-color: var(--color-hairline);
+  color: var(--color-ink-muted-48);
+  pointer-events: none;
 }

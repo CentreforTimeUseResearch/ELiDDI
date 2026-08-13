@@ -1,12 +1,13 @@
 /**
- * Sidebar component CSS 
+ * Sidebar component CSS
  */
 
 .off-screen-menu {
   position: fixed;
-  top: 0;
+  top: 4.4rem;
   left: -450px;
-  background-color: rgb(34, 37, 49);
+  background-color: var(--color-surface-tile);
+  color: var(--color-on-dark);
   height: 100vh;
   width: 100%;
   max-width: 350px;
@@ -15,9 +16,12 @@
   justify-content: center;
   align-items: center;
   text-align: center;
+  font-family: var(--font-display);
+  font-weight: 600;
   font-size: 3rem;
   line-height: 1;
   transition: 0.3s ease;
+  z-index: 2;
 }
 
 .off-screen-menu.active {
@@ -25,11 +29,18 @@
 }
 
 nav {
-  padding: 1rem;
+  min-height: 44px;
+  padding: 0.6rem var(--space-md);
   flex-shrink: 0;
   display: flex;
-  gap: 8px;
-  background-color: rgb(34, 37, 49);
+  align-items: center;
+  gap: var(--space-xs);
+  background-color: var(--color-surface-black);
+  color: var(--color-on-dark);
+  font-family: var(--font-text);
+  font-size: var(--text-fine-print-size);
+  line-height: var(--text-fine-print-lh);
+  letter-spacing: var(--text-fine-print-ls);
 }
 
 .left-pane {
@@ -38,7 +49,7 @@ nav {
 }
 
 .middle-pane {
-  padding-left: 12px;
+  padding-left: var(--space-sm);
   flex: 1 1 0%
 }
 
@@ -58,8 +69,8 @@ nav {
 .ham-menu span {
   height: 5px;
   width: 100%;
-  background-color: #6f86ff;
-  border-radius: 25px;
+  background-color: var(--color-on-dark);
+  border-radius: var(--radius-pill);
   position: absolute;
   top: 50%;
   left: 50%;

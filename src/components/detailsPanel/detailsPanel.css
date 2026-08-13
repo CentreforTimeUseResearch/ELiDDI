@@ -119,3 +119,16 @@ details-panel.active {
 .btn-delete-btn.hide {
   display: none;
 }
+
+.entry-error {
+  margin: var(--space-sm) var(--space-md);
+  font-family: var(--font-text);
+  font-size: var(--text-fine-print-size);
+  font-weight: var(--text-caption-strong-weight);
+  color: var(--color-danger);
+  text-align: left;
+}
+
+.entry-error[hidden] {
+  display: none;
+}

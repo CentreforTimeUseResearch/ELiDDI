@@ -6,6 +6,25 @@ const SVGNS = "http://www.w3.org/2000/svg";
 
 const INDEX = 'index';
 
+// sets textElement's content to fullText (with a <title> child carrying the
+// untruncated text for hover/screen readers), then shortens the visible text
+// with an ellipsis until it fits maxWidth - requires textElement to already be
+// attached to a connected SVG, since it measures actual rendered width
+function fitTextToBlockWidth(textElement, fullText, maxWidth) {
+  const title = document.createElementNS(SVGNS, 'title');
+  title.textContent = fullText;
+  textElement.appendChild(title);
+
+  const textNode = document.createTextNode(fullText);
+  textElement.appendChild(textNode);
+
+  let truncated = fullText;
+  while (truncated.length > 1 && textElement.getBBox().width > maxWidth) {
+    truncated = truncated.slice(0, -1);
+    textNode.textContent = `${truncated}…`;
+  }
+}
+
 export class Timeline extends TinyBase {
   static observedAttributes = [INDEX];
 
@@ -93,10 +112,14 @@ export class Timeline extends TinyBase {
       text.setAttributeNS(null, 'font-size', fontSize);
       text.setAttributeNS(null, 'fill', fill);
       text.setAttributeNS(null, 'data-id', entry.id);
-      text.textContent = entry.activity;
       entryGroup.appendChild(text)
 
       this.entriesLayer.appendChild(entryGroup)
+
+      // fitTextToBlockWidth needs the text element attached to a connected
+      // SVG (it measures rendered width), so this runs after the append above
+      const label = Array.isArray(entry.activity) ? entry.activity.join(', ') : entry.activity;
+      fitTextToBlockWidth(text, label, 200);
     })
 
 

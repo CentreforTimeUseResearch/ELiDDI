@@ -90,8 +90,6 @@ export class DetailsPanel extends TinyBase {
     this.classList.add('active');
   }
 
-
-
   hidePanel() {
     this.open = false;
     this.classList.remove('active')
@@ -239,6 +237,7 @@ export class DetailsPanel extends TinyBase {
             </div>
             <div class="details-panel-content">
               <el-activityPicker 
+                id="${this[TIME_LINE_INDEX]}"
                 instruction="${this[INSTRUCTION]}" 
                 heading="${this[HEADING]}" 
                 ${this.setProps({ onPopOverShowing: (isPopoverShowing) => this.onPopOverShowing(isPopoverShowing), onFocusCallback: () => this.onFocusCallback(), onSetActivityOnSelectedEntry: (activity) => this.onSetActivityOnSelectedEntry(activity) })}

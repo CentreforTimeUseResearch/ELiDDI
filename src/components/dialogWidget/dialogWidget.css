@@ -1,13 +1,12 @@
 el-dialog {
 
-
-  --border-color: #6f86ff;
+  --border-color: var(--color-primary-focus);
 
   --spotlight1-x: 50%;
   --spotlight1-y: 2%;
   --spotlight-size: 18%;
-  --spotlight1-base-color: #000;
-  --spotlight1-spot-color: #fff;
+  --spotlight1-base-color: var(--color-surface-black);
+  --spotlight1-spot-color: var(--color-canvas);
   --spotlight1-opacity: 76%;
 
   --modal-y-pos: 0px;
@@ -18,7 +17,7 @@ el-dialog {
     padding: 0;
     box-sizing: border-box;
     border: 4px solid var(--border-color);
-    border-radius: 16px;
+    border-radius: var(--radius-lg);
     transition-property: inset-block-start;
     transition-duration: 0.5s;
 
@@ -41,19 +40,24 @@ el-dialog {
       height: 100%;
       flex-direction: column;
       display: flex;
-      padding: 1.5rem;
+      padding: var(--space-lg);
     }
 
     button {
-      border-radius: .25rem;
+      border-radius: var(--radius-xs);
     }
 
     .dialog-content {
       flex-shrink: 0;
       flex-grow: 1;
+      color: var(--color-ink);
 
       h4 {
-        font-size: 26.88px;
+        font-family: var(--font-display);
+        font-size: var(--text-tagline-size);
+        font-weight: var(--text-tagline-weight);
+        line-height: var(--text-tagline-lh);
+        letter-spacing: var(--text-tagline-ls);
         margin: 0;
         margin-bottom: var(--y-gap);
       }
@@ -62,12 +66,16 @@ el-dialog {
     .dialog-actions {
       flex-shrink: 1;
       flex-grow: 0;
-      margin-top: 16px;
+      margin-top: var(--space-md);
       text-align: center;
 
       button {
+        color: var(--color-primary);
         text-decoration: underline;
-        font-size: 0.9rem;
+        font-family: var(--font-text);
+        font-size: var(--text-caption-size);
+        line-height: var(--text-caption-lh);
+        letter-spacing: var(--text-caption-ls);
         margin: 0 auto;
       }
     }

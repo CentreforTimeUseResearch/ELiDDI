@@ -6,7 +6,7 @@ export class TimelinePicker extends TinyBase {
   timelines;
   timelinePicker;
   store = super.getStore();
-  currentTimelineIndex;
+  currentTimelineIndex = 0;
 
   constructor() {
     super();
@@ -70,7 +70,7 @@ export class TimelinePicker extends TinyBase {
       return;
     }
     return this.timelines
-      .map((timelineName, index) => `<option value=${index} ${index === this.currentTimelineIndex ? 'selected' : ''}>${timelineName}</option>`)
+      .map((timelineName, index) => `<option value=${index} ${index === this.currentTimelineIndex ? 'selected' : ''}>${timelineName} timeline</option>`)
       .join('');
   }
 
@@ -78,7 +78,7 @@ export class TimelinePicker extends TinyBase {
     // this component is a work in progress so this output is for debug purposes
     this.innerHTML = `
             <div class="el-form-group width-adjust">
-                <label class="el-label" for="timeline-picker">Choose timeline:</label>
+               <!-- <label class="el-label" for="timeline-picker">Choose timeline:</label> -->
                 <select 
                   id="timeline-picker"
                   class="el-select" 
@@ -86,7 +86,7 @@ export class TimelinePicker extends TinyBase {
                   name="timeline-picker" 
                   aria-describedby="timeline-picker-hint"
                 >
-                    <!--<option value="choose" selected>Choose timeline</option>-->
+                    
                     ${this.createOptions()}
                 </select>
             </div>

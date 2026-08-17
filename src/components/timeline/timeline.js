@@ -5,26 +5,30 @@ import { formatOffsetAsClockTime } from '../../utils/time';
 import './timeline.css';
 
 const SVGNS = "http://www.w3.org/2000/svg";
+const XHTMLNS = "http://www.w3.org/1999/xhtml";
 
 const INDEX = 'index';
 
-// sets textElement's content to fullText (with a <title> child carrying the
-// untruncated text for hover/screen readers), then shortens the visible text
-// with an ellipsis until it fits maxWidth - requires textElement to already be
-// attached to a connected SVG, since it measures actual rendered width
-function fitTextToBlockWidth(textElement, fullText, maxWidth) {
-  const title = document.createElementNS(SVGNS, 'title');
-  title.textContent = fullText;
-  textElement.appendChild(title);
+// builds a <foreignObject> containing an HTML div for the entry label, so
+// long labels wrap across multiple lines (via CSS) instead of being
+// truncated - div also carries the title attribute for a native tooltip
+// with the full text, mirroring the old SVG <title> behavior
+function createLabelForeignObject({ x, y, width, height, label, fontSize, id }) {
+  const foreignObject = document.createElementNS(SVGNS, 'foreignObject');
+  foreignObject.setAttributeNS(null, 'x', x);
+  foreignObject.setAttributeNS(null, 'y', y);
+  foreignObject.setAttributeNS(null, 'width', width);
+  foreignObject.setAttributeNS(null, 'height', height > 0 ? height : 20);
 
-  const textNode = document.createTextNode(fullText);
-  textElement.appendChild(textNode);
+  const label_div = document.createElementNS(XHTMLNS, 'div');
+  label_div.className = 'event-label';
+  label_div.style.fontSize = `${fontSize}px`;
+  label_div.title = label;
+  label_div.setAttribute('data-id', id);
+  label_div.textContent = label;
 
-  let truncated = fullText;
-  while (truncated.length > 1 && textElement.getBBox().width > maxWidth) {
-    truncated = truncated.slice(0, -1);
-    textNode.textContent = `${truncated}…`;
-  }
+  foreignObject.appendChild(label_div);
+  return foreignObject;
 }
 
 export class Timeline extends TinyBase {
@@ -37,7 +41,10 @@ export class Timeline extends TinyBase {
   entries = [];
   detailsPanel;
   selectedID;
-  index;
+  shadowIndex = 0;  // we want to render primary activities as shadow dimension on other dimensions
+  entriesLayer;
+  shadowEntriesLayer;
+  shadowDimensionEntries;
 
   constructor() {
     super();
@@ -46,11 +53,12 @@ export class Timeline extends TinyBase {
 
   connectedCallback() {
     const state = this.store.getState()
-    const timeline = state.timelines[this[INDEX]]
+    this.dimensionIndex = Number(this.getAttribute(INDEX));
+    const timeline = state.timelines[this.dimensionIndex]
     if (!Array.isArray(timeline)) {
       this.store.dispatch({
         type: "ADD_TIMELINE",
-        payload: { dimensionIndex: this[INDEX] }
+        payload: { dimensionIndex: this.dimensionIndex }
       })
     } else {
       this.entries = timeline
@@ -59,20 +67,28 @@ export class Timeline extends TinyBase {
     this.store.subscribe(() => this.updateState());
     this.getChildElementReferences();
     this.renderEntries();
+    if (this.dimensionIndex !== this.shadowIndex) {
+      this.renderShadowDimension();
+    }
     this.assignEventHandlers();
   }
 
   getChildElementReferences() {
     this.timeLineElement = this.querySelector('svg');
     this.entriesLayer = this.timeLineElement.querySelector('#events');
+    this.shadowEntriesLayer = this.timeLineElement.querySelector('#timeline-shadow');
     // get a handle on the details-panel as you need to communicate with it
     this.detailsPanel = this.querySelector('details-panel');
   }
 
   updateState() {
     const state = this.store.getState()
-    const timeline = state.timelines[this[INDEX]]
+    const timeline = state.timelines[this.dimensionIndex]
+    const currentDimensionIndex = state.currentDimensionIndex
     this.entries = timeline;
+    if (this.dimensionIndex !== this.shadowIndex && currentDimensionIndex === this.dimensionIndex) { // this is not primary activity timeline and we're currently viewing this timeline
+      this.renderShadowDimension(); // render primary activity entries as shadow timeline
+    }
   }
 
   renderEntries() {
@@ -85,7 +101,7 @@ export class Timeline extends TinyBase {
 
     // at some point there are going to have to have their own event handling 
     // and at that point it might be a good idea to shift them into their own class/object
-    const dimensionData = GLOBALS.DATA.timeline[this[INDEX]];
+    const dimensionData = GLOBALS.DATA.timeline[this.dimensionIndex];
 
     this.entries.forEach(entry => {
       const entryGroup = document.createElementNS(SVGNS, 'g');
@@ -102,29 +118,73 @@ export class Timeline extends TinyBase {
       rect.setAttributeNS(null, 'data-id', entry.id);
       entryGroup.appendChild(rect);
 
-      const text = document.createElementNS(SVGNS, 'text');
-      const textX = 220;
-      const textY = startOffsetPx + 5;
-      const fontSize = 13;
-      const fill = "#3a3d4d"
-      text.setAttributeNS(null, 'x', textX);
-      text.setAttributeNS(null, 'y', textY);
-      text.setAttributeNS(null, 'text-anchor', 'middle');
-      text.setAttributeNS(null, 'dominant-baseline', 'middle');
-      text.setAttributeNS(null, 'font-size', fontSize);
-      text.setAttributeNS(null, 'fill', fill);
-      text.setAttributeNS(null, 'data-id', entry.id);
-      entryGroup.appendChild(text)
+      const label = Array.isArray(entry.activity) ? entry.activity.join(', ') : entry.activity;
+      const labelForeignObject = createLabelForeignObject({
+        x: 110,
+        y: startOffsetPx,
+        width: 200,
+        height,
+        label,
+        fontSize: 13,
+        id: entry.id,
+      });
+      entryGroup.appendChild(labelForeignObject);
 
       this.entriesLayer.appendChild(entryGroup)
-
-      // fitTextToBlockWidth needs the text element attached to a connected
-      // SVG (it measures rendered width), so this runs after the append above
-      const label = Array.isArray(entry.activity) ? entry.activity.join(', ') : entry.activity;
-      fitTextToBlockWidth(text, label, 200);
     })
 
 
+  }
+
+  renderShadowDimension() {
+    // entry element looks like this
+    // <g>
+    //   <rect class="event-block" x="105" y="800" width="230" height="450" fill="#9aa0c3" fill-opacity="0.45" />
+    //   <text x="220" y="1025" text-anchor="middle" dominant-baseline="middle" font-size="13" fill="#3a3d4d">c/ch</text>
+    // </g>
+
+    const dimensionIndex = this.shadowIndex;
+
+    const dimensionData = GLOBALS.DATA.timeline[dimensionIndex];
+    if (this.shadowDimensionEntries !== this.store.getState()?.timelines[dimensionIndex]) {
+      this.shadowDimensionEntries = this.store.getState()?.timelines[dimensionIndex];
+    } else {
+      return; // do not rerender if nothing changed
+    }
+
+    this.shadowEntriesLayer.innerHTML = "";
+
+
+
+    this.shadowDimensionEntries.forEach(entry => {
+      const entryGroup = document.createElementNS(SVGNS, 'g');
+      const rect = document.createElementNS(SVGNS, 'rect');
+      const startOffsetPx = (entry.startOffsetMins || 0) * 2;
+      const endOffsetPx = (entry.endOffsetMins || 0) * 2;
+      const height = endOffsetPx - startOffsetPx
+      rect.setAttributeNS(null, 'x', '100');
+      rect.setAttributeNS(null, 'y', startOffsetPx);
+      rect.setAttributeNS(null, 'height', height > 0 ? height : 20);
+      rect.setAttributeNS(null, 'width', '50');
+      rect.setAttributeNS(null, 'fill', getActivityColor(dimensionData, entry.activity));
+      rect.setAttributeNS(null, 'fill-opacity', '0.45');
+      rect.setAttributeNS(null, 'data-id', entry.id);
+      entryGroup.appendChild(rect);
+
+      const label = Array.isArray(entry.activity) ? entry.activity.join(', ') : entry.activity;
+      const labelForeignObject = createLabelForeignObject({
+        x: 100,
+        y: startOffsetPx,
+        width: 50,
+        height,
+        label,
+        fontSize: 13,
+        id: entry.id,
+      });
+      entryGroup.appendChild(labelForeignObject);
+
+      this.shadowEntriesLayer.appendChild(entryGroup)
+    })
   }
 
   calculateTheTimeSlotClicked(y) {
@@ -176,7 +236,7 @@ export class Timeline extends TinyBase {
   }
 
   get isSingleChoiceDimension() {
-    return GLOBALS.DATA.timeline[Number(this[INDEX])].mode !== 'multiple-choice';
+    return GLOBALS.DATA.timeline[Number(this.dimensionIndex)].mode !== 'multiple-choice';
   }
 
   formatOverlapMessage(conflict) {
@@ -186,14 +246,12 @@ export class Timeline extends TinyBase {
   }
 
   getNextEntryId() {
-    // not entries.length - deleting an entry can leave gaps, so length would
-    // eventually collide with an id that's still in use
     return this.entries.reduce((maxId, entry) => Math.max(maxId, entry.id), -1) + 1;
   }
 
   createEntry(entry) {
     const id = this.getNextEntryId();
-    const dimensionIndex = Number(this[INDEX]);
+    const dimensionIndex = this.dimensionIndex;
     if (typeof dimensionIndex !== 'number') {
       console.error('Problem with identifying dimension index', e.target)
       return;
@@ -210,7 +268,7 @@ export class Timeline extends TinyBase {
   }
 
   updateEntry(entry) {
-    const dimensionIndex = Number(this[INDEX]);
+    const dimensionIndex = this.dimensionIndex;
     if (typeof dimensionIndex !== 'number') {
       console.error('Problem with identifying dimension index', e.target)
       return;
@@ -229,7 +287,7 @@ export class Timeline extends TinyBase {
   }
 
   deleteEntry(id) {
-    const dimensionIndex = Number(this[INDEX]);
+    const dimensionIndex = this.dimensionIndex;
     if (!this.entries.some((entry) => entry.id === id)) {
       // already gone (e.g. a stray double-click) - nothing to do
       return;
@@ -244,6 +302,7 @@ export class Timeline extends TinyBase {
     this.selectedID = undefined;
     this.detailsPanel.reset();
     this.renderEntries();
+
   }
 
   attributeChangedCallback(name, oldValue, newValue) {

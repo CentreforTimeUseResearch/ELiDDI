@@ -66,7 +66,8 @@ export class Onboarding extends TinyBase {
   }
 
   render() {
-    const { onboardingStep, uipanel } = this.store.getState();
+    const { onboarding, onboardingStep, uipanel } = this.store.getState();
+    if (!onboarding) { return }
     const numberOfSteps = GLOBALS.DATA.instructions.length;
     const isLastStep = onboardingStep === numberOfSteps - 1; // index is zero indexed so last index is one less than numberOfSteps;
     const { title, text, spotlight, modalTop, showPanel } = GLOBALS.DATA.instructions[onboardingStep];

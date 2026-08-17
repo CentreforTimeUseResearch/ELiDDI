@@ -72,7 +72,7 @@ export class TimePicker extends TinyBase {
         this.timeInput.setAttribute("max", this.maxTimeValue);
       }
     }
-
+    this.timeInput.addEventListener("click", (e) => { if (e) { e.stopPropagation() } });  // dont allow click to trigger timeline click
     this.timeInput.addEventListener("blur", () => this.validate());
     this.timeInput.addEventListener('change', (e) => {
       this.value = e.target.value;

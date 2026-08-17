@@ -12,5 +12,13 @@ export default {
   ],
   test: {
     environment: 'jsdom',
+    // 1. Switch pool type to forks to prevent hanging worker threads
+    pool: 'forks',
+
+    // 2. Increase the global test timeout limit (in milliseconds)
+    testTimeout: 20000,
+
+    // 3. Optional: Increase the hook timeout limit (e.g., beforeEach/afterEach)
+    hookTimeout: 20000,
   },
 }

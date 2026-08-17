@@ -322,7 +322,7 @@ function processJsonToHTML(jsonData) {
   html += '</form></dynamic-timeline>';
 
   console.log(html);
-  console.log('<hr />');
+  // console.log('<hr />');
   console.log('<pre>');
   console.log(environment);
   console.log('</pre>');

@@ -92,6 +92,7 @@ el-activitypicker {
     font-weight: var(--text-body-weight);
     padding: 11px 22px;
     border-radius: var(--radius-pill);
+    outline: 8px solid white;
     border: 2px solid transparent;
     cursor: pointer;
   }

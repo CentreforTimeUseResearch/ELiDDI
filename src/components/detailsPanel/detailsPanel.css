@@ -10,6 +10,9 @@ details-panel {
   opacity: 1;
   z-index: 1;
 
+  max-width: 400px;
+  /* mobile only for now */
+
   @starting-style {
     opacity: 0;
   }

@@ -18,14 +18,22 @@
   "day_boundary": "04:00",
   "instructions": [
     {
+      "title": "Welcome to ELiDDI",
+      "text": "Thank you for your interest in completing the diary, There's just a few simple steps to filling in your details",
+      "spotlight": [
+        50,
+        50,
+        100
+      ]
+    },
+    {
       "title": "Select a Timeline",
       "text": "Use the <strong>timeline picker</strong> to switch timelines. Each timeline records different information about your day. When you switch you will see information about what each timeline is for.",
       "spotlight": [
         50,
         6,
         15
-      ],
-      "image": "timeline-picker.png"
+      ]
     },
     {
       "title": "Pick a start time",

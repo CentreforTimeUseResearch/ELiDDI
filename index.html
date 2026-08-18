@@ -40,8 +40,8 @@
 
       <g id="wrapper">
 
-        <!-- "Elapsed / past" shading: adjust y + height to match current time -->
-        <rect id="past-overlay" x="0" y="1050" width="320" height="1350" fill="#eef0f3" />
+        <!-- "Future" shading (now -> end of day) - y/height are set live by Timeline.updateFutureOverlay() -->
+        <rect id="future-overlay" x="0" y="1050" width="320" height="1350" fill="#eef0f3" />
 
         <!-- ============ GRID LINES ============ -->
         <g id="grid-lines">

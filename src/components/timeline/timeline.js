@@ -1,13 +1,15 @@
 import { TinyBase } from '../base';
 import { getActivityColor } from '../../utils/activities';
 import { findOverlappingEntry } from '../../utils/entries';
-import { formatOffsetAsClockTime } from '../../utils/time';
+import { formatOffsetAsClockTime, getCurrentOffsetMins } from '../../utils/time';
 import './timeline.css';
 
 const SVGNS = "http://www.w3.org/2000/svg";
 const XHTMLNS = "http://www.w3.org/1999/xhtml";
 
 const INDEX = 'index';
+const PX_PER_MINUTE = 2;
+const MINUTES_PER_DAY = 24 * 60; // -> 2880px, matches the SVG viewBox height
 
 // builds a <foreignObject> containing an HTML div for the entry label, so
 // long labels wrap across multiple lines (via CSS) instead of being
@@ -45,6 +47,8 @@ export class Timeline extends TinyBase {
   entriesLayer;
   shadowEntriesLayer;
   shadowDimensionEntries;
+  futureOverlayElement;
+  futureOverlayIntervalId;
 
   constructor() {
     super();
@@ -66,6 +70,8 @@ export class Timeline extends TinyBase {
     super.connectedCallback();
     this.store.subscribe(() => this.updateState());
     this.getChildElementReferences();
+    this.updateFutureOverlay();
+    this.futureOverlayIntervalId = setInterval(this.updateFutureOverlay.bind(this), 30000);
     this.renderEntries();
     if (this.dimensionIndex !== this.shadowIndex) {
       this.renderShadowDimension();
@@ -73,12 +79,26 @@ export class Timeline extends TinyBase {
     this.assignEventHandlers();
   }
 
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    clearInterval(this.futureOverlayIntervalId);
+  }
+
   getChildElementReferences() {
     this.timeLineElement = this.querySelector('svg');
     this.entriesLayer = this.timeLineElement.querySelector('#events');
     this.shadowEntriesLayer = this.timeLineElement.querySelector('#timeline-shadow');
+    this.futureOverlayElement = this.timeLineElement.querySelector('#future-overlay');
     // get a handle on the details-panel as you need to communicate with it
     this.detailsPanel = this.querySelector('details-panel');
+  }
+
+  updateFutureOverlay() {
+    if (!this.futureOverlayElement) { return; }
+    const nowOffsetPx = getCurrentOffsetMins() * PX_PER_MINUTE;
+    const totalHeightPx = MINUTES_PER_DAY * PX_PER_MINUTE;
+    this.futureOverlayElement.setAttributeNS(null, 'y', nowOffsetPx);
+    this.futureOverlayElement.setAttributeNS(null, 'height', totalHeightPx - nowOffsetPx);
   }
 
   updateState() {
@@ -106,8 +126,8 @@ export class Timeline extends TinyBase {
     this.entries.forEach(entry => {
       const entryGroup = document.createElementNS(SVGNS, 'g');
       const rect = document.createElementNS(SVGNS, 'rect');
-      const startOffsetPx = (entry.startOffsetMins || 0) * 2;
-      const endOffsetPx = (entry.endOffsetMins || 0) * 2;
+      const startOffsetPx = (entry.startOffsetMins || 0) * PX_PER_MINUTE;
+      const endOffsetPx = (entry.endOffsetMins || 0) * PX_PER_MINUTE;
       const height = endOffsetPx - startOffsetPx
       rect.setAttributeNS(null, 'x', '100');
       rect.setAttributeNS(null, 'y', startOffsetPx);
@@ -159,8 +179,8 @@ export class Timeline extends TinyBase {
     this.shadowDimensionEntries.forEach(entry => {
       const entryGroup = document.createElementNS(SVGNS, 'g');
       const rect = document.createElementNS(SVGNS, 'rect');
-      const startOffsetPx = (entry.startOffsetMins || 0) * 2;
-      const endOffsetPx = (entry.endOffsetMins || 0) * 2;
+      const startOffsetPx = (entry.startOffsetMins || 0) * PX_PER_MINUTE;
+      const endOffsetPx = (entry.endOffsetMins || 0) * PX_PER_MINUTE;
       const height = endOffsetPx - startOffsetPx
       rect.setAttributeNS(null, 'x', '100');
       rect.setAttributeNS(null, 'y', startOffsetPx);

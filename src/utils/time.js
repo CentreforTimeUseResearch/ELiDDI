@@ -17,3 +17,13 @@ export function formatOffsetAsClockTime(offsetMins) {
   const mins = String(totalMinutes % 60).padStart(2, '0');
   return `${hours}:${mins}`;
 }
+
+// minutes elapsed since day_boundary, wrapping across midnight - inverse of
+// formatOffsetAsClockTime's offset -> clock-time math. e.g. day_boundary=04:00,
+// wall-clock 02:00 -> 1320 (22:00 into the diary day that started yesterday)
+export function getCurrentOffsetMins() {
+  const now = new Date();
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const MINUTES_PER_DAY = 24 * 60;
+  return ((nowMinutes - getDayBoundaryInMinutes()) + MINUTES_PER_DAY) % MINUTES_PER_DAY;
+}

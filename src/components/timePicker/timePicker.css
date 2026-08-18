@@ -38,6 +38,7 @@ el-time-picker {
   }
 
   .error-text {
+    display: block;
     font-family: var(--font-text);
     font-size: var(--text-fine-print-size);
     font-weight: var(--text-caption-strong-weight);

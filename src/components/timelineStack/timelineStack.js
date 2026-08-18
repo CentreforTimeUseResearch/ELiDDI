@@ -34,12 +34,13 @@ export class TimelineStack extends TinyBase {
   scrollToTimeline() {
     const timeline = this.children[this.dimensionIndex];
     // get the element
-    timeline.scrollIntoView({
-      behavior: 'smooth',
-      block: 'nearest', // Prevents the whole page from jumping vertically
-      inline: 'start'   // Aligns item to the start edge to match CSS snapping
-    });
-
+    // timeline.scrollIntoView({
+    //   behavior: 'smooth',
+    //   block: 'nearest', // Prevents the whole page from jumping vertically
+    //   inline: 'start'   // Aligns item to the start edge to match CSS snapping
+    // });
+    // this.scrollLeft += 400
+    this.scrollLeft = this.dimensionIndex * (this.scrollWidth / this.numTimelines);
   }
 
   switchDimension(index) {

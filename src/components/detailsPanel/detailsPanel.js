@@ -162,6 +162,7 @@ export class DetailsPanel extends TinyBase {
     const showActivityPanel = uipanel === 'activity'
 
     if (showActivityPanel) {
+      // console.log('hereh')
       this.showPanel();
     } else {
       this.hidePanel();

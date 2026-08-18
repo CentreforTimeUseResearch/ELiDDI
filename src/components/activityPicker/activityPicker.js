@@ -311,11 +311,6 @@ export class ActivityPicker extends TinyBase {
 
   updateResults() {
     const searchString = this.input.value;
-
-    if (!searchString) {
-      return;
-    }
-
     var results = this.searchActivities(searchString);
 
     //   debugger;

@@ -6,6 +6,8 @@ const onboardingStep = (state = 0, action) => {
       return state + 1; // put in upper bounds from GLOBAL
     case 'PREVIOUS_INSTRUCTION':
       return state - 1 >= 0 ? state - 1 : 0;
+    case 'RESET_ONBOARDING':
+      return 0;
     default:
       return state;
   }

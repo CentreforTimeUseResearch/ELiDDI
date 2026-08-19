@@ -1,5 +1,6 @@
 
 import { TimePicker } from '../timePicker/timePicker';
+import { DurationInput } from '../durationInput/durationInput';
 import { TinyBase } from '../base';
 import './timePickerPanel.css';
 
@@ -107,12 +108,13 @@ export class TimePickerPanel extends TinyBase {
     // store total difference in minutes
     this.durationInputMinutes = endTotalMinutes - startTotalMinutes;;
 
-    this.durationInputElement.innerHTML = this.durationInputMinutes ? this.convertMinutesToTimePickerFormat(this.durationInputMinutes) : '--:--';
+    this.durationInputElement.setAttribute('value', this.durationInputMinutes ? this.durationInputMinutes : undefined);
   }
 
   recalculateEndTime(startTotalMinutes, durationTotalMinutes) {
-    const endMinutes = startTotalMinutes + durationTotalMinutes;
+    const endMinutes = Number(startTotalMinutes) + Number(durationTotalMinutes);
     // we need to check that end minutes is not later that 3.59am
+    this.endInputMinutes = endMinutes;
     this.endInputElement.setAttribute('value', this.convertMinutesToTimePickerFormat(endMinutes))
   }
 
@@ -147,11 +149,10 @@ export class TimePickerPanel extends TinyBase {
     this.restOfDayElement.checked = this.endofday;
     this.startInputElement.setAttribute('value', this.startInputMinutes ? this.convertMinutesToTimePickerFormat(this.startInputMinutes) : undefined)
     this.endInputElement.setAttribute('value', this.endInputMinutes ? this.convertMinutesToTimePickerFormat(this.endInputMinutes) : undefined)
-    this.durationInputElement.innerHTML = this.durationInputMinutes ? this.convertMinutesToTimePickerFormat(this.durationInputMinutes) : '--:--';
+    this.durationInputElement.setAttribute('value', this.durationInputMinutes ? this.durationInputMinutes : undefined)
   }
 
   render() {
-    console.log(this.durationInputMinutes)
     this.innerHTML = `
     <fieldset class="time-container">
       <legend class="sr-only">Schedule Settings</legend>
@@ -175,12 +176,13 @@ export class TimePickerPanel extends TinyBase {
         <label for="timepicker-rest-of-day">Continue this activity to the end of the day</label>
       </div>
 
-      
-      <span class="duration-indicator">
-        Duration:
-        <span class="duration-indicator" data-id="duration">${this.durationInputMinutes ? this.convertMinutesToTimePickerFormat(this.durationInputMinutes) : '--:--'}<span> 
-      <span> 
-      
+      <el-duration-input ${this.setProps({ change: (valueInMinutes) => this.onTimeInputChange('duration', valueInMinutes) })}
+        data-id="duration"
+        input-id="duration"
+        label="Duration"
+        value="${this.durationInputMinutes ? this.durationInputMinutes : undefined}"
+      ></el-duration-input>
+
     </fieldset>
     `;
     this.assignEventHandlers();

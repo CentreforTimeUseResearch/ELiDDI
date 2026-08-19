@@ -3,6 +3,7 @@ el-time-picker-panel {
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
+    justify-content: center;
 
     input,
     label {
@@ -28,11 +29,4 @@ el-time-picker-panel {
   flex-direction: column;
   gap: var(--space-xs);
   font-family: var(--font-text);
-
-  .duration-indicator {
-    font-size: var(--text-fine-print-size);
-    line-height: var(--text-fine-print-lh);
-    letter-spacing: var(--text-fine-print-ls);
-    color: var(--color-on-dark);
-  }
 }

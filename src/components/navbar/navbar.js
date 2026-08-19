@@ -1,16 +1,18 @@
 import '../timelinePicker/timelinePicker.js';
 import '../contextualHelp/contextualHelp.js';
+import { TinyBase } from '../base';
 import './navbar.css';
 
-export class Navbar extends HTMLElement {
+export class Navbar extends TinyBase {
   ready = false;
+  store = super.getStore();
 
   constructor() {
     super();
   }
 
   connectedCallback() {
-    this.render();
+    super.connectedCallback();
     this.assignEventHandlers();
   }
 
@@ -19,6 +21,11 @@ export class Navbar extends HTMLElement {
       const hamMenu = this.querySelector('.ham-menu');
       const offScreenMenu = this.querySelector('.off-screen-menu');
       hamMenu?.addEventListener('click', () => {
+        hamMenu.classList.toggle('active');
+        offScreenMenu.classList.toggle('active');
+      });
+      this.querySelector('.instructions-button')?.addEventListener('click', () => {
+        this.store.dispatch({ type: 'RESET_ONBOARDING' });
         hamMenu.classList.toggle('active');
         offScreenMenu.classList.toggle('active');
       });
@@ -32,7 +39,7 @@ export class Navbar extends HTMLElement {
 
         <div class="off-screen-menu">
             <ul>
-                <li>Instructions</li>
+                <li><button class="reset-to-div instructions-button" type="button">Instructions</button></li>
                 <li>Change Date</li>
                 <li>Reset</li>
             </ul>

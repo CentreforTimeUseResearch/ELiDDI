@@ -1,0 +1,75 @@
+el-duration-input {
+  display: block;
+
+  .duration-fieldset {
+    border: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  legend {
+    font-family: var(--font-text);
+    font-weight: var(--text-caption-strong-weight);
+    font-size: var(--text-caption-size);
+    line-height: var(--text-caption-strong-lh);
+    letter-spacing: var(--text-caption-ls);
+    color: var(--color-on-dark);
+    padding: 0;
+  }
+
+  .duration-fields {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    gap: var(--space-sm);
+    margin-top: var(--space-xxs);
+  }
+
+  .duration-field {
+    display: flex;
+    flex-direction: column;
+
+    label {
+      font-family: var(--font-text);
+      font-weight: var(--text-caption-strong-weight);
+      font-size: var(--text-caption-size);
+      line-height: var(--text-caption-strong-lh);
+      letter-spacing: var(--text-caption-ls);
+      color: var(--color-on-dark);
+      margin-bottom: var(--space-xxs);
+    }
+  }
+
+  input {
+    font-family: var(--font-text);
+    font-size: var(--text-body-size);
+    padding: var(--space-sm);
+    border: 1px solid var(--color-ink-muted-48);
+    /* Exceeds 3:1 non-text contrast standard */
+    border-radius: var(--radius-sm);
+    width: 4ch;
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+  }
+
+  input:focus {
+    outline: 2px solid var(--color-primary-focus);
+    /* Accessible high-contrast focus ring */
+    outline-offset: 2px;
+  }
+
+  .hint-text {
+    display: block;
+    font-family: var(--font-text);
+    font-size: var(--text-fine-print-size);
+    color: var(--color-body-muted);
+  }
+
+  .error-text {
+    display: block;
+    font-family: var(--font-text);
+    font-size: var(--text-fine-print-size);
+    font-weight: var(--text-caption-strong-weight);
+    color: var(--color-danger);
+  }
+}

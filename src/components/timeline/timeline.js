@@ -1,6 +1,6 @@
 import { TinyBase } from '../base';
 import { getActivityColor } from '../../utils/activities';
-import { findOverlappingEntry } from '../../utils/entries';
+import { findOverlappingEntry, findNextEntry } from '../../utils/entries';
 import { formatOffsetAsClockTime, getCurrentOffsetMins } from '../../utils/time';
 import './timeline.css';
 
@@ -269,6 +269,10 @@ export class Timeline extends TinyBase {
     return this.entries.reduce((maxId, entry) => Math.max(maxId, entry.id), -1) + 1;
   }
 
+  findNextEntryAfter(afterOffsetMins) {
+    return findNextEntry(this.entries, afterOffsetMins, this.selectedID);
+  }
+
   createEntry(entry) {
     const id = this.getNextEntryId();
     const dimensionIndex = this.dimensionIndex;
@@ -354,7 +358,7 @@ export class Timeline extends TinyBase {
   render() {
     this.appendChild(this.fragment);
     this.innerHTML += `<details-panel
-      ${this.setProps({ saveEntry: (entry) => this.saveEntry(entry), deleteEntry: (id) => this.deleteEntry(id) })}
+      ${this.setProps({ saveEntry: (entry) => this.saveEntry(entry), deleteEntry: (id) => this.deleteEntry(id), findNextEntryAfter: (offsetMins) => this.findNextEntryAfter(offsetMins) })}
       dimensionindex=${this[INDEX]}
       heading="${GLOBALS.DATA.timeline[this[INDEX]]?.description}"
       instruction="${GLOBALS.DATA.timeline[this[INDEX]]?.instruction}"

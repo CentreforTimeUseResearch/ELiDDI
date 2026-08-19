@@ -154,6 +154,24 @@ export class DetailsPanel extends TinyBase {
     }
   }
 
+  // decides what "continue this activity" should mean given the current
+  // start time - continue to the next chronological entry if one exists
+  // after this start time, otherwise fall back to the end of the diary day
+  getContinueToTarget(startTimeInMinutes) {
+    const offsetMins = startTimeInMinutes - this.dayBoundaryInMinutes;
+    const nextEntry = this.props.findNextEntryAfter(offsetMins);
+    if (nextEntry) {
+      return {
+        endTimeInMinutes: nextEntry.startOffsetMins + this.dayBoundaryInMinutes,
+        label: 'Continue this activity to the next activity'
+      };
+    }
+    return {
+      endTimeInMinutes: this.dayBoundaryInMinutes - 1 + (24 * 60),
+      label: 'Continue this activity to the end of the day'
+    };
+  }
+
 
   onStoreUpdate() {
     const { uipanel, currentDimensionIndex } = this.store.getState();
@@ -296,7 +314,7 @@ export class DetailsPanel extends TinyBase {
                 heading="${this[HEADING]}" 
                 ${this.setProps({ onPopOverShowing: (isPopoverShowing) => this.onPopOverShowing(isPopoverShowing), onFocusCallback: () => this.onFocusCallback(), onSetActivityOnSelectedEntry: (activity) => this.onSetActivityOnSelectedEntry(activity), onSetActivitiesOnSelectedEntry: (activities) => this.onSetActivitiesOnSelectedEntry(activities) })}
               ></el-activityPicker>
-              <el-time-picker-panel ${this.setProps({ onTimeSet: (setTimeProps) => this.onSetOffsetMins(setTimeProps) })} day-boundary="${this.dayBoundaryInMinutes}"></el-time-picker-panel>
+              <el-time-picker-panel ${this.setProps({ onTimeSet: (setTimeProps) => this.onSetOffsetMins(setTimeProps), getContinueToTarget: (startTimeInMinutes) => this.getContinueToTarget(startTimeInMinutes) })} day-boundary="${this.dayBoundaryInMinutes}"></el-time-picker-panel>
               <div class="entry-error" aria-live="polite" hidden></div>
               <button class="btn btn-save-btn opaque">Save</button>
               <button class="btn btn-delete-btn hide">Delete</button>

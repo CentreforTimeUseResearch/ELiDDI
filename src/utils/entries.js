@@ -11,3 +11,11 @@ function spansOverlap(a, b) {
 export function findOverlappingEntry(entries, candidate, excludeId) {
   return entries.find((entry) => entry.id !== excludeId && spansOverlap(entry, candidate));
 }
+
+// returns the entry (other than excludeId) with the soonest startOffsetMins
+// strictly after `afterOffsetMins`, or undefined if none
+export function findNextEntry(entries, afterOffsetMins, excludeId) {
+  return entries
+    .filter((entry) => entry.id !== excludeId && entry.startOffsetMins > afterOffsetMins)
+    .sort((a, b) => a.startOffsetMins - b.startOffsetMins)[0];
+}

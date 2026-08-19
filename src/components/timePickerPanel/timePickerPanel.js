@@ -118,6 +118,7 @@ export class TimePickerPanel extends TinyBase {
     // we need to check that end minutes is not later that 3.59am
     this.endInputMinutes = endMinutes;
     this.endInputElement.setAttribute('value', this.convertMinutesToTimePickerFormat(endMinutes))
+    this.props.onTimeSet({ timeField: 'endTime', timeInMinutes: endMinutes });
   }
 
   onTimeInputChange(fieldId, valueInMinutes) {

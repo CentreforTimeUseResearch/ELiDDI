@@ -1,4 +1,4 @@
-dynamic-timeline {
+el-dynamic-timeline {
   position: relative;
   display: flex;
   height: 93dvh;
@@ -7,5 +7,4 @@ dynamic-timeline {
   max-width: 400px;
   /* mobile only for now */
   margin: 0 auto;
-
 }

@@ -129,13 +129,13 @@ function generateMultiCheckboxInput(chunk, cardNum, uniqueRef, options, question
                     <legend>${questionText} <small>Mark all relevant boxes</small></legend>
                     <label><input type="checkbox" id="${chunk}_${cardNum}-alone" name="${chunk}_${cardNum}-${uniqueRef}"/>Alone</label><br />
   ${options
-      .map((option) => {
-        const safeId = option.replace(/ |\//g, '_');
-        const label = option.split('-').pop().trim(); // remove category info, if any
+    .map((option) => {
+      const safeId = option.replace(/ |\//g, '_');
+      const label = option.split('-').pop().trim(); // remove category info, if any
 
-        return `<label><input type="checkbox" id="${chunk}_${cardNum}-${safeId}" name="${chunk}_${cardNum}-${uniqueRef}"/>${option}</label><br />`;
-      })
-      .join('')}
+      return `<label><input type="checkbox" id="${chunk}_${cardNum}-${safeId}" name="${chunk}_${cardNum}-${uniqueRef}"/>${option}</label><br />`;
+    })
+    .join('')}
                </fieldset>
             </div>
             `;
@@ -165,21 +165,12 @@ function createCardHTML(data, timeSlot, cardNum, chunk) {
 
 
   ${data
-      .map((dimension, index) => {
-        if (dimension.mode === 'single-choice') {
-          if (dimension.allow_free_text) {
-            return generateTextFieldInput(chunk, cardNum, dimension.uniqueRef, dimension.description);
-          } else {
-            return generateSelectDropDown(
-              chunk,
-              cardNum,
-              dimension.uniqueRef,
-              dimension.options,
-              dimension.description
-            );
-          }
-        } else if (dimension.mode === 'multiple-choice') {
-          return generateMultiCheckboxInput(
+    .map((dimension, index) => {
+      if (dimension.mode === 'single-choice') {
+        if (dimension.allow_free_text) {
+          return generateTextFieldInput(chunk, cardNum, dimension.uniqueRef, dimension.description);
+        } else {
+          return generateSelectDropDown(
             chunk,
             cardNum,
             dimension.uniqueRef,
@@ -187,8 +178,17 @@ function createCardHTML(data, timeSlot, cardNum, chunk) {
             dimension.description
           );
         }
-      })
-      .join('')}
+      } else if (dimension.mode === 'multiple-choice') {
+        return generateMultiCheckboxInput(
+          chunk,
+          cardNum,
+          dimension.uniqueRef,
+          dimension.options,
+          dimension.description
+        );
+      }
+    })
+    .join('')}
 
 
 
@@ -309,7 +309,7 @@ function processJsonToHTML(jsonData) {
   let html = generateScriptBlockForEnvironmentVariables(jsonData);
 
   html += generateDataLists(dimensionsWithFlattenedActivities);
-  html += '<dynamic-timeline><header><h1>Time use diary</h1></header>';
+  html += '<el-dynamic-timeline><header><h1>Time use diary</h1></header>';
   html += '<form method="post" action="/">';
   for (let i = 0; i < numChunks; i++) {
     // break the table into chunks of 18 (3 hours = 3 * (60 / 10))
@@ -319,7 +319,7 @@ function processJsonToHTML(jsonData) {
   }
   html += generateFooter();
 
-  html += '</form></dynamic-timeline>';
+  html += '</form></el-dynamic-timeline>';
 
   console.log(html);
   // console.log('<hr />');

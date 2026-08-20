@@ -92,8 +92,8 @@ export class Timeline extends TinyBase {
     this.entriesLayer = this.timeLineElement.querySelector('#events');
     this.shadowEntriesLayer = this.timeLineElement.querySelector('#timeline-shadow');
     this.futureOverlayElement = this.timeLineElement.querySelector('#future-overlay');
-    // get a handle on the details-panel as you need to communicate with it
-    this.detailsPanel = this.querySelector('details-panel');
+    // get a handle on the details panel as you need to communicate with it
+    this.detailsPanel = this.querySelector('el-details-panel');
   }
 
   updateFutureOverlay() {
@@ -345,12 +345,12 @@ export class Timeline extends TinyBase {
 
   render() {
     this.appendChild(this.fragment);
-    this.innerHTML += `<details-panel
+    this.innerHTML += `<el-details-panel
       ${this.setProps({ saveEntry: (entry) => this.saveEntry(entry), deleteEntry: (id) => this.deleteEntry(id), findNextEntryAfter: (offsetMins) => this.findNextEntryAfter(offsetMins) })}
       dimensionindex=${this[INDEX]}
       heading="${GLOBALS.DATA.timeline[this[INDEX]]?.description}"
       instruction="${GLOBALS.DATA.timeline[this[INDEX]]?.instruction}"
-    ></details-panel>`;
+    ></el-details-panel>`;
   }
 }
 

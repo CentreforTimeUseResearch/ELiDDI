@@ -67,4 +67,4 @@ export class Navbar extends TinyBase {
   }
 }
 
-customElements.define('nav-bar', Navbar);
+customElements.define('el-nav-bar', Navbar);

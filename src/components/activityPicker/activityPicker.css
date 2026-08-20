@@ -1,4 +1,4 @@
-el-activitypicker {
+el-activity-picker {
   display: block;
 
   .combobox-wrapper {
@@ -28,7 +28,7 @@ el-activitypicker {
 
     &::before {
       position: absolute;
-      content: " \A8FA";
+      content: ' \A8FA';
       top: 16px;
       right: -11px;
       height: 50px;

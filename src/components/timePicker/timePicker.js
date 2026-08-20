@@ -1,9 +1,17 @@
 import { TinyBase } from '../base';
+import {
+  INPUT_ID_ATTR,
+  LABEL_ATTR,
+  VALUE_ATTR,
+  handleValidatedFieldAttributeChange,
+  showFieldError,
+  clearFieldError,
+} from '../../utils/validatedFormField';
 import './timePicker.css';
 
-const ID = 'input-id';
-const LABEL = 'label';
-const VALUE = 'value';
+const ID = INPUT_ID_ATTR;
+const LABEL = LABEL_ATTR;
+const VALUE = VALUE_ATTR;
 const CONSTRAINED = 'constrained';
 const READ_ONLY = 'read-only';
 const REQUIRED = 'required';
@@ -105,26 +113,15 @@ export class TimePicker extends TinyBase {
   }
 
   showError(message) {
-    this.timeInput.setAttribute('aria-invalid', 'true'); // Tells screen reader it is broken
-    this.errorDisplay.textContent = message;
-    this.errorDisplay.removeAttribute('hidden');
+    showFieldError(this.errorDisplay, this.timeInput, message);
   }
 
   clearError() {
-    this.timeInput.setAttribute('aria-invalid', 'false');
-    this.errorDisplay.textContent = '';
-    this.errorDisplay.setAttribute('hidden', 'true');
+    clearFieldError(this.errorDisplay, this.timeInput);
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
-    if (this[name] !== newValue) {
-      this[name] = newValue === 'undefined' ? undefined : newValue;
-      if (name === 'value') {
-        this.render();
-        this.assignEventHandlers();
-        this.validate();
-      }
-    }
+    handleValidatedFieldAttributeChange(this, name, newValue);
   }
 
   render() {

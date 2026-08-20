@@ -1,9 +1,17 @@
 import { TinyBase } from '../base';
+import {
+  INPUT_ID_ATTR,
+  LABEL_ATTR,
+  VALUE_ATTR,
+  handleValidatedFieldAttributeChange,
+  showFieldError,
+  clearFieldError,
+} from '../../utils/validatedFormField';
 import './durationInput.css';
 
-const ID = 'input-id';
-const LABEL = 'label';
-const VALUE = 'value';
+const ID = INPUT_ID_ATTR;
+const LABEL = LABEL_ATTR;
+const VALUE = VALUE_ATTR;
 
 const MAX_HOURS = 23;
 const MAX_MINUTES = 59;
@@ -31,7 +39,11 @@ export class DurationInput extends TinyBase {
     this.errorDisplay = this.querySelector(`#${this[ID]}-error`);
 
     [this.hoursInput, this.minutesInput].forEach((input) => {
-      input.addEventListener('click', (e) => { if (e) { e.stopPropagation() } });  // dont allow click to trigger timeline click
+      input.addEventListener('click', (e) => {
+        if (e) {
+          e.stopPropagation();
+        }
+      }); // dont allow click to trigger timeline click
       input.addEventListener('keypress', (e) => this.restrictToDigits(e));
       input.addEventListener('input', (e) => this.sanitizeInput(e));
       input.addEventListener('change', () => this.handleChange());
@@ -73,34 +85,24 @@ export class DurationInput extends TinyBase {
   }
 
   showError(inputElement, message) {
-    inputElement.setAttribute('aria-invalid', 'true');
-    this.errorDisplay.textContent = message;
-    this.errorDisplay.removeAttribute('hidden');
+    showFieldError(this.errorDisplay, inputElement, message);
   }
 
   clearError() {
-    this.hoursInput.setAttribute('aria-invalid', 'false');
-    this.minutesInput.setAttribute('aria-invalid', 'false');
-    this.errorDisplay.textContent = '';
-    this.errorDisplay.setAttribute('hidden', 'true');
+    clearFieldError(this.errorDisplay, [this.hoursInput, this.minutesInput]);
   }
 
   handleChange() {
-    if (!this.validate()) { return; }
+    if (!this.validate()) {
+      return;
+    }
     const hours = this.hoursInput.value === '' ? 0 : Number(this.hoursInput.value);
     const minutes = this.minutesInput.value === '' ? 0 : Number(this.minutesInput.value);
     this.props.change(hours * MINUTES_PER_HOUR + minutes);
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
-    if (this[name] !== newValue) {
-      this[name] = (newValue === "undefined") ? undefined : newValue;
-      if (name === VALUE) {
-        this.render();
-        this.assignEventHandlers();
-        this.validate();
-      }
-    }
+    handleValidatedFieldAttributeChange(this, name, newValue);
   }
 
   render() {

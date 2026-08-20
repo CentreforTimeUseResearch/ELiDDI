@@ -1,6 +1,7 @@
 import './dialogWidget.css';
 import { Onboarding } from '../onboarding/onboarding';
 import { TinyBase } from '../base';
+import { DISMISS_ONBOARDING } from '../../store/actionTypes';
 
 const ID = 'id';
 const TEXT = 'text';
@@ -31,7 +32,7 @@ export class DialogWidget extends TinyBase {
 
     this.querySelector('[data-skip]').addEventListener('click', () => {
       this.store.dispatch({
-        type: 'DISMISS_ONBOARDING',
+        type: DISMISS_ONBOARDING,
       });
     });
     this.registerCleanup(this.store.subscribe(this.updateState.bind(this)));

@@ -2,6 +2,14 @@ import { TinyBase } from '../base';
 import { getActivityColor } from '../../utils/activities';
 import { findOverlappingEntry, findNextEntry } from '../../utils/entries';
 import { formatOffsetAsClockTime, getCurrentOffsetMins } from '../../utils/time';
+import {
+  ADD_TIMELINE,
+  SHOW_PANEL,
+  ADD_ENTRY,
+  UPDATE_ENTRY,
+  DELETE_ENTRY,
+  HIDE_PANEL,
+} from '../../store/actionTypes';
 import './timeline.css';
 
 const SVGNS = 'http://www.w3.org/2000/svg';
@@ -60,7 +68,7 @@ export class Timeline extends TinyBase {
     const timeline = state.timelines[this.dimensionIndex];
     if (!Array.isArray(timeline)) {
       this.store.dispatch({
-        type: 'ADD_TIMELINE',
+        type: ADD_TIMELINE,
         payload: { dimensionIndex: this.dimensionIndex },
       });
     } else {
@@ -246,7 +254,7 @@ export class Timeline extends TinyBase {
 
     // open activity panel
     this.store.dispatch({
-      type: 'SHOW_PANEL',
+      type: SHOW_PANEL,
       payload: 'activity',
     });
   }
@@ -278,7 +286,7 @@ export class Timeline extends TinyBase {
     }
     // create entry
     this.store.dispatch({
-      type: 'ADD_ENTRY',
+      type: ADD_ENTRY,
       payload: {
         dimensionIndex,
         ...entry,
@@ -295,7 +303,7 @@ export class Timeline extends TinyBase {
     }
     const index = this.entries.findIndex((entry) => entry.id === this.selectedID);
     this.store.dispatch({
-      type: 'UPDATE_ENTRY',
+      type: UPDATE_ENTRY,
       payload: {
         id: this.selectedID,
         dimensionIndex,
@@ -313,11 +321,11 @@ export class Timeline extends TinyBase {
       return;
     }
     this.store.dispatch({
-      type: 'DELETE_ENTRY',
+      type: DELETE_ENTRY,
       payload: { dimensionIndex, id },
     });
     this.store.dispatch({
-      type: 'HIDE_PANEL',
+      type: HIDE_PANEL,
     });
     this.selectedID = undefined;
     this.detailsPanel.reset();
@@ -344,7 +352,7 @@ export class Timeline extends TinyBase {
       this.updateEntry(entry);
     }
     this.store.dispatch({
-      type: 'HIDE_PANEL',
+      type: HIDE_PANEL,
     });
     this.detailsPanel.reset();
     this.renderEntries();

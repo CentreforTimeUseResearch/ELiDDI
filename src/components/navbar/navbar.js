@@ -1,6 +1,7 @@
 import '../timelinePicker/timelinePicker.js';
 import '../contextualHelp/contextualHelp.js';
 import { TinyBase } from '../base';
+import { RESET_ONBOARDING } from '../../store/actionTypes';
 import './navbar.css';
 
 export class Navbar extends TinyBase {
@@ -25,7 +26,7 @@ export class Navbar extends TinyBase {
         offScreenMenu.classList.toggle('active');
       });
       this.querySelector('.instructions-button')?.addEventListener('click', () => {
-        this.store.dispatch({ type: 'RESET_ONBOARDING' });
+        this.store.dispatch({ type: RESET_ONBOARDING });
         hamMenu.classList.toggle('active');
         offScreenMenu.classList.toggle('active');
       });

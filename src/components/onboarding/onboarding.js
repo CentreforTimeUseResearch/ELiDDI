@@ -1,4 +1,11 @@
 import { TinyBase } from '../base';
+import {
+  DISMISS_ONBOARDING,
+  PREVIOUS_INSTRUCTION,
+  NEXT_INSTRUCTION,
+  SHOW_PANEL,
+  HIDE_PANEL,
+} from '../../store/actionTypes';
 import './onboarding.css';
 
 export class Onboarding extends TinyBase {
@@ -27,7 +34,7 @@ export class Onboarding extends TinyBase {
       this.next = this.querySelector('[data-next]');
       this.next?.addEventListener('click', () => {
         this.store.dispatch({
-          type: 'DISMISS_ONBOARDING',
+          type: DISMISS_ONBOARDING,
         });
       });
     }
@@ -36,26 +43,26 @@ export class Onboarding extends TinyBase {
 
   onBackClick() {
     this.store.dispatch({
-      type: 'PREVIOUS_INSTRUCTION',
+      type: PREVIOUS_INSTRUCTION,
     });
   }
 
   onNextClick() {
     this.store.dispatch({
-      type: 'NEXT_INSTRUCTION',
+      type: NEXT_INSTRUCTION,
     });
   }
 
   onOpenPanel(payload) {
     this.store.dispatch({
-      type: 'SHOW_PANEL',
+      type: SHOW_PANEL,
       payload,
     });
   }
 
   onClosePanel() {
     this.store.dispatch({
-      type: 'HIDE_PANEL',
+      type: HIDE_PANEL,
     });
   }
 

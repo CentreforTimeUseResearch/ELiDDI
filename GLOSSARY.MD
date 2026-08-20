@@ -6,7 +6,7 @@ The ubiquitous language for ELiDDI's diary domain. Use these terms consistently 
 
 ### Activity
 
-A single thing a Respondent can record against a Dimension for a span of time (e.g. "sleeping", "washing, dressing"). Defined in `config/activities.json` under a Category, with a `name` and `color`, and optionally further broken down into Child items. An Activity is a *choice*, not a record of it happening — the record is an Entry.
+A single thing a Respondent can record against a Dimension for a span of time (e.g. "sleeping", "washing, dressing"). Defined in `config/activities.json` under a Category, with a `name` and `color`, and optionally further broken down into Child items. An Activity is a _choice_, not a record of it happening — the record is an Entry.
 
 ### Category
 
@@ -28,27 +28,23 @@ A Respondent's complete record for one day: every Timeline (one per Dimension) t
 
 Whether a Diary is still in progress or has been completed. Tracked in application state (`status`), reset per diary and marked complete once the Respondent finishes.
 
-### Dimension *(the raw config field is still literally named `timeline` — see note below)*
+### Dimension _(the raw config field is still literally named `timeline` — see note below)_
 
 One of the fixed axes a Respondent records for every span of time in the day — Primary activity, Secondary activity, Location, Who, Device, Enjoyment, in that order. Defined in `config/activities.json`'s `timeline` array; each Dimension has a `name`, a Mode, and its own Category → Activity hierarchy.
 
-Deliberately *not* called "Column": the mobile view currently renders each Dimension as a vertical column, but planned desktop work will lay them out horizontally instead — "Column" would describe today's layout, not the concept, and would go stale the moment a horizontal desktop view ships. "Dimension" describes what it *is* (an axis you classify a span of time along) independent of how it's drawn.
+Deliberately _not_ called "Column": the mobile view currently renders each Dimension as a vertical column, but planned desktop work will lay them out horizontally instead — "Column" would describe today's layout, not the concept, and would go stale the moment a horizontal desktop view ships. "Dimension" describes what it _is_ (an axis you classify a span of time along) independent of how it's drawn.
 
 > ✅ **Naming clash resolved in code.** This entry used to flag a real clash — "timeline" meant both this concept and the per-Respondent record below. All in-code identifiers now consistently say "Dimension" for this sense: `currentDimensionIndex`, the `SWITCH_DIMENSION`/`RESET_DIMENSION_INDEX` actions, the `dimensionIndex` payload field on `ADD_ENTRY`/`UPDATE_ENTRY`, and the `dimensionindex` HTML attribute threaded through `<details-panel>`/`<el-accordion>`. "Timeline" (`state.timelines`, the `timelines`/`timeline` reducers, `<el-timeline>`, `<el-timeline-stack>`) is reserved exclusively for the per-Respondent record sense — see **Timeline** below.
 >
 > One deliberate exception remains: `config/activities.json`'s top-level `timeline` array, and the `GLOBALS.DATA.timeline` reads of it, still use the old name. That's not a leftover naming smell — it's a data contract shared with the upstream O-TUD project (see `json_schema.md`), and renaming the JSON field would break every existing `activities.json`. When you see `GLOBALS.DATA.timeline[dimensionIndex]` in code, read it as "the Dimension config at this index," not as a Timeline.
 
-### Start time
+### Duration
 
-The clock time (or, internally, the offset in minutes from the Day boundary) at which an Entry begins.
+The length of an Entry, derived by subtracting its Start time from its End time — not stored independently, always computed from the two.
 
 ### End time
 
 The clock time (or, internally, the offset in minutes from the Day boundary) at which an Entry stops. Paired with Start time to define the span an Entry covers.
-
-### Duration
-
-The length of an Entry, derived by subtracting its Start time from its End time — not stored independently, always computed from the two.
 
 ### Entry
 
@@ -62,8 +58,12 @@ A per-Dimension setting — `single-choice` or `multiple-choice` — controlling
 
 The person filling in the diary. Not yet named explicitly anywhere in the code, but every other term above is defined from their point of view — they're the implicit actor behind every Entry.
 
+### Start time
+
+The clock time (or, internally, the offset in minutes from the Day boundary) at which an Entry begins.
+
 ### Timeline
 
 One Respondent's filled-in record of Entries for a single Dimension, for one Diary — e.g. "the Location timeline" is everywhere they've recorded where they were, across the whole day. Rendered by the `<el-timeline>` component, one per Dimension, and held in application state as `state.timelines[dimensionIndex]`.
 
-> See the note under **Dimension** — "timeline" no longer needs disambiguating in code: it consistently means *this* sense now, the per-Respondent record, everywhere except the raw `config/activities.json` field (which was intentionally left alone as a shared data contract).
+> See the note under **Dimension** — "timeline" no longer needs disambiguating in code: it consistently means _this_ sense now, the per-Respondent record, everywhere except the raw `config/activities.json` field (which was intentionally left alone as a shared data contract).

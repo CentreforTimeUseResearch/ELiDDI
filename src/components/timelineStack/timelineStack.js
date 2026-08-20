@@ -1,5 +1,6 @@
 import { TinyBase } from '../base';
 import { Timeline } from '../timeline/timeline';
+import { SWITCH_DIMENSION } from '../../store/actionTypes';
 
 import './timelineStack.css';
 
@@ -45,7 +46,7 @@ export class TimelineStack extends TinyBase {
       return;
     }
     this.store.dispatch({
-      type: 'SWITCH_DIMENSION',
+      type: SWITCH_DIMENSION,
       payload: index,
     });
   }

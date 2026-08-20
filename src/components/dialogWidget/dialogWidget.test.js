@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { DialogWidget } from './dialogWidget';
+import { DISMISS_ONBOARDING, RESET_ONBOARDING } from '../../store/actionTypes';
 
 describe('DialogWidget', () => {
   beforeEach(() => {
@@ -18,10 +19,10 @@ describe('DialogWidget', () => {
 
     expect(dialog.hasAttribute('open')).toBe(true);
 
-    el.store.dispatch({ type: 'DISMISS_ONBOARDING' });
+    el.store.dispatch({ type: DISMISS_ONBOARDING });
     expect(dialog.hasAttribute('open')).toBe(false);
 
-    el.store.dispatch({ type: 'RESET_ONBOARDING' });
+    el.store.dispatch({ type: RESET_ONBOARDING });
     expect(dialog.hasAttribute('open')).toBe(true);
   });
 });

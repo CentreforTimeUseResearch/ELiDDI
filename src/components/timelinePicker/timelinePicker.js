@@ -1,4 +1,5 @@
 import { TinyBase } from '../base';
+import { HIDE_PANEL, SWITCH_DIMENSION } from '../../store/actionTypes';
 import './timelinePicker.css';
 
 export class TimelinePicker extends TinyBase {
@@ -49,11 +50,11 @@ export class TimelinePicker extends TinyBase {
     }
 
     this.store.dispatch({
-      type: 'HIDE_PANEL',
+      type: HIDE_PANEL,
     });
 
     this.store.dispatch({
-      type: 'SWITCH_DIMENSION',
+      type: SWITCH_DIMENSION,
       payload,
     });
   }

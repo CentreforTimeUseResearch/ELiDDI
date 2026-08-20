@@ -16,12 +16,11 @@ export class DynamicTimelineUI extends TinyBase {
   render() {
     // this component is a work in progress
     this.innerHTML = `
-            <nav-bar></nav-bar>
+            <el-nav-bar></el-nav-bar>
             <el-timeline-stack></el-timeline-stack>
             <el-dialog id="dialog"></el-dialog>
             `;
   }
 }
 
-
-customElements.define('dynamic-timeline', DynamicTimelineUI);
+customElements.define('el-dynamic-timeline', DynamicTimelineUI);

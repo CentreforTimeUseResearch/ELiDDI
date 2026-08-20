@@ -50,7 +50,7 @@ export class DetailsPanel extends TinyBase {
   getChildElementReferences() {
     // this.popoverElement = document.getElementById('popover');
     this.timelinePickerPanel = this.querySelector('el-time-picker-panel');
-    this.activityPicker = this.querySelector('el-activityPicker');
+    this.activityPicker = this.querySelector('el-activity-picker');
     this.saveButton = this.querySelector('.btn-save-btn');
     this.deleteButton = this.querySelector('.btn-delete-btn');
     this.errorDisplay = this.querySelector('.entry-error');
@@ -311,12 +311,12 @@ export class DetailsPanel extends TinyBase {
                 </button>
             </div>
             <div class="details-panel-content">
-              <el-activityPicker
-                id="${this[DIMENSION_INDEX]}"
-                instruction="${this[INSTRUCTION]}" 
-                heading="${this[HEADING]}" 
+              <el-activity-picker
+                dimensionindex="${this[DIMENSION_INDEX]}"
+                instruction="${this[INSTRUCTION]}"
+                heading="${this[HEADING]}"
                 ${this.setProps({ onPopOverShowing: (isPopoverShowing) => this.onPopOverShowing(isPopoverShowing), onFocusCallback: () => this.onFocusCallback(), onSetActivityOnSelectedEntry: (activity) => this.onSetActivityOnSelectedEntry(activity), onSetActivitiesOnSelectedEntry: (activities) => this.onSetActivitiesOnSelectedEntry(activities) })}
-              ></el-activityPicker>
+              ></el-activity-picker>
               <el-time-picker-panel ${this.setProps({ onTimeSet: (setTimeProps) => this.onSetOffsetMins(setTimeProps), getContinueToTarget: (startTimeInMinutes) => this.getContinueToTarget(startTimeInMinutes) })} day-boundary="${this.dayBoundaryInMinutes}"></el-time-picker-panel>
               <div class="entry-error" aria-live="polite" hidden></div>
               <button class="btn btn-save-btn opaque">Save</button>
@@ -326,4 +326,4 @@ export class DetailsPanel extends TinyBase {
   }
 }
 
-customElements.define('details-panel', DetailsPanel);
+customElements.define('el-details-panel', DetailsPanel);

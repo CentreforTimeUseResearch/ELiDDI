@@ -6,10 +6,10 @@ import './activityPicker.css';
 
 const HEADING = 'heading';
 const INSTRUCTION = 'instruction';
-const ID = 'id';
+const DIMENSION_INDEX = 'dimensionindex';
 
 export class ActivityPicker extends TinyBase {
-  static observedAttributes = [HEADING, INSTRUCTION, ID];
+  static observedAttributes = [HEADING, INSTRUCTION, DIMENSION_INDEX];
 
   store = super.getStore();
   content;
@@ -32,10 +32,11 @@ export class ActivityPicker extends TinyBase {
   }
 
   extractActivities() {
-    // read the attribute directly (not this[ID]) since attributeChangedCallback
-    // hasn't run yet at construction time; this picker's own dimension is fixed
-    // by its id attribute, not the globally-active currentDimensionIndex
-    const dimensionIndex = Number(this.getAttribute(ID));
+    // read the attribute directly (not this[DIMENSION_INDEX]) since
+    // attributeChangedCallback hasn't run yet at construction time; this
+    // picker's own dimension is fixed by its dimensionindex attribute, not
+    // the globally-active currentDimensionIndex
+    const dimensionIndex = Number(this.getAttribute(DIMENSION_INDEX));
     this.content = GLOBALS.DATA.timeline[dimensionIndex].categories;
     this.mode = GLOBALS.DATA.timeline[dimensionIndex].mode;
     this.allowFreeText = GLOBALS.DATA.timeline[dimensionIndex].allow_free_text === true;
@@ -174,7 +175,7 @@ export class ActivityPicker extends TinyBase {
 
   render() {
     this.innerHTML = `
-        <label class="el-label el-label--l" for="activity-input_${this[ID]}">
+        <label class="el-label el-label--l" for="activity-input_${this[DIMENSION_INDEX]}">
           ${this[HEADING]}
         </label>
         <div class="combobox-wrapper">
@@ -186,12 +187,12 @@ export class ActivityPicker extends TinyBase {
                     aria-expanded="false"
                     aria-autocomplete="list"
                     aria-controls="ex1-grid"
-                    id="activity-input_${this[ID]}"
+                    id="activity-input_${this[DIMENSION_INDEX]}"
                     value=""
                 >
                  <span class="instruction"> ${this[INSTRUCTION]} </span>
                 <div id="activity-picker-popover" popover="manual" class="activity-picker-popover">
-                  <el-accordion dimensionindex=${this[ID]} ${this.setProps({ content: this.content, activitySelect: this.onActivitySelect, activityToggle: (activity, isSelected) => this.onActivityToggle(activity, isSelected), ...this.accordionProps() })}></el-accordion>
+                  <el-accordion dimensionindex=${this[DIMENSION_INDEX]} ${this.setProps({ content: this.content, activitySelect: this.onActivitySelect, activityToggle: (activity, isSelected) => this.onActivityToggle(activity, isSelected), ...this.accordionProps() })}></el-accordion>
                   ${this.doneButtonHtml()}
                 </div>
             </div>
@@ -202,4 +203,4 @@ export class ActivityPicker extends TinyBase {
   }
 }
 
-customElements.define('el-activitypicker', ActivityPicker);
+customElements.define('el-activity-picker', ActivityPicker);

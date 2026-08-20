@@ -9,8 +9,8 @@ if (!customElements.get('test-harness-detailspanel')) {
 
 describe('DetailsPanel', () => {
   beforeEach(() => {
-    if (!customElements.get('details-panel')) {
-      customElements.define('details-panel', DetailsPanel);
+    if (!customElements.get('el-details-panel')) {
+      customElements.define('el-details-panel', DetailsPanel);
     }
     document.body.innerHTML = '';
   });
@@ -26,7 +26,7 @@ describe('DetailsPanel', () => {
       true
     );
 
-    const el = document.createElement('details-panel');
+    const el = document.createElement('el-details-panel');
     el.setAttribute('key', key);
     el.setAttribute('dimensionindex', '0');
     el.setAttribute('heading', 'Primary activity');
@@ -37,7 +37,7 @@ describe('DetailsPanel', () => {
 
   it('renders its activity picker and time picker panel', () => {
     const el = createPanel();
-    expect(el.querySelector('el-activitypicker')).not.toBeNull();
+    expect(el.querySelector('el-activity-picker')).not.toBeNull();
     expect(el.querySelector('el-time-picker-panel')).not.toBeNull();
   });
 

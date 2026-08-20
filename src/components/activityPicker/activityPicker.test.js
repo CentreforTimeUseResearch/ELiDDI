@@ -4,19 +4,15 @@ import { KEY_CODE } from './keyboardGridNavigation';
 
 describe('ActivityPicker', () => {
   beforeEach(() => {
-    if (!customElements.get('el-activitypicker')) {
-      customElements.define('el-activitypicker', ActivityPicker);
+    if (!customElements.get('el-activity-picker')) {
+      customElements.define('el-activity-picker', ActivityPicker);
     }
     document.body.innerHTML = '';
   });
 
   function createPicker() {
-    const el = document.createElement('el-activitypicker');
-    // render() reads the dimension index via this[ID] (ID = 'id'), which
-    // resolves to the native DOM `id` property - in real usage this is
-    // always set because the markup is parsed with an id="..." attribute
-    // already present (see DetailsPanel's render()), so match that here
-    el.setAttribute('id', '0');
+    const el = document.createElement('el-activity-picker');
+    el.setAttribute('dimensionindex', '0');
     document.body.appendChild(el);
     return el;
   }

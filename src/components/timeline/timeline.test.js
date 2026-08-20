@@ -1,5 +1,12 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Timeline } from './timeline';
+// Timeline only references '<el-details-panel>' as a string in its render
+// template - it never imports the class, so DetailsPanel is only ever
+// registered as a customElements side effect of *something* importing it.
+// Pull that in explicitly so the panelActions contract can actually wire up.
+import '../detailsPanel/detailsPanel';
+import { appStore } from '../../store/appStore';
+import { ADD_TIMELINE } from '../../store/actionTypes';
 
 // renderEntriesInto is the renderer shared by renderEntries() and
 // renderShadowDimension() (previously ~45 lines duplicated between them,
@@ -96,5 +103,102 @@ describe('Timeline.renderEntriesInto', () => {
     });
 
     expect(layer.querySelector('.event-label').textContent).toBe('Cooking, Childcare');
+  });
+});
+
+// regression coverage for the Timeline -> DetailsPanel props-based contract:
+// Timeline used to hold a raw `this.detailsPanel` DOM reference and call
+// setStartTime/setEndTime/setActivity/setEntryId/reset/showError on it
+// directly - any rename on DetailsPanel's side would silently break
+// Timeline. It now only knows about the four functions DetailsPanel hands
+// back via the registerPanelActions callback prop.
+describe('Timeline panelActions contract', () => {
+  beforeEach(() => {
+    if (!customElements.get('el-timeline')) {
+      customElements.define('el-timeline', Timeline);
+    }
+    if (!document.getElementById('svg-timeline')) {
+      const template = document.createElement('template');
+      template.id = 'svg-timeline';
+      template.innerHTML = `
+        <svg>
+          <g id="timeline-shadow"></g>
+          <rect id="future-overlay"></rect>
+          <g id="events"></g>
+        </svg>
+      `;
+      document.head.appendChild(template);
+    }
+    document.body.innerHTML = '';
+
+    // the timelines reducer slices/pads by index, so it needs every slot
+    // touched at least once - the real app does this for free because
+    // TimelineStack mounts one <el-timeline> per dimension, in order, all
+    // at once; seed the same shape here rather than depending on which
+    // single dimension index a given test happens to mount
+    for (let dimensionIndex = 0; dimensionIndex < 6; dimensionIndex++) {
+      if (!Array.isArray(appStore.getState().timelines[dimensionIndex])) {
+        appStore.dispatch({ type: ADD_TIMELINE, payload: { dimensionIndex } });
+      }
+    }
+  });
+
+  function createTimeline(dimensionIndex) {
+    const el = document.createElement('el-timeline');
+    el.setAttribute('index', String(dimensionIndex));
+    document.body.appendChild(el);
+    return el;
+  }
+
+  it('does not hold a direct reference to the details panel instance', () => {
+    const el = createTimeline(2); // Location
+    expect(el.detailsPanel).toBeUndefined();
+    expect(el.panelActions).toBeDefined();
+  });
+
+  it('calls panelActions.openNewEntry (not a direct method call) when clicking empty space', () => {
+    const el = createTimeline(4); // Device
+    const openNewEntry = vi.fn();
+    el.panelActions.openNewEntry = openNewEntry;
+
+    el.onTimelineClick({ target: { dataset: {} }, offsetY: 40 });
+
+    expect(openNewEntry).toHaveBeenCalledWith(20); // calculateTheTimeSlotClicked(40) -> 20
+  });
+
+  it('calls panelActions.openEntry with the clicked entry when clicking an existing block', () => {
+    const el = createTimeline(1); // Secondary activity
+    const entry = { id: 7, startOffsetMins: 0, endOffsetMins: 30, activity: 'Reading' };
+    el.entries = [entry];
+    const openEntry = vi.fn();
+    el.panelActions.openEntry = openEntry;
+
+    el.onTimelineClick({ target: { dataset: { id: '7' } } });
+
+    expect(openEntry).toHaveBeenCalledWith(entry);
+  });
+
+  it('calls panelActions.close after saving successfully', () => {
+    const el = createTimeline(5); // Enjoyment (single-choice)
+    const close = vi.fn();
+    el.panelActions.close = close;
+
+    el.saveEntry({ startOffsetMins: 0, endOffsetMins: 30, activity: 'Reading' });
+
+    expect(close).toHaveBeenCalledOnce();
+  });
+
+  it('calls panelActions.reportSaveConflict instead of close when the new entry overlaps an existing one', () => {
+    const el = createTimeline(0); // Primary activity (single-choice)
+    el.entries = [{ id: 1, startOffsetMins: 0, endOffsetMins: 60, activity: 'Sleep' }];
+    const close = vi.fn();
+    const reportSaveConflict = vi.fn();
+    el.panelActions.close = close;
+    el.panelActions.reportSaveConflict = reportSaveConflict;
+
+    el.saveEntry({ startOffsetMins: 30, endOffsetMins: 90, activity: 'Work' });
+
+    expect(reportSaveConflict).toHaveBeenCalledOnce();
+    expect(close).not.toHaveBeenCalled();
   });
 });

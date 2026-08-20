@@ -2,7 +2,6 @@ import { TinyBase } from '../base';
 import './timelinePicker.css';
 
 export class TimelinePicker extends TinyBase {
-
   dimensionNames;
   timelinePicker;
   store = super.getStore();
@@ -11,7 +10,7 @@ export class TimelinePicker extends TinyBase {
   constructor() {
     super();
     this.parseDimensionNamesFromData();
-    this.store.subscribe(() => this.update());
+    this.registerCleanup(this.store.subscribe(() => this.update()));
   }
 
   parseDimensionNamesFromData() {
@@ -28,40 +27,35 @@ export class TimelinePicker extends TinyBase {
   }
 
   assignEventHandlers() {
-
     this.timelinePicker = this.querySelector('[data-timeline-picker]');
     this.timelinePicker?.addEventListener('change', (e) => {
       e.stopPropagation();
-      this.switchDimension(Number(e.target.value))
+      this.switchDimension(Number(e.target.value));
     });
-
-
   }
 
   update() {
     const { currentDimensionIndex } = this.store.getState();
     if (this.currentDimensionIndex !== currentDimensionIndex) {
-
       this.currentDimensionIndex = currentDimensionIndex;
       this.render();
     }
   }
 
   switchDimension(payload) {
-    if (typeof payload !== "number") {
+    if (typeof payload !== 'number') {
       console.error('Problem with timeline picker value');
       return;
     }
 
     this.store.dispatch({
-      type: 'HIDE_PANEL'
-    })
+      type: 'HIDE_PANEL',
+    });
 
     this.store.dispatch({
       type: 'SWITCH_DIMENSION',
       payload,
     });
-
   }
 
   createOptions() {
@@ -70,7 +64,10 @@ export class TimelinePicker extends TinyBase {
       return;
     }
     return this.dimensionNames
-      .map((dimensionName, index) => `<option value=${index} ${index === this.currentDimensionIndex ? 'selected' : ''}>${dimensionName}</option>`)
+      .map(
+        (dimensionName, index) =>
+          `<option value=${index} ${index === this.currentDimensionIndex ? 'selected' : ''}>${dimensionName}</option>`
+      )
       .join('');
   }
 

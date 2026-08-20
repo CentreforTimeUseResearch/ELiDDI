@@ -4,8 +4,8 @@ import { findOverlappingEntry, findNextEntry } from '../../utils/entries';
 import { formatOffsetAsClockTime, getCurrentOffsetMins } from '../../utils/time';
 import './timeline.css';
 
-const SVGNS = "http://www.w3.org/2000/svg";
-const XHTMLNS = "http://www.w3.org/1999/xhtml";
+const SVGNS = 'http://www.w3.org/2000/svg';
+const XHTMLNS = 'http://www.w3.org/1999/xhtml';
 
 const INDEX = 'index';
 const PX_PER_MINUTE = 2;
@@ -43,45 +43,40 @@ export class Timeline extends TinyBase {
   entries = [];
   detailsPanel;
   selectedID;
-  shadowIndex = 0;  // we want to render primary activities as shadow dimension on other dimensions
+  shadowIndex = 0; // we want to render primary activities as shadow dimension on other dimensions
   entriesLayer;
   shadowEntriesLayer;
   shadowDimensionEntries;
   futureOverlayElement;
-  futureOverlayIntervalId;
 
   constructor() {
     super();
-    this.fragment = document.getElementById("svg-timeline").content.cloneNode(true);
+    this.fragment = document.getElementById('svg-timeline').content.cloneNode(true);
   }
 
   connectedCallback() {
-    const state = this.store.getState()
+    const state = this.store.getState();
     this.dimensionIndex = Number(this.getAttribute(INDEX));
-    const timeline = state.timelines[this.dimensionIndex]
+    const timeline = state.timelines[this.dimensionIndex];
     if (!Array.isArray(timeline)) {
       this.store.dispatch({
-        type: "ADD_TIMELINE",
-        payload: { dimensionIndex: this.dimensionIndex }
-      })
+        type: 'ADD_TIMELINE',
+        payload: { dimensionIndex: this.dimensionIndex },
+      });
     } else {
-      this.entries = timeline
+      this.entries = timeline;
     }
     super.connectedCallback();
-    this.store.subscribe(() => this.updateState());
+    this.registerCleanup(this.store.subscribe(() => this.updateState()));
     this.getChildElementReferences();
     this.updateFutureOverlay();
-    this.futureOverlayIntervalId = setInterval(this.updateFutureOverlay.bind(this), 30000);
+    const futureOverlayIntervalId = setInterval(this.updateFutureOverlay.bind(this), 30000);
+    this.registerCleanup(() => clearInterval(futureOverlayIntervalId));
     this.renderEntries();
     if (this.dimensionIndex !== this.shadowIndex) {
       this.renderShadowDimension();
     }
     this.assignEventHandlers();
-  }
-
-  disconnectedCallback() {
-    super.disconnectedCallback();
-    clearInterval(this.futureOverlayIntervalId);
   }
 
   getChildElementReferences() {
@@ -94,7 +89,9 @@ export class Timeline extends TinyBase {
   }
 
   updateFutureOverlay() {
-    if (!this.futureOverlayElement) { return; }
+    if (!this.futureOverlayElement) {
+      return;
+    }
     const nowOffsetPx = getCurrentOffsetMins() * PX_PER_MINUTE;
     const totalHeightPx = MINUTES_PER_DAY * PX_PER_MINUTE;
     this.futureOverlayElement.setAttributeNS(null, 'y', nowOffsetPx);
@@ -102,11 +99,12 @@ export class Timeline extends TinyBase {
   }
 
   updateState() {
-    const state = this.store.getState()
-    const timeline = state.timelines[this.dimensionIndex]
-    const currentDimensionIndex = state.currentDimensionIndex
+    const state = this.store.getState();
+    const timeline = state.timelines[this.dimensionIndex];
+    const currentDimensionIndex = state.currentDimensionIndex;
     this.entries = timeline;
-    if (this.dimensionIndex !== this.shadowIndex && currentDimensionIndex === this.dimensionIndex) { // this is not primary activity timeline and we're currently viewing this timeline
+    if (this.dimensionIndex !== this.shadowIndex && currentDimensionIndex === this.dimensionIndex) {
+      // this is not primary activity timeline and we're currently viewing this timeline
       this.renderShadowDimension(); // render primary activity entries as shadow timeline
     }
   }
@@ -117,18 +115,18 @@ export class Timeline extends TinyBase {
     //   <rect class="event-block" x="105" y="800" width="230" height="450" fill="#9aa0c3" fill-opacity="0.45" />
     //   <text x="220" y="1025" text-anchor="middle" dominant-baseline="middle" font-size="13" fill="#3a3d4d">c/ch</text>
     // </g>
-    this.entriesLayer.innerHTML = "";
+    this.entriesLayer.innerHTML = '';
 
-    // at some point there are going to have to have their own event handling 
+    // at some point there are going to have to have their own event handling
     // and at that point it might be a good idea to shift them into their own class/object
     const dimensionData = GLOBALS.DATA.timeline[this.dimensionIndex];
 
-    this.entries.forEach(entry => {
+    this.entries.forEach((entry) => {
       const entryGroup = document.createElementNS(SVGNS, 'g');
       const rect = document.createElementNS(SVGNS, 'rect');
       const startOffsetPx = (entry.startOffsetMins || 0) * PX_PER_MINUTE;
       const endOffsetPx = (entry.endOffsetMins || 0) * PX_PER_MINUTE;
-      const height = endOffsetPx - startOffsetPx
+      const height = endOffsetPx - startOffsetPx;
       rect.setAttributeNS(null, 'x', '100');
       rect.setAttributeNS(null, 'y', startOffsetPx);
       rect.setAttributeNS(null, 'height', height > 0 ? height : 20);
@@ -150,10 +148,8 @@ export class Timeline extends TinyBase {
       });
       entryGroup.appendChild(labelForeignObject);
 
-      this.entriesLayer.appendChild(entryGroup)
-    })
-
-
+      this.entriesLayer.appendChild(entryGroup);
+    });
   }
 
   renderShadowDimension() {
@@ -172,16 +168,14 @@ export class Timeline extends TinyBase {
       return; // do not rerender if nothing changed
     }
 
-    this.shadowEntriesLayer.innerHTML = "";
+    this.shadowEntriesLayer.innerHTML = '';
 
-
-
-    this.shadowDimensionEntries.forEach(entry => {
+    this.shadowDimensionEntries.forEach((entry) => {
       const entryGroup = document.createElementNS(SVGNS, 'g');
       const rect = document.createElementNS(SVGNS, 'rect');
       const startOffsetPx = (entry.startOffsetMins || 0) * PX_PER_MINUTE;
       const endOffsetPx = (entry.endOffsetMins || 0) * PX_PER_MINUTE;
-      const height = endOffsetPx - startOffsetPx
+      const height = endOffsetPx - startOffsetPx;
       rect.setAttributeNS(null, 'x', '100');
       rect.setAttributeNS(null, 'y', startOffsetPx);
       rect.setAttributeNS(null, 'height', height > 0 ? height : 20);
@@ -203,8 +197,8 @@ export class Timeline extends TinyBase {
       });
       entryGroup.appendChild(labelForeignObject);
 
-      this.shadowEntriesLayer.appendChild(entryGroup)
-    })
+      this.shadowEntriesLayer.appendChild(entryGroup);
+    });
   }
 
   calculateTheTimeSlotClicked(y) {
@@ -215,23 +209,25 @@ export class Timeline extends TinyBase {
   assignEventHandlers() {
     if (!this.ready) {
       // are there times when we don't want the timeline to be clickable?
-      this.timeLineElement?.addEventListener('click', (e) => { this.onTimelineClick(e) })
+      this.timeLineElement?.addEventListener('click', (e) => {
+        this.onTimelineClick(e);
+      });
       this.ready = true;
     }
   }
 
   onTimelineClick(e) {
-    const element_id = e.target?.dataset?.id
+    const element_id = e.target?.dataset?.id;
     if (element_id !== undefined) {
-      // set selected 
-      const entry_id = Number(e.target?.dataset?.id)
+      // set selected
+      const entry_id = Number(e.target?.dataset?.id);
       if (typeof entry_id !== 'number') {
-        console.error('Problem with identifying entry from click', e.target)
+        console.error('Problem with identifying entry from click', e.target);
         return;
       }
       this.selectedID = entry_id;
       // fetch the
-      const entry = this.entries.find((entry) => entry.id === entry_id)
+      const entry = this.entries.find((entry) => entry.id === entry_id);
       // set up the panel
       this.detailsPanel.setStartTime(entry.startOffsetMins);
       this.detailsPanel.setEndTime(entry.endOffsetMins);
@@ -251,8 +247,8 @@ export class Timeline extends TinyBase {
     // open activity panel
     this.store.dispatch({
       type: 'SHOW_PANEL',
-      payload: 'activity'
-    })
+      payload: 'activity',
+    });
   }
 
   get isSingleChoiceDimension() {
@@ -277,37 +273,37 @@ export class Timeline extends TinyBase {
     const id = this.getNextEntryId();
     const dimensionIndex = this.dimensionIndex;
     if (typeof dimensionIndex !== 'number') {
-      console.error('Problem with identifying dimension index', e.target)
+      console.error('Problem with identifying dimension index', e.target);
       return;
     }
     // create entry
     this.store.dispatch({
-      type: "ADD_ENTRY",
+      type: 'ADD_ENTRY',
       payload: {
         dimensionIndex,
         ...entry,
-        id
-      }
-    })
+        id,
+      },
+    });
   }
 
   updateEntry(entry) {
     const dimensionIndex = this.dimensionIndex;
     if (typeof dimensionIndex !== 'number') {
-      console.error('Problem with identifying dimension index', e.target)
+      console.error('Problem with identifying dimension index', e.target);
       return;
     }
     const index = this.entries.findIndex((entry) => entry.id === this.selectedID);
     this.store.dispatch({
-      type: "UPDATE_ENTRY",
+      type: 'UPDATE_ENTRY',
       payload: {
         id: this.selectedID,
         dimensionIndex,
         index,
-        ...entry
-      }
-    })
-    this.selectedID = undefined
+        ...entry,
+      },
+    });
+    this.selectedID = undefined;
   }
 
   deleteEntry(id) {
@@ -318,15 +314,14 @@ export class Timeline extends TinyBase {
     }
     this.store.dispatch({
       type: 'DELETE_ENTRY',
-      payload: { dimensionIndex, id }
-    })
+      payload: { dimensionIndex, id },
+    });
     this.store.dispatch({
-      type: 'HIDE_PANEL'
-    })
+      type: 'HIDE_PANEL',
+    });
     this.selectedID = undefined;
     this.detailsPanel.reset();
     this.renderEntries();
-
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
@@ -344,13 +339,13 @@ export class Timeline extends TinyBase {
       }
     }
     if (this.selectedID === undefined) {
-      this.createEntry(entry)
+      this.createEntry(entry);
     } else {
       this.updateEntry(entry);
     }
     this.store.dispatch({
-      type: 'HIDE_PANEL'
-    })
+      type: 'HIDE_PANEL',
+    });
     this.detailsPanel.reset();
     this.renderEntries();
   }
@@ -362,7 +357,7 @@ export class Timeline extends TinyBase {
       dimensionindex=${this[INDEX]}
       heading="${GLOBALS.DATA.timeline[this[INDEX]]?.description}"
       instruction="${GLOBALS.DATA.timeline[this[INDEX]]?.instruction}"
-    ></details-panel>`
+    ></details-panel>`;
   }
 }
 

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { TimePicker } from './timePicker';
 
 describe('TimePicker', () => {
@@ -39,5 +39,18 @@ describe('TimePicker', () => {
     input.dispatchEvent(new Event('blur'));
     expect(input.getAttribute('aria-invalid')).toBe('false');
     expect(el.querySelector('.error-text').hasAttribute('hidden')).toBe(true);
+  });
+
+  // regression test: a constrained picker's 30s "now" polling interval
+  // used to never be cleared, so every re-render (TimePickerPanel rebuilds
+  // these on most edits) left the previous interval running forever
+  it('clears its constrained-time polling interval on disconnect', () => {
+    const clearIntervalSpy = vi.spyOn(window, 'clearInterval');
+    const el = createPicker({ constrained: 'true' });
+
+    el.remove();
+
+    expect(clearIntervalSpy).toHaveBeenCalledTimes(1);
+    clearIntervalSpy.mockRestore();
   });
 });

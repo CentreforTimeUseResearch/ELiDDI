@@ -49,7 +49,7 @@ export class Timeline extends TinyBase {
   fragment;
   timeLineElement;
   entries = [];
-  detailsPanel;
+  panelActions;
   selectedID;
   shadowIndex = 0; // we want to render primary activities as shadow dimension on other dimensions
   entriesLayer;
@@ -92,8 +92,6 @@ export class Timeline extends TinyBase {
     this.entriesLayer = this.timeLineElement.querySelector('#events');
     this.shadowEntriesLayer = this.timeLineElement.querySelector('#timeline-shadow');
     this.futureOverlayElement = this.timeLineElement.querySelector('#future-overlay');
-    // get a handle on the details panel as you need to communicate with it
-    this.detailsPanel = this.querySelector('el-details-panel');
   }
 
   updateFutureOverlay() {
@@ -222,19 +220,15 @@ export class Timeline extends TinyBase {
       // fetch the
       const entry = this.entries.find((entry) => entry.id === entry_id);
       // set up the panel
-      this.detailsPanel.setStartTime(entry.startOffsetMins);
-      this.detailsPanel.setEndTime(entry.endOffsetMins);
-      this.detailsPanel.setActivity(entry.activity);
-      this.detailsPanel.setEntryId(entry_id);
+      this.panelActions.openEntry(entry);
       // we need to do soemthing different on save
     } else {
       // starting a brand new entry - clear out anything left over from a
       // previous edit that was opened but never saved/deleted
       this.selectedID = undefined;
-      this.detailsPanel.reset();
       const { offsetY } = e;
       const startOffsetMins = this.calculateTheTimeSlotClicked(offsetY >= 0 ? offsetY : 0);
-      this.detailsPanel.setStartTime(startOffsetMins);
+      this.panelActions.openNewEntry(startOffsetMins);
     }
 
     // open activity panel
@@ -313,7 +307,7 @@ export class Timeline extends TinyBase {
       type: HIDE_PANEL,
     });
     this.selectedID = undefined;
-    this.detailsPanel.reset();
+    this.panelActions.close();
     this.renderEntries();
   }
 
@@ -327,7 +321,7 @@ export class Timeline extends TinyBase {
     if (this.isSingleChoiceDimension) {
       const conflict = findOverlappingEntry(this.entries, entry, this.selectedID);
       if (conflict) {
-        this.detailsPanel.showError(this.formatOverlapMessage(conflict));
+        this.panelActions.reportSaveConflict(this.formatOverlapMessage(conflict));
         return;
       }
     }
@@ -339,14 +333,21 @@ export class Timeline extends TinyBase {
     this.store.dispatch({
       type: HIDE_PANEL,
     });
-    this.detailsPanel.reset();
+    this.panelActions.close();
     this.renderEntries();
   }
 
   render() {
     this.appendChild(this.fragment);
     this.innerHTML += `<el-details-panel
-      ${this.setProps({ saveEntry: (entry) => this.saveEntry(entry), deleteEntry: (id) => this.deleteEntry(id), findNextEntryAfter: (offsetMins) => this.findNextEntryAfter(offsetMins) })}
+      ${this.setProps({
+        saveEntry: (entry) => this.saveEntry(entry),
+        deleteEntry: (id) => this.deleteEntry(id),
+        findNextEntryAfter: (offsetMins) => this.findNextEntryAfter(offsetMins),
+        registerPanelActions: (actions) => {
+          this.panelActions = actions;
+        },
+      })}
       dimensionindex=${this[INDEX]}
       heading="${GLOBALS.DATA.timeline[this[INDEX]]?.description}"
       instruction="${GLOBALS.DATA.timeline[this[INDEX]]?.instruction}"

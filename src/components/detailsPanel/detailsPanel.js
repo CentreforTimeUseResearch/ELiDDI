@@ -36,6 +36,15 @@ export class DetailsPanel extends TinyBase {
     const { currentDimensionIndex } = this.store.getState();
     this.currentDimensionIndex = currentDimensionIndex;
     super.connectedCallback();
+    // hand Timeline a small, named set of things it's allowed to do to
+    // this panel, instead of it reaching in and calling our methods
+    // directly - keeps Timeline decoupled from our actual method names
+    this.props.registerPanelActions?.({
+      openEntry: (entry) => this.openEntry(entry),
+      openNewEntry: (startOffsetMins) => this.openNewEntry(startOffsetMins),
+      close: () => this.reset(),
+      reportSaveConflict: (message) => this.showError(message),
+    });
     this.registerCleanup(this.store.subscribe(this.onStoreUpdate.bind(this)));
     this.getChildElementReferences();
     this.assignEventHandlers();
@@ -105,6 +114,23 @@ export class DetailsPanel extends TinyBase {
   hidePanel() {
     this.open = false;
     this.classList.remove('active');
+  }
+
+  // part of the panelActions contract handed to Timeline via
+  // registerPanelActions - pre-fills the panel for editing an existing entry
+  openEntry(entry) {
+    this.setStartTime(entry.startOffsetMins);
+    this.setEndTime(entry.endOffsetMins);
+    this.setActivity(entry.activity);
+    this.setEntryId(entry.id);
+  }
+
+  // part of the panelActions contract handed to Timeline via
+  // registerPanelActions - clears any leftover state and pre-fills the
+  // start time for a brand new entry
+  openNewEntry(startOffsetMins) {
+    this.reset();
+    this.setStartTime(startOffsetMins);
   }
 
   setStartTime(starttime) {

@@ -1,19 +1,13 @@
 import { Accordion } from '../accordion/accordion';
 import { TinyBase } from '../base';
-import { getActivityDisplayName } from '../../utils/activities';
+import { escapeHtml, searchActivities, hasKnownActivity } from '../../utils/activitySearch';
+import { KeyboardGridNavigation } from './keyboardGridNavigation';
 import './activityPicker.css';
 
 const HEADING = 'heading';
 const INSTRUCTION = 'instruction';
 const ID = 'id';
 
-function escapeHtml(str) {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
 export class ActivityPicker extends TinyBase {
   static observedAttributes = [HEADING, INSTRUCTION, ID];
 
@@ -26,39 +20,15 @@ export class ActivityPicker extends TinyBase {
   grid;
   popoverElement;
 
-  options;
-  accordionDataKey;
-  onFocusCallback;
-
-  activeRowIndex = -1;
-  activeColIndex = 0;
-  rowsCount = 0;
-  colsCount = 0;
-  gridFocused = false;
-  shown = false;
-  selectionCol = 0;
-
-  keyCode = {
-    BACKSPACE: 8,
-    TAB: 9,
-    RETURN: 13,
-    SHIFT: 16,
-    ESC: 27,
-    SPACE: 32,
-    PAGE_UP: 33,
-    PAGE_DOWN: 34,
-    END: 35,
-    HOME: 36,
-    LEFT: 37,
-    UP: 38,
-    RIGHT: 39,
-    DOWN: 40,
-    DELETE: 46,
-  };
-
   constructor() {
     super();
     this.extractActivities();
+    this.gridNavigation = new KeyboardGridNavigation({
+      updateResults: () => this.updateResults(),
+      setActiveDescendant: (value) => this.input.setAttribute('aria-activedescendant', value),
+      clearInputDeferred: () => this.clearInputDeferred(),
+      hideResults: () => this.hideResults(),
+    });
   }
 
   extractActivities() {
@@ -88,22 +58,11 @@ export class ActivityPicker extends TinyBase {
     this.grid = this.querySelector('#ex1-grid');
     this.popoverElement = this.querySelector('#activity-picker-popover');
 
-    document.addEventListener('click', (event) => {
-      this.handleClickOutside();
-    });
+    document.addEventListener('click', () => this.handleClickOutside());
 
-    this.input.addEventListener('keyup', (event) => this.handleInputKeyUp(event));
-    this.input.addEventListener('keydown', (event) => this.handleInputKeyDown(event));
-    this.input.addEventListener('focus', (event) => this.handleInputFocus());
-
-    // this.grid.addEventListener('click', this.handleGridClick.bind(this));
-
-    // document.addEventListener('keydown', (event) => {
-    //   if (event.key === 'Escape') {
-    //     this.hidePopover();
-    //     this.input.blur();
-    //   }
-    // })
+    this.input.addEventListener('keyup', (evt) => this.gridNavigation.handleKeyUp(evt));
+    this.input.addEventListener('keydown', (evt) => this.gridNavigation.handleKeyDown(evt));
+    this.input.addEventListener('focus', () => this.handleInputFocus());
   }
 
   handleClickOutside() {
@@ -116,210 +75,29 @@ export class ActivityPicker extends TinyBase {
   }
 
   handleInputFocus() {
-    this.showPopover({ source: this.input });
+    this.showPopover();
     this.props.onFocusCallback?.();
-    // this.updateResults();
   }
 
   showPopover() {
-    // this.props.onPopOverShowing(true)
     this.popoverElement.showPopover({ source: this.input });
   }
 
   hidePopover() {
-    // this.props.onPopOverShowing(false)
     this.popoverElement.hidePopover();
   }
 
-  // handleBodyClick(evt) {
-  //     if (evt.target === this.input || this.grid.contains(evt.target)) {
-  //         return;
-  //     }
-  //     this.hideResults();
-  // }
-
-  handleInputKeyUp(evt) {
-    var key = evt.which || evt.keyCode;
-
-    switch (key) {
-      case this.keyCode.UP:
-      case this.keyCode.DOWN:
-      case this.keyCode.ESC:
-      case this.keyCode.RETURN:
-        evt.preventDefault();
-        return;
-      case this.keyCode.LEFT:
-      case this.keyCode.RIGHT:
-        if (this.gridFocused) {
-          evt.preventDefault();
-          return;
-        }
-        break;
-      default:
-        this.updateResults();
-    }
-  }
-
-  handleInputKeyDown(evt) {
-    const key = evt.which || evt.keyCode;
-    let activeRowIndex = this.activeRowIndex;
-    let activeColIndex = this.activeColIndex;
-
-    if (key === this.keyCode.ESC) {
-      if (this.gridFocused) {
-        this.gridFocused = false;
-        // this.removeFocusCell(this.activeRowIndex, this.activeColIndex);
-        this.activeRowIndex = -1;
-        this.activeColIndex = 0;
-        this.input.setAttribute('aria-activedescendant', '');
-      } else {
-        if (!this.shown) {
-          setTimeout(
-            function () {
-              // On Firefox, input does not get cleared here unless wrapped in
-              // a setTimeout
-              this.input.value = '';
-            }.bind(this),
-            1
-          );
-        }
-      }
-      if (this.shown) {
-        this.hideResults();
-      }
-      return;
-    }
-
-    if (this.rowsCount < 1) {
-      return;
-    }
-
-    switch (key) {
-      case this.keyCode.UP:
-        this.gridFocused = true;
-        // activeRowIndex = this.getRowIndex(key);
-        evt.preventDefault();
-        break;
-      case this.keyCode.DOWN:
-        this.gridFocused = true;
-        // activeRowIndex = this.getRowIndex(key);
-        evt.preventDefault();
-        break;
-      case this.keyCode.LEFT:
-        if (activeColIndex <= 0) {
-          activeColIndex = this.colsCount - 1;
-          // activeRowIndex = this.getRowIndex(key);
-        } else {
-          activeColIndex--;
-        }
-        if (this.gridFocused) {
-          evt.preventDefault();
-        }
-        break;
-      case this.keyCode.RIGHT:
-        if (activeColIndex === -1 || activeColIndex >= this.colsCount - 1) {
-          activeColIndex = 0;
-          // activeRowIndex = this.getRowIndex(key);
-        } else {
-          activeColIndex++;
-        }
-        if (this.gridFocused) {
-          evt.preventDefault();
-        }
-        break;
-      case this.keyCode.RETURN:
-        // activeItem = this.getItemAt(activeRowIndex, this.selectionCol);
-        // this.selectItem(activeItem);
-        this.gridFocused = false;
-        return;
-      case this.keyCode.TAB:
-        // this.hideResults();
-        return;
-      default:
-        return;
-    }
-
-    this.activeRowIndex = activeRowIndex;
-    this.activeColIndex = activeColIndex;
-
-    // grid-cell lookup/focus (getItemAt, focusCell) isn't implemented yet,
-    // so there's never an active item to point aria-activedescendant at
-    this.input.setAttribute('aria-activedescendant', '');
-  }
-
-  // handleGridClick(evt) {
-  //     if (!evt.target) {
-  //         return;
-  //     }
-
-  //     var row;
-  //     if (evt.target.getAttribute('role') === 'row') {
-  //         row = evt.target;
-  //     } else if (evt.target.getAttribute('role') === 'gridcell') {
-  //         row = evt.target.parentNode;
-  //     } else {
-  //         return;
-  //     }
-
-  //     var selectItem = row.querySelector('.result-cell');
-  //     this.selectItem(selectItem);
-  // }
-
-  set data(data) {
-    this.options = data;
-  }
-
-  set searchFunction(searchFn) {
-    this.searchFn = searchFn;
-  }
-
-  searchActivities(searchString) {
-    return this.content.map((category) => {
-      return {
-        name: category.name,
-        activities: category.activities.filter((activity) => {
-          return activity.name?.toLowerCase().includes(searchString.toLowerCase());
-        }),
-      };
-    });
+  // On Firefox the input does not get cleared unless wrapped in a
+  // setTimeout - invoked by the keyboard-navigation state machine on Escape
+  clearInputDeferred() {
+    setTimeout(() => {
+      this.input.value = '';
+    }, 1);
   }
 
   updateResults() {
     const searchString = this.input.value;
-    var results = this.searchActivities(searchString);
-
-    //   debugger;
-
-    //   this.hideResults();
-
-    //   if (!searchString) {
-    //     results = [];
-    //   }
-
-    //   var results = this.searchFn(searchString);
-
-    //   if (results.length) {
-    //     for (var row = 0; row < results.length; row++) {
-    //       var resultRow = document.createElement('div');
-    //       resultRow.className = 'result-row';
-    //       resultRow.setAttribute('role', 'row');
-    //       resultRow.setAttribute('id', 'result-row-' + row);
-    //       for (var col = 0; col < results[row].length; col++) {
-    //         var resultCell = document.createElement('div');
-    //         resultCell.className = 'result-cell';
-    //         resultCell.setAttribute('role', 'gridcell');
-    //         resultCell.setAttribute('id', 'result-item-' + row + 'x' + col);
-    //         resultCell.innerText = results[row][col];
-    //         resultRow.appendChild(resultCell);
-    //       }
-    //       this.grid.appendChild(resultRow);
-    //     }
-    //     aria.Utils.removeClass(this.grid, 'hidden');
-    //     this.input.setAttribute('aria-expanded', 'true');
-    //     this.rowsCount = results.length;
-    //     this.colsCount = results.length ? results[0].length : 0;
-    //     this.shown = true;
-    //   }
+    const results = searchActivities(this.content, searchString);
     this.renderAccordion(results, searchString);
   }
 
@@ -367,20 +145,9 @@ export class ActivityPicker extends TinyBase {
       ?.addEventListener('click', () => this.hidePopover());
   }
 
-  // true if searchString exactly matches an already-listed activity's
-  // display name - used to avoid offering free text as a redundant duplicate
-  hasKnownActivity(searchString) {
-    const lower = searchString.toLowerCase();
-    return this.content.some((category) =>
-      category.activities.some(
-        (activity) => getActivityDisplayName(activity)?.toLowerCase() === lower
-      )
-    );
-  }
-
   freeTextOptionHtml(searchString = '') {
     const trimmed = searchString.trim();
-    if (!this.allowFreeText || !trimmed || this.hasKnownActivity(trimmed)) {
+    if (!this.allowFreeText || !trimmed || hasKnownActivity(this.content, trimmed)) {
       return '';
     }
     const safeText = escapeHtml(trimmed);
@@ -412,13 +179,13 @@ export class ActivityPicker extends TinyBase {
         </label>
         <div class="combobox-wrapper">
             <div class="combobox-input-wrapper">
-                <input 
-                    type="text" 
-                    role="combobox" 
-                    aria-haspopup="grid" 
-                    aria-expanded="false" 
-                    aria-autocomplete="list" 
-                    aria-controls="ex1-grid" 
+                <input
+                    type="text"
+                    role="combobox"
+                    aria-haspopup="grid"
+                    aria-expanded="false"
+                    aria-autocomplete="list"
+                    aria-controls="ex1-grid"
                     id="activity-input_${this[ID]}"
                     value=""
                 >

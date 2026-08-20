@@ -6,6 +6,6 @@ dynamic-timeline {
   overflow: hidden;
   max-width: 400px;
   /* mobile only for now */
-
+  margin: 0 auto;
 
 }

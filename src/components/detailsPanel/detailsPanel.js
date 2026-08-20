@@ -1,6 +1,7 @@
 import { ActivityPicker } from '../activityPicker/activityPicker'; // as el-autocomplete
 import { TimePickerPanel } from '../timePickerPanel/timePickerPanel';
 import { TinyBase } from '../base';
+import { HIDE_PANEL, SHOW_PANEL } from '../../store/actionTypes';
 import './detailsPanel.css';
 
 const DIMENSION_INDEX = 'dimensionindex';
@@ -71,9 +72,14 @@ export class DetailsPanel extends TinyBase {
     this.deleteButton.addEventListener('click', () => this.onDeleteButtonClick());
     this.openCloseButton.addEventListener('click', () => {
       if (this.open) {
-        this.hidePanel();
+        this.store.dispatch({
+          type: HIDE_PANEL,
+        });
       } else {
-        this.showPanel();
+        this.store.dispatch({
+          type: SHOW_PANEL,
+          payload: 'activity',
+        });
       }
     });
   }
@@ -212,7 +218,6 @@ export class DetailsPanel extends TinyBase {
     const showActivityPanel = uipanel === 'activity';
 
     if (showActivityPanel) {
-      // console.log('hereh')
       this.showPanel();
     } else {
       this.hidePanel();

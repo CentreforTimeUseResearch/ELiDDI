@@ -54,11 +54,11 @@ export class ActivityPicker extends TinyBase {
     RIGHT: 39,
     DOWN: 40,
     DELETE: 46,
-  }
+  };
 
   constructor() {
     super();
-    this.extractActivities()
+    this.extractActivities();
   }
 
   extractActivities() {
@@ -77,13 +77,10 @@ export class ActivityPicker extends TinyBase {
 
   connectedCallback() {
     super.connectedCallback();
-    this.render();
   }
 
-
-
   setInputValue(activity) {
-    this.input.value = Array.isArray(activity) ? activity.join(', ') : (activity || "");
+    this.input.value = Array.isArray(activity) ? activity.join(', ') : activity || '';
   }
 
   assignEventHandlers() {
@@ -134,7 +131,6 @@ export class ActivityPicker extends TinyBase {
     this.popoverElement.hidePopover();
   }
 
-
   // handleBodyClick(evt) {
   //     if (evt.target === this.input || this.grid.contains(evt.target)) {
   //         return;
@@ -143,8 +139,6 @@ export class ActivityPicker extends TinyBase {
   // }
 
   handleInputKeyUp(evt) {
-
-
     var key = evt.which || evt.keyCode;
 
     switch (key) {
@@ -200,9 +194,6 @@ export class ActivityPicker extends TinyBase {
       return;
     }
 
-    const prevActive = this.getItemAt(activeRowIndex, this.selectionCol);
-    let activeItem;
-
     switch (key) {
       case this.keyCode.UP:
         this.gridFocused = true;
@@ -248,26 +239,12 @@ export class ActivityPicker extends TinyBase {
         return;
     }
 
-    if (prevActive) {
-      // this.removeFocusCell(this.activeRowIndex, this.activeColIndex);
-      // prevActive.setAttribute('aria-selected', 'false');
-    }
-
-    // activeItem = this.getItemAt(activeRowIndex, activeColIndex);
     this.activeRowIndex = activeRowIndex;
     this.activeColIndex = activeColIndex;
 
-    if (activeItem) {
-      this.input.setAttribute(
-        'aria-activedescendant',
-        'result-item-' + activeRowIndex + 'x' + activeColIndex
-      );
-      // this.focusCell(activeRowIndex, activeColIndex);
-      // var selectedItem = this.getItemAt(activeRowIndex, this.selectionCol);
-      selectedItem.setAttribute('aria-selected', 'true');
-    } else {
-      this.input.setAttribute('aria-activedescendant', '');
-    }
+    // grid-cell lookup/focus (getItemAt, focusCell) isn't implemented yet,
+    // so there's never an active item to point aria-activedescendant at
+    this.input.setAttribute('aria-activedescendant', '');
   }
 
   // handleGridClick(evt) {
@@ -296,17 +273,15 @@ export class ActivityPicker extends TinyBase {
     this.searchFn = searchFn;
   }
 
-
   searchActivities(searchString) {
-
     return this.content.map((category) => {
       return {
         name: category.name,
-        activities: category.activities.filter(activity => {
-          return activity.name?.toLowerCase().includes(searchString.toLowerCase())
-        })
-      }
-    })
+        activities: category.activities.filter((activity) => {
+          return activity.name?.toLowerCase().includes(searchString.toLowerCase());
+        }),
+      };
+    });
   }
 
   updateResults() {
@@ -345,19 +320,16 @@ export class ActivityPicker extends TinyBase {
     //     this.colsCount = results.length ? results[0].length : 0;
     //     this.shown = true;
     //   }
-    this.renderAccordion(results, searchString)
+    this.renderAccordion(results, searchString);
   }
 
   onActivitySelect(activity) {
-
-
-
     if (!activity) {
-      console.log('problem with button to set label')
+      console.log('problem with button to set label');
       return;
     }
 
-    this.props.onSetActivityOnSelectedEntry(activity)
+    this.props.onSetActivityOnSelectedEntry(activity);
     this.hidePopover();
   }
 
@@ -369,7 +341,7 @@ export class ActivityPicker extends TinyBase {
       this.selectedActivities = this.selectedActivities.filter((name) => name !== activity);
     }
     this.setInputValue(this.selectedActivities);
-    this.props.onSetActivitiesOnSelectedEntry([...this.selectedActivities])
+    this.props.onSetActivitiesOnSelectedEntry([...this.selectedActivities]);
   }
 
   // called by DetailsPanel when opening the panel for an existing multi-choice
@@ -384,11 +356,15 @@ export class ActivityPicker extends TinyBase {
   }
 
   doneButtonHtml() {
-    return this.isMulti ? `<button type="button" class="btn activity-picker-done-btn" data-done>Done</button>` : '';
+    return this.isMulti
+      ? `<button type="button" class="btn activity-picker-done-btn" data-done>Done</button>`
+      : '';
   }
 
   assignDoneButtonHandler() {
-    this.popoverElement.querySelector('[data-done]')?.addEventListener('click', () => this.hidePopover());
+    this.popoverElement
+      .querySelector('[data-done]')
+      ?.addEventListener('click', () => this.hidePopover());
   }
 
   // true if searchString exactly matches an already-listed activity's
@@ -396,7 +372,9 @@ export class ActivityPicker extends TinyBase {
   hasKnownActivity(searchString) {
     const lower = searchString.toLowerCase();
     return this.content.some((category) =>
-      category.activities.some((activity) => getActivityDisplayName(activity)?.toLowerCase() === lower)
+      category.activities.some(
+        (activity) => getActivityDisplayName(activity)?.toLowerCase() === lower
+      )
     );
   }
 
@@ -416,7 +394,7 @@ export class ActivityPicker extends TinyBase {
   }
 
   renderAccordion(results, searchString = '') {
-    this.popoverElement.innerHTML = `${this.freeTextOptionHtml(searchString)}<el-accordion ${this.setProps({ content: results, activitySelect: this.onActivitySelect, activityToggle: (activity, isSelected) => this.onActivityToggle(activity, isSelected), ...this.accordionProps() })}></el-accordion>${this.doneButtonHtml()}`
+    this.popoverElement.innerHTML = `${this.freeTextOptionHtml(searchString)}<el-accordion ${this.setProps({ content: results, activitySelect: this.onActivitySelect, activityToggle: (activity, isSelected) => this.onActivityToggle(activity, isSelected), ...this.accordionProps() })}></el-accordion>${this.doneButtonHtml()}`;
     this.assignDoneButtonHandler();
     this.assignFreeTextHandler();
   }

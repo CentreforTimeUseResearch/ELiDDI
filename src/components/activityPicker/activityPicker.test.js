@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ActivityPicker } from './activityPicker';
+import { KEY_CODE } from './keyboardGridNavigation';
 
 describe('ActivityPicker', () => {
   beforeEach(() => {
@@ -39,14 +40,34 @@ describe('ActivityPicker', () => {
   // ReferenceError as soon as this branch became reachable (rowsCount >= 1)
   it('handles an arrow key without throwing once rowsCount is populated', () => {
     const el = createPicker();
-    el.rowsCount = 1;
+    el.gridNavigation.rowsCount = 1;
     const fakeEvent = {
-      keyCode: el.keyCode.DOWN,
-      which: el.keyCode.DOWN,
+      keyCode: KEY_CODE.DOWN,
+      which: KEY_CODE.DOWN,
       preventDefault: () => {},
     };
 
-    expect(() => el.handleInputKeyDown(fakeEvent)).not.toThrow();
+    expect(() => el.gridNavigation.handleKeyDown(fakeEvent)).not.toThrow();
     expect(el.input.getAttribute('aria-activedescendant')).toBe('');
+  });
+
+  it('offers a free-text option for an unmatched search when allowFreeText is set', () => {
+    const el = createPicker();
+    el.allowFreeText = true;
+    el.input.value = 'Some new activity';
+    el.gridNavigation.handleKeyUp({ which: 0 });
+
+    const freeTextBtn = el.popoverElement.querySelector('[data-free-text]');
+    expect(freeTextBtn).not.toBeNull();
+    expect(freeTextBtn.textContent).toContain('Some new activity');
+  });
+
+  it('does not offer free text when the dimension does not allow it', () => {
+    const el = createPicker();
+    el.allowFreeText = false;
+    el.input.value = 'Some new activity';
+    el.gridNavigation.handleKeyUp({ which: 0 });
+
+    expect(el.popoverElement.querySelector('[data-free-text]')).toBeNull();
   });
 });

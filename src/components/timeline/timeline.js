@@ -117,19 +117,22 @@ export class Timeline extends TinyBase {
     }
   }
 
-  renderEntries() {
-    // entry element looks like this
-    // <g>
-    //   <rect class="event-block" x="105" y="800" width="230" height="450" fill="#9aa0c3" fill-opacity="0.45" />
-    //   <text x="220" y="1025" text-anchor="middle" dominant-baseline="middle" font-size="13" fill="#3a3d4d">c/ch</text>
-    // </g>
-    this.entriesLayer.innerHTML = '';
+  // Shared renderer for both the primary entries layer and the shadow
+  // (secondary-timeline-on-other-dimensions) layer - they only differ in
+  // which entries/layer they draw into and how wide each block is, since
+  // the shadow layer is a narrower strip alongside the full-width entries.
+  //
+  // entry element looks like this:
+  // <g>
+  //   <rect class="event-block" x="105" y="800" width="230" height="450" fill="#9aa0c3" fill-opacity="0.45" />
+  //   <text x="220" y="1025" text-anchor="middle" dominant-baseline="middle" font-size="13" fill="#3a3d4d">c/ch</text>
+  // </g>
+  renderEntriesInto({ layer, entries, dimensionIndex, blockWidth, labelX, labelWidth }) {
+    layer.innerHTML = '';
 
-    // at some point there are going to have to have their own event handling
-    // and at that point it might be a good idea to shift them into their own class/object
-    const dimensionData = GLOBALS.DATA.timeline[this.dimensionIndex];
+    const dimensionData = GLOBALS.DATA.timeline[dimensionIndex];
 
-    this.entries.forEach((entry) => {
+    entries.forEach((entry) => {
       const entryGroup = document.createElementNS(SVGNS, 'g');
       const rect = document.createElementNS(SVGNS, 'rect');
       const startOffsetPx = (entry.startOffsetMins || 0) * PX_PER_MINUTE;
@@ -138,7 +141,7 @@ export class Timeline extends TinyBase {
       rect.setAttributeNS(null, 'x', '100');
       rect.setAttributeNS(null, 'y', startOffsetPx);
       rect.setAttributeNS(null, 'height', height > 0 ? height : 20);
-      rect.setAttributeNS(null, 'width', '220');
+      rect.setAttributeNS(null, 'width', blockWidth);
       rect.setAttributeNS(null, 'fill', getActivityColor(dimensionData, entry.activity));
       rect.setAttributeNS(null, 'fill-opacity', '0.45');
       rect.setAttributeNS(null, 'data-id', entry.id);
@@ -146,9 +149,9 @@ export class Timeline extends TinyBase {
 
       const label = Array.isArray(entry.activity) ? entry.activity.join(', ') : entry.activity;
       const labelForeignObject = createLabelForeignObject({
-        x: 110,
+        x: labelX,
         y: startOffsetPx,
-        width: 200,
+        width: labelWidth,
         height,
         label,
         fontSize: 13,
@@ -156,56 +159,38 @@ export class Timeline extends TinyBase {
       });
       entryGroup.appendChild(labelForeignObject);
 
-      this.entriesLayer.appendChild(entryGroup);
+      layer.appendChild(entryGroup);
+    });
+  }
+
+  renderEntries() {
+    // at some point there are going to have to have their own event handling
+    // and at that point it might be a good idea to shift them into their own class/object
+    this.renderEntriesInto({
+      layer: this.entriesLayer,
+      entries: this.entries,
+      dimensionIndex: this.dimensionIndex,
+      blockWidth: '220',
+      labelX: 110,
+      labelWidth: 200,
     });
   }
 
   renderShadowDimension() {
-    // entry element looks like this
-    // <g>
-    //   <rect class="event-block" x="105" y="800" width="230" height="450" fill="#9aa0c3" fill-opacity="0.45" />
-    //   <text x="220" y="1025" text-anchor="middle" dominant-baseline="middle" font-size="13" fill="#3a3d4d">c/ch</text>
-    // </g>
-
     const dimensionIndex = this.shadowIndex;
-
-    const dimensionData = GLOBALS.DATA.timeline[dimensionIndex];
-    if (this.shadowDimensionEntries !== this.store.getState()?.timelines[dimensionIndex]) {
-      this.shadowDimensionEntries = this.store.getState()?.timelines[dimensionIndex];
-    } else {
+    const nextShadowDimensionEntries = this.store.getState()?.timelines[dimensionIndex];
+    if (this.shadowDimensionEntries === nextShadowDimensionEntries) {
       return; // do not rerender if nothing changed
     }
+    this.shadowDimensionEntries = nextShadowDimensionEntries;
 
-    this.shadowEntriesLayer.innerHTML = '';
-
-    this.shadowDimensionEntries.forEach((entry) => {
-      const entryGroup = document.createElementNS(SVGNS, 'g');
-      const rect = document.createElementNS(SVGNS, 'rect');
-      const startOffsetPx = (entry.startOffsetMins || 0) * PX_PER_MINUTE;
-      const endOffsetPx = (entry.endOffsetMins || 0) * PX_PER_MINUTE;
-      const height = endOffsetPx - startOffsetPx;
-      rect.setAttributeNS(null, 'x', '100');
-      rect.setAttributeNS(null, 'y', startOffsetPx);
-      rect.setAttributeNS(null, 'height', height > 0 ? height : 20);
-      rect.setAttributeNS(null, 'width', '50');
-      rect.setAttributeNS(null, 'fill', getActivityColor(dimensionData, entry.activity));
-      rect.setAttributeNS(null, 'fill-opacity', '0.45');
-      rect.setAttributeNS(null, 'data-id', entry.id);
-      entryGroup.appendChild(rect);
-
-      const label = Array.isArray(entry.activity) ? entry.activity.join(', ') : entry.activity;
-      const labelForeignObject = createLabelForeignObject({
-        x: 100,
-        y: startOffsetPx,
-        width: 50,
-        height,
-        label,
-        fontSize: 13,
-        id: entry.id,
-      });
-      entryGroup.appendChild(labelForeignObject);
-
-      this.shadowEntriesLayer.appendChild(entryGroup);
+    this.renderEntriesInto({
+      layer: this.shadowEntriesLayer,
+      entries: this.shadowDimensionEntries,
+      dimensionIndex,
+      blockWidth: '50',
+      labelX: 100,
+      labelWidth: 50,
     });
   }
 

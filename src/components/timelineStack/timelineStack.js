@@ -7,26 +7,23 @@ export class TimelineStack extends TinyBase {
   ready = false;
   store = super.getStore();
   timelinesData = GLOBALS.DATA.timeline;
-  numTimelines = GLOBALS.DATA.timeline.length
+  numTimelines = GLOBALS.DATA.timeline.length;
   dimensionIndex = 0;
 
   constructor() {
     super();
   }
 
-
-
   connectedCallback() {
-
     super.connectedCallback();
     this.assignEventHandlers();
-    this.store.subscribe(() => this.updateState());
+    this.registerCleanup(this.store.subscribe(() => this.updateState()));
   }
 
   updateState() {
     const { currentDimensionIndex } = this.store.getState();
     if (currentDimensionIndex !== this.dimensionIndex) {
-      this.dimensionIndex = currentDimensionIndex
+      this.dimensionIndex = currentDimensionIndex;
       this.scrollToTimeline();
     }
   }
@@ -55,12 +52,12 @@ export class TimelineStack extends TinyBase {
 
   assignEventHandlers() {
     if (!this.ready) {
-      this.addEventListener("scrollsnapchange", (event) => {
+      this.addEventListener('scrollsnapchange', (event) => {
         if (!event.snapTargetInline) {
-          console.error('problem getting dimension index from scroll')
-          return
+          console.error('problem getting dimension index from scroll');
+          return;
         }
-        this.switchDimension(Number(event.snapTargetInline.index))
+        this.switchDimension(Number(event.snapTargetInline.index));
       });
 
       this.ready = true;
@@ -75,7 +72,5 @@ export class TimelineStack extends TinyBase {
     }
   }
 }
-
-
 
 customElements.define('el-timeline-stack', TimelineStack);

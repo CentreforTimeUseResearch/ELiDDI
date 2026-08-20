@@ -9,81 +9,79 @@ const POINTER = 'pointer';
 const BACKDROP = 'backdrop';
 
 export class DialogWidget extends TinyBase {
-    static observedAttributes = [ID, TEXT, POSITION, POINTER, BACKDROP];
+  static observedAttributes = [ID, TEXT, POSITION, POINTER, BACKDROP];
 
-    // text;
-    // onboarding;
-    // contentWindow;
-    dialog;
-    store;
-    onboarding;
+  // text;
+  // onboarding;
+  // contentWindow;
+  dialog;
+  store;
+  onboarding;
 
-    constructor() {
-        super();
-        this.store = super.getStore();
-        const { onboarding } = this.store.getState();
-        this.onboarding = onboarding;
+  constructor() {
+    super();
+    this.store = super.getStore();
+    const { onboarding } = this.store.getState();
+    this.onboarding = onboarding;
+  }
+
+  connectedCallback() {
+    this.render();
+    this.dialog = this.querySelector('dialog');
+
+    this.querySelector('[data-skip]').addEventListener('click', () => {
+      this.store.dispatch({
+        type: 'DISMISS_ONBOARDING',
+      });
+    });
+    this.registerCleanup(this.store.subscribe(this.updateState.bind(this)));
+    this.updateState();
+  }
+
+  updateState() {
+    const { onboarding } = this.store.getState();
+    this.onboarding = onboarding;
+    if (this.onboarding) {
+      this.showModal();
+    } else {
+      this.close();
     }
+  }
 
-    connectedCallback() {
-        this.render();
-        this.dialog = this.querySelector('dialog');
-
-
-        this.querySelector('[data-skip]').addEventListener('click', () => {
-            this.store.dispatch({
-                type: 'DISMISS_ONBOARDING'
-            })
-        })
-        this.store.subscribe(this.updateState.bind(this))
-        this.updateState();
+  showModal() {
+    if (!this.dialog) {
+      console.error('missing dialog element!');
+      return;
     }
+    this.dialog.showModal();
+  }
 
-    updateState() {
-        const { onboarding } = this.store.getState();
-        this.onboarding = onboarding;
-        if (this.onboarding) {
-            this.showModal();
-        } else {
-            this.close();
-        }
+  close() {
+    if (!this.dialog) {
+      console.error('missing dialog element!');
+      return;
     }
+    this.dialog.close();
+  }
 
-    showModal() {
-        if (!this.dialog) {
-            console.error('missing dialog element!');
-            return;
-        }
-        this.dialog.showModal();
+  attributeChangedCallback(name, oldValue, newValue) {
+    if (this[name] !== newValue) {
+      this[name] = newValue;
     }
+  }
 
-    close() {
-        if (!this.dialog) {
-            console.error('missing dialog element!');
-            return;
-        }
-        this.dialog.close();
-    }
+  moveSpotlight(x, y, size) {
+    this.style.setProperty('--spotlight1-x', x + '%');
+    this.style.setProperty('--spotlight1-y', y + '%');
+    this.style.setProperty('--spotlight-size', size + '%');
+  }
 
-    attributeChangedCallback(name, oldValue, newValue) {
-        if (this[name] !== newValue) {
-            this[name] = newValue;
-        }
-    }
+  moveModalTop(y) {
+    this.style.setProperty('--modal-y-pos', y + 'px');
+  }
 
-    moveSpotlight(x, y, size) {
-        this.style.setProperty("--spotlight1-x", x + "%");
-        this.style.setProperty("--spotlight1-y", y + "%");
-        this.style.setProperty("--spotlight-size", size + "%");
-    }
-
-    moveModalTop(y) {
-        this.style.setProperty("--modal-y-pos", y + "px");
-    }
-
-    render() {
-
-        this.innerHTML = `
+  render() {
+    this.innerHTML = `
         <dialog id="dialog">
             <div class="dialog-layout">
                 <div class="dialog-content"> 
@@ -95,10 +93,9 @@ export class DialogWidget extends TinyBase {
             </div>
         </dialog>
         `;
-    }
+  }
 }
 
 // <div class="help-popover-content">${this[TEXT]}</div>
-
 
 customElements.define('el-dialog', DialogWidget);

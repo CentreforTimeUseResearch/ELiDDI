@@ -5,7 +5,7 @@ import './detailsPanel.css';
 
 const DIMENSION_INDEX = 'dimensionindex';
 const HEADING = 'heading';
-const INSTRUCTION = 'instruction'
+const INSTRUCTION = 'instruction';
 
 export class DetailsPanel extends TinyBase {
   static observedAttributes = [DIMENSION_INDEX, HEADING, INSTRUCTION];
@@ -36,7 +36,7 @@ export class DetailsPanel extends TinyBase {
     const { currentDimensionIndex } = this.store.getState();
     this.currentDimensionIndex = currentDimensionIndex;
     super.connectedCallback();
-    this.store.subscribe(this.onStoreUpdate.bind(this));
+    this.registerCleanup(this.store.subscribe(this.onStoreUpdate.bind(this)));
     this.getChildElementReferences();
     this.assignEventHandlers();
   }
@@ -50,30 +50,34 @@ export class DetailsPanel extends TinyBase {
   getChildElementReferences() {
     // this.popoverElement = document.getElementById('popover');
     this.timelinePickerPanel = this.querySelector('el-time-picker-panel');
-    this.activityPicker = this.querySelector('el-activityPicker')
-    this.saveButton = this.querySelector('.btn-save-btn')
-    this.deleteButton = this.querySelector('.btn-delete-btn')
-    this.errorDisplay = this.querySelector('.entry-error')
+    this.activityPicker = this.querySelector('el-activityPicker');
+    this.saveButton = this.querySelector('.btn-save-btn');
+    this.deleteButton = this.querySelector('.btn-delete-btn');
+    this.errorDisplay = this.querySelector('.entry-error');
     this.openCloseButton = this.querySelector('[data-openCloseButton]');
   }
 
   assignEventHandlers() {
-    this.saveButton.addEventListener('click', () => this.onSaveButtonClick())
-    this.deleteButton.addEventListener('click', () => this.onDeleteButtonClick())
+    this.saveButton.addEventListener('click', () => this.onSaveButtonClick());
+    this.deleteButton.addEventListener('click', () => this.onDeleteButtonClick());
     this.openCloseButton.addEventListener('click', () => {
       if (this.open) {
-        this.hidePanel()
+        this.hidePanel();
       } else {
-        this.showPanel()
+        this.showPanel();
       }
-    })
+    });
   }
 
   isEntryComplete() {
     const hasActivity = Array.isArray(this.state.activity)
       ? this.state.activity.length > 0
       : !!this.state.activity;
-    return typeof this.state.startOffsetMins === 'number' && typeof this.state.endOffsetMins === 'number' && hasActivity
+    return (
+      typeof this.state.startOffsetMins === 'number' &&
+      typeof this.state.endOffsetMins === 'number' &&
+      hasActivity
+    );
   }
 
   updateState(newState) {
@@ -87,12 +91,11 @@ export class DetailsPanel extends TinyBase {
   }
 
   reset() {
-    this.state = {}
+    this.state = {};
     this.render();
     this.getChildElementReferences();
     this.assignEventHandlers();
   }
-
 
   showPanel() {
     this.open = true;
@@ -101,56 +104,60 @@ export class DetailsPanel extends TinyBase {
 
   hidePanel() {
     this.open = false;
-    this.classList.remove('active')
+    this.classList.remove('active');
   }
 
   setStartTime(starttime) {
     this.updateState({
       ...this.state,
-      startOffsetMins: starttime
-    })
+      startOffsetMins: starttime,
+    });
     this.setTimePanelStartTime();
   }
-
 
   setEndTime(endtime) {
     this.updateState({
       ...this.state,
-      endOffsetMins: endtime
-    })
+      endOffsetMins: endtime,
+    });
     this.setTimePanelEndTime();
   }
 
   setActivity(activity) {
     this.updateState({
       ...this.state,
-      activity
-    })
-    this.activityPicker.setInputValue(activity)
+      activity,
+    });
+    this.activityPicker.setInputValue(activity);
     if (Array.isArray(activity)) {
       // pre-fill the picker so previously-selected activities show as pressed
-      this.activityPicker.setSelectedActivities(activity)
+      this.activityPicker.setSelectedActivities(activity);
     }
   }
 
   setEntryId(id) {
     this.updateState({
       ...this.state,
-      id
-    })
+      id,
+    });
     this.showDeleteButton();
   }
 
-
   setTimePanelStartTime() {
     if (typeof this.state.startOffsetMins === 'number') {
-      this.timelinePickerPanel.setAttribute('start-time', this.state.startOffsetMins + this.dayBoundaryInMinutes);
+      this.timelinePickerPanel.setAttribute(
+        'start-time',
+        this.state.startOffsetMins + this.dayBoundaryInMinutes
+      );
     }
   }
 
   setTimePanelEndTime() {
     if (typeof this.state.endOffsetMins === 'number') {
-      this.timelinePickerPanel.setAttribute('end-time', this.state.endOffsetMins + this.dayBoundaryInMinutes);
+      this.timelinePickerPanel.setAttribute(
+        'end-time',
+        this.state.endOffsetMins + this.dayBoundaryInMinutes
+      );
     }
   }
 
@@ -163,21 +170,20 @@ export class DetailsPanel extends TinyBase {
     if (nextEntry) {
       return {
         endTimeInMinutes: nextEntry.startOffsetMins + this.dayBoundaryInMinutes,
-        label: 'Continue this activity to the next activity'
+        label: 'Continue this activity to the next activity',
       };
     }
     return {
-      endTimeInMinutes: this.dayBoundaryInMinutes - 1 + (24 * 60),
-      label: 'Continue this activity to the end of the day'
+      endTimeInMinutes: this.dayBoundaryInMinutes - 1 + 24 * 60,
+      label: 'Continue this activity to the end of the day',
     };
   }
 
-
   onStoreUpdate() {
     const { uipanel, currentDimensionIndex } = this.store.getState();
-    this.currentDimensionIndex = currentDimensionIndex
-    const isMyDimension = Number(this[DIMENSION_INDEX]) === this.currentDimensionIndex
-    const showActivityPanel = uipanel === 'activity'
+    this.currentDimensionIndex = currentDimensionIndex;
+    const isMyDimension = Number(this[DIMENSION_INDEX]) === this.currentDimensionIndex;
+    const showActivityPanel = uipanel === 'activity';
 
     if (showActivityPanel) {
       // console.log('hereh')
@@ -189,23 +195,23 @@ export class DetailsPanel extends TinyBase {
     if (isMyDimension) {
       this.classList.remove('hide');
     } else {
-      this.classList.add('hide')
+      this.classList.add('hide');
     }
   }
 
   onSaveButtonClick() {
     //create a new entry.
     if (!this.isEntryComplete()) return;
-    this.props.saveEntry(this.state)
+    this.props.saveEntry(this.state);
   }
 
   onDeleteButtonClick() {
     if (this.state.id === undefined) return;
-    this.props.deleteEntry(this.state.id)
+    this.props.deleteEntry(this.state.id);
   }
 
   showSaveButton() {
-    this.saveButton.classList.remove('opaque')
+    this.saveButton.classList.remove('opaque');
   }
 
   hideSaveButton() {
@@ -213,7 +219,7 @@ export class DetailsPanel extends TinyBase {
   }
 
   showDeleteButton() {
-    this.deleteButton.classList.remove('hide')
+    this.deleteButton.classList.remove('hide');
   }
 
   hideDeleteButton() {
@@ -245,14 +251,12 @@ export class DetailsPanel extends TinyBase {
 
   // triggered by activity select
   onSetActivityOnSelectedEntry(activity) {
-
     this.updateState({
       ...this.state,
-      activity
+      activity,
     });
 
-    this.activityPicker.setInputValue(activity)
-
+    this.activityPicker.setInputValue(activity);
   }
 
   // triggered on every toggle in a multiple-choice picker; popover stays open
@@ -260,10 +264,9 @@ export class DetailsPanel extends TinyBase {
   onSetActivitiesOnSelectedEntry(activities) {
     this.updateState({
       ...this.state,
-      activity: activities
+      activity: activities,
     });
   }
-
 
   // triggered by adding a  valid end time to an entry that has a valid start time
   onSetOffsetMins({ timeField, timeInMinutes }) {
@@ -279,7 +282,7 @@ export class DetailsPanel extends TinyBase {
       case 'startTime':
         this.updateState({
           ...this.state,
-          startOffsetMins: offsetMins
+          startOffsetMins: offsetMins,
         });
         break;
     }
@@ -288,9 +291,9 @@ export class DetailsPanel extends TinyBase {
   render() {
     if (Number(this[DIMENSION_INDEX]) !== this.currentDimensionIndex) {
       // hide
-      this.classList.add('hide')
+      this.classList.add('hide');
     } else {
-      this.classList.remove('hide')
+      this.classList.remove('hide');
       //show
     }
 
@@ -320,7 +323,6 @@ export class DetailsPanel extends TinyBase {
               <button class="btn btn-delete-btn hide">Delete</button>
             </div>
             `;
-
   }
 }
 

@@ -1,7 +1,11 @@
 import { TinyBase } from '../base';
 import { getActivityColor } from '../../utils/activities';
 import { findOverlappingEntry, findNextEntry } from '../../utils/entries';
-import { formatOffsetAsClockTime, getCurrentOffsetMins } from '../../utils/time';
+import {
+  formatOffsetAsClockTime,
+  getCurrentOffsetMins,
+  getCurrentDiaryDateKey,
+} from '../../utils/time';
 import {
   ADD_TIMELINE,
   SHOW_PANEL,
@@ -103,6 +107,12 @@ export class Timeline extends TinyBase {
     if (!this.futureOverlayElement) {
       return;
     }
+    if (this.currentDate !== getCurrentDiaryDateKey()) {
+      // "future" only means anything on the actual current diary day -
+      // a past (or future) diary date has nothing left to grey out
+      this.futureOverlayElement.setAttributeNS(null, 'height', 0);
+      return;
+    }
     const nowOffsetPx = getCurrentOffsetMins() * PX_PER_MINUTE;
     const totalHeightPx = MINUTES_PER_DAY * PX_PER_MINUTE;
     this.futureOverlayElement.setAttributeNS(null, 'y', nowOffsetPx);
@@ -120,6 +130,7 @@ export class Timeline extends TinyBase {
       // unlike an edit (which the acting Timeline instance already
       // re-renders itself after), nothing else triggers a re-render here
       this.renderEntries();
+      this.updateFutureOverlay();
     }
     if (this.dimensionIndex !== this.shadowIndex && currentDimensionIndex === this.dimensionIndex) {
       // this is not primary activity timeline and we're currently viewing this timeline

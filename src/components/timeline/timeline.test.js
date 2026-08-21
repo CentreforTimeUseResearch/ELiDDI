@@ -7,6 +7,7 @@ import { Timeline } from './timeline';
 import '../detailsPanel/detailsPanel';
 import { appStore } from '../../store/appStore';
 import { ADD_ENTRY, SWITCH_DATE } from '../../store/actionTypes';
+import { getCurrentDiaryDateKey } from '../../utils/time';
 
 // renderEntriesInto is the renderer shared by renderEntries() and
 // renderShadowDimension() (previously ~45 lines duplicated between them,
@@ -263,5 +264,62 @@ describe('Timeline multi-day scoping', () => {
     appStore.dispatch({ type: SWITCH_DATE, payload: dateD });
 
     expect(el.querySelector('#events rect[data-id="1"]')).toBeNull();
+  });
+});
+
+// regression coverage: the future overlay greys out the remainder of
+// "today" on the timeline - it should only appear when the diary date
+// being viewed is the actual current diary day, not a past (or future) one
+describe('Timeline future overlay', () => {
+  beforeEach(() => {
+    if (!customElements.get('el-timeline')) {
+      customElements.define('el-timeline', Timeline);
+    }
+    if (!document.getElementById('svg-timeline')) {
+      const template = document.createElement('template');
+      template.id = 'svg-timeline';
+      template.innerHTML = `
+        <svg>
+          <g id="timeline-shadow"></g>
+          <rect id="future-overlay"></rect>
+          <g id="events"></g>
+        </svg>
+      `;
+      document.head.appendChild(template);
+    }
+    document.body.innerHTML = '';
+  });
+
+  function createTimeline(dimensionIndex) {
+    const el = document.createElement('el-timeline');
+    el.setAttribute('index', String(dimensionIndex));
+    document.body.appendChild(el);
+    return el;
+  }
+
+  it('shows the future overlay when viewing the actual current diary day', () => {
+    appStore.dispatch({ type: SWITCH_DATE, payload: getCurrentDiaryDateKey() });
+    const el = createTimeline(4);
+
+    const height = Number(el.querySelector('#future-overlay').getAttribute('height'));
+    expect(height).toBeGreaterThan(0);
+  });
+
+  it('hides the future overlay for a past diary day', () => {
+    appStore.dispatch({ type: SWITCH_DATE, payload: '2000-01-01' });
+    const el = createTimeline(4);
+
+    const height = Number(el.querySelector('#future-overlay').getAttribute('height'));
+    expect(height).toBe(0);
+  });
+
+  it('hides the future overlay immediately on switching away from today, without waiting for the 30s interval', () => {
+    appStore.dispatch({ type: SWITCH_DATE, payload: getCurrentDiaryDateKey() });
+    const el = createTimeline(4);
+    expect(Number(el.querySelector('#future-overlay').getAttribute('height'))).toBeGreaterThan(0);
+
+    appStore.dispatch({ type: SWITCH_DATE, payload: '2000-01-01' });
+
+    expect(Number(el.querySelector('#future-overlay').getAttribute('height'))).toBe(0);
   });
 });

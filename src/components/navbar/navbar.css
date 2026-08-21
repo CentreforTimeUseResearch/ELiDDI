@@ -55,7 +55,16 @@ nav {
 
 .middle-pane {
   padding-left: var(--space-sm);
-  flex: 1 1 0%
+  flex: 1 1 0%;
+
+  .date-indicator {
+    margin: 4px auto;
+    text-align: center;
+
+    u {
+      color: blue;
+    }
+  }
 }
 
 .right-pane {

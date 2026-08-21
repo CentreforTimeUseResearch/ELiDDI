@@ -1,5 +1,6 @@
 import { TinyBase } from '../base';
 import { HIDE_PANEL, SWITCH_DATE } from '../../store/actionTypes';
+import { getCurrentDiaryDateKey } from '../../utils/time';
 import './datePicker.css';
 
 export class DatePicker extends TinyBase {
@@ -39,6 +40,15 @@ export class DatePicker extends TinyBase {
       return;
     }
 
+    if (dateKey > getCurrentDiaryDateKey()) {
+      // the max attribute keeps the native picker UI from offering future
+      // dates, but a typed/scripted value can still get through - reject
+      // it and reset the input back to the last valid date
+      console.error('Cannot select a future date');
+      this.render();
+      return;
+    }
+
     this.store.dispatch({
       type: HIDE_PANEL,
     });
@@ -60,6 +70,7 @@ export class DatePicker extends TinyBase {
                   data-date-picker
                   name="date-picker"
                   value="${this.currentDate}"
+                  max="${getCurrentDiaryDateKey()}"
                 />
             </div>
         `;

@@ -46,3 +46,12 @@ export function getCurrentDiaryDateKey() {
   const day = String(diaryDate.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
+
+// formats a diary date key ("YYYY-MM-DD") for display as "DD/MM/YYYY" - a
+// plain string reformat rather than parsing through new Date(dateKey),
+// which reads the key as UTC midnight and can shift the displayed date by
+// a day in timezones behind UTC
+export function formatDateKeyAsDDMMYYYY(dateKey) {
+  const [year, month, day] = dateKey.split('-');
+  return `${day}/${month}/${year}`;
+}

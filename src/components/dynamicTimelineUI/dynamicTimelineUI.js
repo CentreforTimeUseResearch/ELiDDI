@@ -3,15 +3,17 @@ import { Navbar } from '../navbar/navbar';
 import { DialogWidget } from '../dialogWidget/dialogWidget';
 import { TimelineStack } from '../timelineStack/timelineStack';
 import { Onboarding } from '../onboarding/onboarding';
+import { DatePicker } from '../datePicker/datePicker';
 
 import { TinyBase } from '../base';
-import { DISMISS_ONBOARDING } from '../../store/actionTypes';
+import { DISMISS_ONBOARDING, HIDE_PANEL } from '../../store/actionTypes';
 
 import './dynamicTimelineUI.css';
 
 export class DynamicTimelineUI extends TinyBase {
   store = super.getStore();
-  dialogActions;
+  onboardingDialogActions;
+  dateDialogActions;
 
   constructor() {
     super();
@@ -24,19 +26,25 @@ export class DynamicTimelineUI extends TinyBase {
   }
 
   onStoreUpdate() {
-    const { onboarding } = this.store.getState();
+    const { onboarding, uipanel } = this.store.getState();
     if (onboarding) {
-      this.dialogActions.open();
+      this.onboardingDialogActions.open();
     } else {
-      this.dialogActions.close();
+      this.onboardingDialogActions.close();
+    }
+
+    if (uipanel === 'date') {
+      this.dateDialogActions.open();
+    } else {
+      this.dateDialogActions.close();
     }
   }
 
   render() {
     // this component is a work in progress
     const onboardingMarkup = `<el-onboarding ${this.setProps({
-      moveSpotlight: (x, y, size) => this.dialogActions.moveSpotlight(x, y, size),
-      moveModalTop: (y) => this.dialogActions.moveModalTop(y),
+      moveSpotlight: (x, y, size) => this.onboardingDialogActions.moveSpotlight(x, y, size),
+      moveModalTop: (y) => this.onboardingDialogActions.moveModalTop(y),
     })}></el-onboarding>`;
 
     this.innerHTML = `
@@ -44,11 +52,18 @@ export class DynamicTimelineUI extends TinyBase {
             <el-timeline-stack></el-timeline-stack>
             <el-dialog id="dialog" ${this.setProps({
               registerDialogActions: (actions) => {
-                this.dialogActions = actions;
+                this.onboardingDialogActions = actions;
               },
               content: onboardingMarkup,
               closeLabel: 'skip',
               onRequestClose: () => this.store.dispatch({ type: DISMISS_ONBOARDING }),
+            })}></el-dialog>
+            <el-dialog id="date-dialog" ${this.setProps({
+              registerDialogActions: (actions) => {
+                this.dateDialogActions = actions;
+              },
+              content: '<el-date-picker></el-date-picker>',
+              onRequestClose: () => this.store.dispatch({ type: HIDE_PANEL }),
             })}></el-dialog>
             `;
   }

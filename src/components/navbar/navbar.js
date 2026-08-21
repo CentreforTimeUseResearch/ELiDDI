@@ -1,7 +1,7 @@
 import '../timelinePicker/timelinePicker.js';
 import '../contextualHelp/contextualHelp.js';
 import { TinyBase } from '../base';
-import { RESET_ONBOARDING } from '../../store/actionTypes';
+import { RESET_ONBOARDING, SHOW_PANEL } from '../../store/actionTypes';
 import './navbar.css';
 
 export class Navbar extends TinyBase {
@@ -30,6 +30,11 @@ export class Navbar extends TinyBase {
         hamMenu.classList.toggle('active');
         offScreenMenu.classList.toggle('active');
       });
+      this.querySelector('.change-date-button')?.addEventListener('click', () => {
+        this.store.dispatch({ type: SHOW_PANEL, payload: 'date' });
+        hamMenu.classList.toggle('active');
+        offScreenMenu.classList.toggle('active');
+      });
       this.ready = true;
     }
   }
@@ -41,7 +46,7 @@ export class Navbar extends TinyBase {
         <div class="off-screen-menu">
             <ul>
                 <li><button class="reset-to-div instructions-button" type="button">Instructions</button></li>
-                <li>Change Date</li>
+                <li><button class="reset-to-div change-date-button" type="button">Change Date</button></li>
                 <li>Reset</li>
             </ul>
         </div>

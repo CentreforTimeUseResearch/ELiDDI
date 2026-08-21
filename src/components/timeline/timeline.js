@@ -18,6 +18,10 @@ const XHTMLNS = 'http://www.w3.org/1999/xhtml';
 const INDEX = 'index';
 const PX_PER_MINUTE = 2;
 const MINUTES_PER_DAY = 24 * 60; // -> 2880px, matches the SVG viewBox height
+// stable shared reference so a not-yet-touched dimension/date compares
+// === equal to itself across calls, preserving renderShadowDimension's
+// skip-if-unchanged check instead of allocating a fresh [] every time
+const EMPTY_ENTRIES = [];
 
 // builds a <foreignObject> containing an HTML div for the entry label, so
 // long labels wrap across multiple lines (via CSS) instead of being
@@ -65,11 +69,12 @@ export class Timeline extends TinyBase {
   connectedCallback() {
     const state = this.store.getState();
     this.dimensionIndex = Number(this.getAttribute(INDEX));
-    const timeline = state.timelines[this.dimensionIndex];
+    this.currentDate = state.currentDate;
+    const timeline = state.diaries[this.currentDate]?.timelines[this.dimensionIndex];
     if (!Array.isArray(timeline)) {
       this.store.dispatch({
         type: ADD_TIMELINE,
-        payload: { dimensionIndex: this.dimensionIndex },
+        payload: { dimensionIndex: this.dimensionIndex, date: this.currentDate },
       });
     } else {
       this.entries = timeline;
@@ -106,9 +111,16 @@ export class Timeline extends TinyBase {
 
   updateState() {
     const state = this.store.getState();
-    const timeline = state.timelines[this.dimensionIndex];
-    const currentDimensionIndex = state.currentDimensionIndex;
-    this.entries = timeline;
+    const { currentDimensionIndex, currentDate } = state;
+    const dateChanged = currentDate !== this.currentDate;
+    this.currentDate = currentDate;
+    this.entries = state.diaries[currentDate]?.timelines[this.dimensionIndex] ?? EMPTY_ENTRIES;
+    if (dateChanged) {
+      // every mounted dimension's entries potentially changed wholesale -
+      // unlike an edit (which the acting Timeline instance already
+      // re-renders itself after), nothing else triggers a re-render here
+      this.renderEntries();
+    }
     if (this.dimensionIndex !== this.shadowIndex && currentDimensionIndex === this.dimensionIndex) {
       // this is not primary activity timeline and we're currently viewing this timeline
       this.renderShadowDimension(); // render primary activity entries as shadow timeline
@@ -176,7 +188,9 @@ export class Timeline extends TinyBase {
 
   renderShadowDimension() {
     const dimensionIndex = this.shadowIndex;
-    const nextShadowDimensionEntries = this.store.getState()?.timelines[dimensionIndex];
+    const state = this.store.getState();
+    const nextShadowDimensionEntries =
+      state.diaries[state.currentDate]?.timelines[dimensionIndex] ?? EMPTY_ENTRIES;
     if (this.shadowDimensionEntries === nextShadowDimensionEntries) {
       return; // do not rerender if nothing changed
     }
@@ -268,6 +282,7 @@ export class Timeline extends TinyBase {
       type: ADD_ENTRY,
       payload: {
         dimensionIndex,
+        date: this.currentDate,
         ...entry,
         id,
       },
@@ -286,6 +301,7 @@ export class Timeline extends TinyBase {
       payload: {
         id: this.selectedID,
         dimensionIndex,
+        date: this.currentDate,
         index,
         ...entry,
       },
@@ -301,7 +317,7 @@ export class Timeline extends TinyBase {
     }
     this.store.dispatch({
       type: DELETE_ENTRY,
-      payload: { dimensionIndex, id },
+      payload: { dimensionIndex, date: this.currentDate, id },
     });
     this.store.dispatch({
       type: HIDE_PANEL,

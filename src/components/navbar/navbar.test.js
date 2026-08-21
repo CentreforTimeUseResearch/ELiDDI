@@ -33,5 +33,14 @@ describe('Navbar', () => {
     expect(el.querySelector('.ham-menu').classList.contains('active')).toBe(false);
   });
 
+  it('dispatches SHOW_PANEL with "date" when the Change Date button is clicked', () => {
+    const el = document.createElement('el-nav-bar');
+    document.body.appendChild(el);
+
+    el.querySelector('.change-date-button').click();
+
+    expect(el.store.getState().uipanel).toBe('date');
+  });
+
   // todo: test that sidebar menu options are present
 });

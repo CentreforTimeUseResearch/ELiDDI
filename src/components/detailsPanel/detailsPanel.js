@@ -16,7 +16,6 @@ export class DetailsPanel extends TinyBase {
   key;
   props;
   open = false;
-  selectedEntry;
   saveButton;
   dayBoundaryInMinutes;
   currentDimensionIndex;

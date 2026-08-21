@@ -14,11 +14,12 @@ export const HIDE_PANEL = 'HIDE_PANEL';
 export const SWITCH_DIMENSION = 'SWITCH_DIMENSION';
 export const RESET_DIMENSION_INDEX = 'RESET_DIMENSION_INDEX';
 
+export const SWITCH_DATE = 'SWITCH_DATE';
+
 export const ADD_TIMELINE = 'ADD_TIMELINE';
 export const ADD_ENTRY = 'ADD_ENTRY';
 export const UPDATE_ENTRY = 'UPDATE_ENTRY';
 export const DELETE_ENTRY = 'DELETE_ENTRY';
-export const SELECT_ENTRY = 'SELECT_ENTRY';
 
 export const SET_STATUS = 'SET_STATUS';
 export const RESET_STATUS = 'RESET_STATUS';

@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { TimePickerPanel } from './timePickerPanel';
 import { TinyBase } from '../base';
+import { appStore } from '../../store/appStore';
+import { SWITCH_DATE } from '../../store/actionTypes';
+import { getCurrentDiaryDateKey } from '../../utils/time';
 
 class TestHarness extends TinyBase {}
 if (!customElements.get('test-harness-timepickerpanel')) {
@@ -55,5 +58,34 @@ describe('TimePickerPanel', () => {
 
     expect(el.endInputMinutes).toBe(570); // 09:30
     expect(onTimeSet).toHaveBeenCalledWith({ timeField: 'endTime', timeInMinutes: 570 });
+  });
+
+  // regression coverage for the future-time-validation multi-day bug: the
+  // max editable time used to be computed from raw wall-clock "now" with
+  // no awareness of which diary date was being edited.
+  describe('getMaxEditableTime', () => {
+    it('returns a defined max when editing the actual current diary day', () => {
+      appStore.dispatch({ type: SWITCH_DATE, payload: getCurrentDiaryDateKey() });
+      const el = createPanel();
+
+      expect(el.getMaxEditableTime()).toMatch(/^\d{2}:\d{2}$/);
+    });
+
+    it('returns undefined (no constraint) when editing a past diary day', () => {
+      appStore.dispatch({ type: SWITCH_DATE, payload: '2000-01-01' });
+      const el = createPanel();
+
+      expect(el.getMaxEditableTime()).toBeUndefined();
+    });
+  });
+
+  // regression test: convertMinutesToTimePickerFormat used to render exactly
+  // midnight (1440 in its raw "minutes past day-boundary, extended past
+  // 1440" format) as "24:00" instead of "00:00" - reachable both from an
+  // entry starting exactly at midnight and, now, from the max-editable-time
+  // computation when "now" is exactly midnight.
+  it('formats exactly midnight (1440) as "00:00", not "24:00"', () => {
+    const el = createPanel();
+    expect(el.convertMinutesToTimePickerFormat(1440)).toBe('00:00');
   });
 });

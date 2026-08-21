@@ -55,3 +55,17 @@ export function formatDateKeyAsDDMMYYYY(dateKey) {
   const [year, month, day] = dateKey.split('-');
   return `${day}/${month}/${year}`;
 }
+
+// the latest editable clock-time-of-day for a Start/End time field, in
+// TimePickerPanel's own "minutes since midnight, extended past 1440 for
+// times after midnight but before the day boundary" format - or undefined
+// if diaryDateKey isn't the actual current diary day, since only "today"
+// has a meaningful "future" to restrict (a past diary day's whole span has
+// already happened; a future one is blocked from selection entirely by
+// the date picker).
+export function getMaxEditableTimeInMinutes(diaryDateKey, dayBoundaryInMinutes) {
+  if (diaryDateKey !== getCurrentDiaryDateKey()) {
+    return undefined;
+  }
+  return dayBoundaryInMinutes + getCurrentOffsetMins();
+}

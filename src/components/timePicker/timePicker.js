@@ -22,23 +22,20 @@ export class TimePicker extends TinyBase {
   store = super.getStore();
   timeInput;
   value;
-  maxTimeValue = this.getCurrentTime24();
+  // resolved once props are available, in connectedCallback - undefined
+  // means no future-time constraint currently applies (e.g. editing a
+  // past diary day)
+  maxTimeValue;
   time24Regex = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
   constructor() {
     super();
   }
 
-  getCurrentTime24() {
-    const now = new Date();
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    return `${hours}:${minutes}`;
-  }
-
   connectedCallback() {
     super.connectedCallback();
     // this.store.subscribe(()=>this.onStateUpdate()));
+    this.maxTimeValue = this.props?.getMaxTime?.();
     this.assignEventHandlers();
     if (this[CONSTRAINED]) {
       const intervalId = setInterval(this.updateTimeConstraints.bind(this), 30000);
@@ -52,12 +49,17 @@ export class TimePicker extends TinyBase {
       return;
     }
 
-    const newTime = this.getCurrentTime24();
+    const newTime = this.props?.getMaxTime?.();
 
-    // Only update the DOM if the minute has actually changed
+    // Only update the DOM if the minute (or constrained-ness) has actually changed
     if (newTime !== this.maxTimeValue) {
       this.maxTimeValue = newTime;
-      this.timeInput.setAttribute('max', this.maxTimeValue);
+      if (this.maxTimeValue === undefined) {
+        this.timeInput.removeAttribute('max');
+      } else {
+        this.timeInput.setAttribute('max', this.maxTimeValue);
+      }
+      this.validate();
     }
   }
 
@@ -78,7 +80,7 @@ export class TimePicker extends TinyBase {
         }
       });
     } else {
-      if (this[CONSTRAINED]) {
+      if (this[CONSTRAINED] && this.maxTimeValue !== undefined) {
         this.timeInput.setAttribute('max', this.maxTimeValue);
       }
     }
@@ -102,7 +104,7 @@ export class TimePicker extends TinyBase {
       this.showError(`The ${this[LABEL]} time field is required.`);
     } else if (value !== '' && !this.time24Regex.test(value)) {
       this.showError('Please enter a valid 24-hour time between 00:00 and 23:59.');
-    } else if (this[CONSTRAINED] && value > this.maxTimeValue) {
+    } else if (this[CONSTRAINED] && this.maxTimeValue !== undefined && value > this.maxTimeValue) {
       this.showError(
         `Time cannot be in the future. Please select a time at or before ${this.maxTimeValue}.`
       );

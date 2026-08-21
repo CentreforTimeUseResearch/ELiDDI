@@ -5,7 +5,9 @@ export default {
     {
       name: 'run-custom-script',
       transformIndexHtml(html) {
-        const output = execSync('node scripts/generate_no_js.js').toString().trim();
+        const output = execSync('node scripts/generate_no_js.js', { maxBuffer: 1024 * 1024 * 20 })
+          .toString()
+          .trim();
         return html.replace('__GENERATED__', output);
       },
     },

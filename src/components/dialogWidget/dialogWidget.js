@@ -1,55 +1,47 @@
 import './dialogWidget.css';
-import { Onboarding } from '../onboarding/onboarding';
 import { TinyBase } from '../base';
-import { DISMISS_ONBOARDING } from '../../store/actionTypes';
 
 const ID = 'id';
 const TEXT = 'text';
 const POSITION = 'position';
-const POINTER = 'pointer';
 const BACKDROP = 'backdrop';
 
 export class DialogWidget extends TinyBase {
-  static observedAttributes = [ID, TEXT, POSITION, POINTER, BACKDROP];
+  static observedAttributes = [ID, TEXT, POSITION, BACKDROP];
 
-  // text;
-  // onboarding;
-  // contentWindow;
   dialog;
-  store;
-  onboarding;
 
   constructor() {
     super();
-    this.store = super.getStore();
-    const { onboarding } = this.store.getState();
-    this.onboarding = onboarding;
   }
 
   connectedCallback() {
+    this.key = this.getAttribute('key');
+    this.props = this.getProps(this.key);
+
+    // register our actions before rendering: content (e.g. Onboarding) can
+    // call moveSpotlight/moveModalTop synchronously during its own first
+    // render, which happens nested inside ours via the render() call below
+    this.props?.registerDialogActions?.({
+      open: () => this.open(),
+      close: () => this.close(),
+      moveSpotlight: (x, y, size) => this.moveSpotlight(x, y, size),
+      moveModalTop: (y) => this.moveModalTop(y),
+    });
+
     this.render();
     this.dialog = this.querySelector('dialog');
 
-    this.querySelector('[data-skip]').addEventListener('click', () => {
-      this.store.dispatch({
-        type: DISMISS_ONBOARDING,
-      });
+    this.querySelector('[data-close]').addEventListener('click', () => {
+      if (this.props?.onRequestClose) {
+        this.props.onRequestClose();
+      } else {
+        this.close();
+      }
     });
-    this.registerCleanup(this.store.subscribe(this.updateState.bind(this)));
-    this.updateState();
   }
 
-  updateState() {
-    const { onboarding } = this.store.getState();
-    this.onboarding = onboarding;
-    if (this.onboarding) {
-      this.showModal();
-    } else {
-      this.close();
-    }
-  }
-
-  showModal() {
+  open() {
     if (!this.dialog) {
       console.error('missing dialog element!');
       return;
@@ -85,18 +77,16 @@ export class DialogWidget extends TinyBase {
     this.innerHTML = `
         <dialog id="dialog">
             <div class="dialog-layout">
-                <div class="dialog-content"> 
-                    ${this.onboarding ? `<el-onboarding ${this.setProps({ moveSpotlight: this.moveSpotlight, moveModalTop: this.moveModalTop })}></el-onboarding>` : `<div></div>`}
+                <div class="dialog-content">
+                    ${this.props?.content ?? ''}
                 </div>
                 <div class="dialog-actions">
-                      <button class="reset-to-div" data-skip>skip</button>
+                      <button class="reset-to-div" data-close>${this.props?.closeLabel ?? 'close'}</button>
                 </div>
             </div>
         </dialog>
         `;
   }
 }
-
-// <div class="help-popover-content">${this[TEXT]}</div>
 
 customElements.define('el-dialog', DialogWidget);

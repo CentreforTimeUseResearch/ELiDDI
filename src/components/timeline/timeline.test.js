@@ -6,7 +6,8 @@ import { Timeline } from './timeline';
 // Pull that in explicitly so the panelActions contract can actually wire up.
 import '../detailsPanel/detailsPanel';
 import { appStore } from '../../store/appStore';
-import { ADD_TIMELINE } from '../../store/actionTypes';
+import { ADD_ENTRY, SWITCH_DATE } from '../../store/actionTypes';
+import { getCurrentDiaryDateKey } from '../../utils/time';
 
 // renderEntriesInto is the renderer shared by renderEntries() and
 // renderShadowDimension() (previously ~45 lines duplicated between them,
@@ -130,17 +131,6 @@ describe('Timeline panelActions contract', () => {
       document.head.appendChild(template);
     }
     document.body.innerHTML = '';
-
-    // the timelines reducer slices/pads by index, so it needs every slot
-    // touched at least once - the real app does this for free because
-    // TimelineStack mounts one <el-timeline> per dimension, in order, all
-    // at once; seed the same shape here rather than depending on which
-    // single dimension index a given test happens to mount
-    for (let dimensionIndex = 0; dimensionIndex < 6; dimensionIndex++) {
-      if (!Array.isArray(appStore.getState().timelines[dimensionIndex])) {
-        appStore.dispatch({ type: ADD_TIMELINE, payload: { dimensionIndex } });
-      }
-    }
   });
 
   function createTimeline(dimensionIndex) {
@@ -200,5 +190,136 @@ describe('Timeline panelActions contract', () => {
 
     expect(reportSaveConflict).toHaveBeenCalledOnce();
     expect(close).not.toHaveBeenCalled();
+  });
+});
+
+// regression coverage for Phase 9's multi-day data model: entries are now
+// keyed by date as well as dimension, and every mounted Timeline needs to
+// redraw when the store's currentDate changes underneath it (unlike an
+// edit, which the acting instance already re-renders itself after).
+describe('Timeline multi-day scoping', () => {
+  beforeEach(() => {
+    if (!customElements.get('el-timeline')) {
+      customElements.define('el-timeline', Timeline);
+    }
+    if (!document.getElementById('svg-timeline')) {
+      const template = document.createElement('template');
+      template.id = 'svg-timeline';
+      template.innerHTML = `
+        <svg>
+          <g id="timeline-shadow"></g>
+          <rect id="future-overlay"></rect>
+          <g id="events"></g>
+        </svg>
+      `;
+      document.head.appendChild(template);
+    }
+    document.body.innerHTML = '';
+  });
+
+  function createTimeline(dimensionIndex) {
+    const el = document.createElement('el-timeline');
+    el.setAttribute('index', String(dimensionIndex));
+    document.body.appendChild(el);
+    return el;
+  }
+
+  it('keeps entries created on one date out of another date for the same dimension', () => {
+    const dateA = '2026-08-21';
+    const dateB = '2026-08-22';
+    appStore.dispatch({ type: SWITCH_DATE, payload: dateA });
+    const el = createTimeline(3); // Who
+
+    el.createEntry({ startOffsetMins: 0, endOffsetMins: 30, activity: 'Family' });
+    expect(el.entries).toHaveLength(1);
+
+    appStore.dispatch({ type: SWITCH_DATE, payload: dateB });
+    expect(el.entries).toHaveLength(0);
+
+    appStore.dispatch({ type: SWITCH_DATE, payload: dateA });
+    expect(el.entries).toHaveLength(1);
+  });
+
+  it('redraws the SVG entries layer when the date changes', () => {
+    const dateC = '2026-09-01';
+    const dateD = '2026-09-02';
+    appStore.dispatch({ type: SWITCH_DATE, payload: dateC });
+    appStore.dispatch({
+      type: ADD_ENTRY,
+      payload: {
+        dimensionIndex: 3,
+        date: dateC,
+        startOffsetMins: 0,
+        endOffsetMins: 30,
+        activity: 'Family',
+        id: 1,
+      },
+    });
+
+    // mounted while dateC is current, so the pre-existing entry should
+    // already be drawn
+    const el = createTimeline(3);
+    expect(el.querySelector('#events rect[data-id="1"]')).not.toBeNull();
+
+    appStore.dispatch({ type: SWITCH_DATE, payload: dateD });
+
+    expect(el.querySelector('#events rect[data-id="1"]')).toBeNull();
+  });
+});
+
+// regression coverage: the future overlay greys out the remainder of
+// "today" on the timeline - it should only appear when the diary date
+// being viewed is the actual current diary day, not a past (or future) one
+describe('Timeline future overlay', () => {
+  beforeEach(() => {
+    if (!customElements.get('el-timeline')) {
+      customElements.define('el-timeline', Timeline);
+    }
+    if (!document.getElementById('svg-timeline')) {
+      const template = document.createElement('template');
+      template.id = 'svg-timeline';
+      template.innerHTML = `
+        <svg>
+          <g id="timeline-shadow"></g>
+          <rect id="future-overlay"></rect>
+          <g id="events"></g>
+        </svg>
+      `;
+      document.head.appendChild(template);
+    }
+    document.body.innerHTML = '';
+  });
+
+  function createTimeline(dimensionIndex) {
+    const el = document.createElement('el-timeline');
+    el.setAttribute('index', String(dimensionIndex));
+    document.body.appendChild(el);
+    return el;
+  }
+
+  it('shows the future overlay when viewing the actual current diary day', () => {
+    appStore.dispatch({ type: SWITCH_DATE, payload: getCurrentDiaryDateKey() });
+    const el = createTimeline(4);
+
+    const height = Number(el.querySelector('#future-overlay').getAttribute('height'));
+    expect(height).toBeGreaterThan(0);
+  });
+
+  it('hides the future overlay for a past diary day', () => {
+    appStore.dispatch({ type: SWITCH_DATE, payload: '2000-01-01' });
+    const el = createTimeline(4);
+
+    const height = Number(el.querySelector('#future-overlay').getAttribute('height'));
+    expect(height).toBe(0);
+  });
+
+  it('hides the future overlay immediately on switching away from today, without waiting for the 30s interval', () => {
+    appStore.dispatch({ type: SWITCH_DATE, payload: getCurrentDiaryDateKey() });
+    const el = createTimeline(4);
+    expect(Number(el.querySelector('#future-overlay').getAttribute('height'))).toBeGreaterThan(0);
+
+    appStore.dispatch({ type: SWITCH_DATE, payload: '2000-01-01' });
+
+    expect(Number(el.querySelector('#future-overlay').getAttribute('height'))).toBe(0);
   });
 });

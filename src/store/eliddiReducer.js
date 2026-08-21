@@ -1,4 +1,5 @@
 import { combineReducers } from './store';
+import { getCurrentDiaryDateKey } from '../utils/time';
 import {
   RESET_ONBOARDING,
   DISMISS_ONBOARDING,
@@ -8,11 +9,11 @@ import {
   HIDE_PANEL,
   SWITCH_DIMENSION,
   RESET_DIMENSION_INDEX,
+  SWITCH_DATE,
   ADD_TIMELINE,
   ADD_ENTRY,
   UPDATE_ENTRY,
   DELETE_ENTRY,
-  SELECT_ENTRY,
   SET_STATUS,
   RESET_STATUS,
   SET_COMPLETE,
@@ -65,6 +66,7 @@ const currentDimensionIndex = (state = 0, action) => {
   }
 };
 
+// per-Dimension Entry[] reducer, one Timeline's worth of Entries
 const timeline = (state = [], action) => {
   const { startOffsetMins, endOffsetMins, id, activity, index } = action.payload;
   switch (action?.type) {
@@ -91,37 +93,30 @@ const timeline = (state = [], action) => {
   }
 };
 
-const selectedEntry = (state = undefined, action) => {
-  switch (action?.type) {
-    case SELECT_ENTRY:
-      return {
-        dimension: action.dimensionIndex,
-        index: action.index,
-      };
-    default:
-      return state;
-  }
-};
-
-const timelines = (state = [], action) => {
+// one Diary's six per-Dimension Timelines. Uses direct index assignment on
+// a copied array (not slice-splice) so it's correct regardless of which
+// dimension index is touched first - slice-splice only produced correct
+// results if every index had been touched at least once in order.
+const dimensionTimelines = (state = [], action) => {
   const index = action?.payload?.dimensionIndex;
+  if (index === undefined) return state;
+  const next = [...state];
   switch (action?.type) {
+    case ADD_TIMELINE:
+      next[index] = [];
+      return next;
     case ADD_ENTRY:
     case UPDATE_ENTRY:
     case DELETE_ENTRY:
-      return [
-        ...state.slice(0, index),
-        [...timeline(state[index], action)],
-        ...state.slice(index + 1),
-      ];
-    case ADD_TIMELINE:
-      return [...state.slice(0, index), [], ...state.slice(index + 1)];
+      next[index] = timeline(next[index], action);
+      return next;
     default:
       return state;
   }
 };
 
-const status = (state = 0, action) => {
+// one Diary's status
+const diaryStatus = (state = 0, action) => {
   switch (action?.type) {
     case SET_STATUS:
       return state;
@@ -134,12 +129,47 @@ const status = (state = 0, action) => {
   }
 };
 
+// one Diary = its Timelines + its Diary status (see GLOSSARY.md)
+const diary = (state = { timelines: [], status: 0 }, action) => ({
+  timelines: dimensionTimelines(state.timelines, action),
+  status: diaryStatus(state.status, action),
+});
+
+// all Diaries, keyed by date (YYYY-MM-DD)
+const diaries = (state = {}, action) => {
+  const dateKey = action?.payload?.date;
+  if (!dateKey) return state;
+  switch (action?.type) {
+    case ADD_TIMELINE:
+    case ADD_ENTRY:
+    case UPDATE_ENTRY:
+    case DELETE_ENTRY:
+    case SET_STATUS:
+    case RESET_STATUS:
+    case SET_COMPLETE:
+      return { ...state, [dateKey]: diary(state[dateKey], action) };
+    default:
+      return state;
+  }
+};
+
+// currently-viewed date - persisted like any other diary data (see
+// appStore.js), so the default below only matters on the very
+// first-ever load, before anything has been persisted
+const currentDate = (state = getCurrentDiaryDateKey(), action) => {
+  switch (action?.type) {
+    case SWITCH_DATE:
+      return action.payload;
+    default:
+      return state;
+  }
+};
+
 export const eliddiReducer = combineReducers({
   onboarding,
   onboardingStep,
   uipanel,
   currentDimensionIndex,
-  timelines,
-  selectedEntry,
-  status,
+  currentDate,
+  diaries,
 });

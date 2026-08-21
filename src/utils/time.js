@@ -25,5 +25,33 @@ export function getCurrentOffsetMins() {
   const now = new Date();
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
   const MINUTES_PER_DAY = 24 * 60;
-  return ((nowMinutes - getDayBoundaryInMinutes()) + MINUTES_PER_DAY) % MINUTES_PER_DAY;
+  return (nowMinutes - getDayBoundaryInMinutes() + MINUTES_PER_DAY) % MINUTES_PER_DAY;
+}
+
+// the single seam deciding "what date counts as the diary day" on the very
+// first-ever load (currentDate is persisted after that, see appStore.js) -
+// a deployment restricted to a fixed past period only needs to change what
+// this returns, nothing else needs to know. Formats from local date parts
+// rather than toISOString(), which converts to UTC and can shift the date
+// near midnight in non-UTC timezones.
+export function getCurrentDiaryDateKey() {
+  const now = new Date();
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const diaryDate = new Date(now);
+  if (nowMinutes < getDayBoundaryInMinutes()) {
+    diaryDate.setDate(diaryDate.getDate() - 1);
+  }
+  const year = diaryDate.getFullYear();
+  const month = String(diaryDate.getMonth() + 1).padStart(2, '0');
+  const day = String(diaryDate.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+// formats a diary date key ("YYYY-MM-DD") for display as "DD/MM/YYYY" - a
+// plain string reformat rather than parsing through new Date(dateKey),
+// which reads the key as UTC midnight and can shift the displayed date by
+// a day in timezones behind UTC
+export function formatDateKeyAsDDMMYYYY(dateKey) {
+  const [year, month, day] = dateKey.split('-');
+  return `${day}/${month}/${year}`;
 }

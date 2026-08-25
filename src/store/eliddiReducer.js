@@ -129,7 +129,7 @@ const diaryStatus = (state = 0, action) => {
   }
 };
 
-// one Diary = its Timelines + its Diary status (see GLOSSARY.md)
+// one Diary = its Timelines + its Diary status (see CONTEXT.md)
 const diary = (state = { timelines: [], status: 0 }, action) => ({
   timelines: dimensionTimelines(state.timelines, action),
   status: diaryStatus(state.status, action),

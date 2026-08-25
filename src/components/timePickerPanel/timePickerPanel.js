@@ -130,24 +130,32 @@ export class TimePickerPanel extends TinyBase {
   }
 
   onTimeInputChange(fieldId, valueInMinutes) {
+    // valueInMinutes arrives as a number when it comes from a typed/picked
+    // time or the "continue to end of day" checkbox, but as a string when
+    // it comes via the start-time/end-time HTML attribute (e.g. reopening
+    // a saved entry - HTML attributes are always strings). Coercing here,
+    // at the one place both paths converge, keeps every downstream
+    // consumer (recalculateDuration's < comparison and += in particular)
+    // working with numbers, not a string/number mix.
+    const minutes = Number(valueInMinutes);
     switch (fieldId) {
       case 'startTime':
         /* we can't have a start time less than the day boundary */
-        this.startInputMinutes = valueInMinutes;
+        this.startInputMinutes = minutes;
         this.props.onTimeSet({ timeField: 'startTime', timeInMinutes: this.startInputMinutes });
         if (this.endInputMinutes) {
           this.recalculateDuration(this.startInputMinutes, this.endInputMinutes);
         }
         break;
       case 'endTime':
-        this.endInputMinutes = valueInMinutes;
+        this.endInputMinutes = minutes;
         this.props.onTimeSet({ timeField: 'endTime', timeInMinutes: this.endInputMinutes });
         if (this.startInputMinutes) {
           this.recalculateDuration(this.startInputMinutes, this.endInputMinutes);
         }
         break;
       case 'duration':
-        this.durationInputMinutes = valueInMinutes;
+        this.durationInputMinutes = minutes;
         if (this.startInputMinutes) {
           this.recalculateEndTime(this.startInputMinutes, this.durationInputMinutes);
         }

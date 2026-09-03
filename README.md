@@ -1,4 +1,5 @@
 # ELiDDI
+
 ### Extended Light Digital Diary Instrument
 
 > **🌱 This project is just getting started.** Development is in its earliest stage — but regular updates are on the way. Watch or star the repo to follow along.
@@ -15,13 +16,13 @@ The full feature set, and documentation are actively being developed. Please let
 
 ## Current Status
 
-| Area | Status |
-|---|---|
-| Core concept | ✅ Defined |
-| Architecture | 🔄 In progress |
-| Implementation | 🕐 Coming soon |
-| Documentation | 🕐 Coming soon |
-| First release | 🕐 Coming soon |
+| Area           | Status         |
+| -------------- | -------------- |
+| Core concept   | ✅ Defined     |
+| Architecture   | ✅ Defined     |
+| Implementation | 🔄 In progress |
+| Documentation  | 🕐 Coming soon |
+| First release  | 🕐 Coming soon |
 
 ---
 
@@ -72,8 +73,8 @@ A detailed roadmap will be published shortly. For now, the immediate priorities 
 
 ## Licence
 
-MIT 
+MIT
 
 ---
 
-*Last updated: May 2026*
+_Last updated: May 2026_

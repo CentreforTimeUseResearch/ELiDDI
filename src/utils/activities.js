@@ -1,4 +1,4 @@
-// Activities in config/activities.json come in two flavors: "coded" (Primary/Secondary,
+// Activities in config/config.json come in two flavors: "coded" (Primary/Secondary,
 // which have a `label`) and "example" (Location/Who/Device/Enjoyment, which only have
 // `name`). Anything reading an activity's display text must fall back to `name`.
 export function getActivityDisplayName(activity) {

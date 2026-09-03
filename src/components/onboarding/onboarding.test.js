@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Onboarding } from './onboarding';
 import { TinyBase } from '../base';
-import activities from '../../../config/activities.json';
+import activities from '../../../config/config.json';
 
 class TestHarness extends TinyBase {}
 if (!customElements.get('test-harness-onboarding')) {

@@ -6,7 +6,7 @@ const environment = process.env.ACTIONS_ENV;
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
 const __dirname = path.dirname(__filename); // get the name of the directory
 
-const filePath = path.join(__dirname, '../config/activities.json');
+const filePath = path.join(__dirname, '../config/config.json');
 const startTimeHour = 4;
 const minutesPerDay = 1440;
 const rows = minutesPerDay / 10;

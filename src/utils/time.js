@@ -1,4 +1,4 @@
-// Entries store times as offsets in minutes from config/activities.json's
+// Entries store times as offsets in minutes from config/config.json's
 // general.day_boundary (e.g. "04:00"), not from midnight - see CONTEXT.md.
 export function getDayBoundaryInMinutes() {
   const [hours, minutes] = GLOBALS.DATA.day_boundary.split(':').map(Number);

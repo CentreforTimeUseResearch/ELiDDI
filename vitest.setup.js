@@ -1,7 +1,7 @@
-import activities from './config/activities.json';
+import activities from './config/config.json';
 
 // The app is normally bootstrapped by scripts/generate_no_js.js injecting
-// `GLOBALS = {DATA: <activities.json>}` as an inline script before any
+// `GLOBALS = {DATA: <config.json>}` as an inline script before any
 // component code runs (see index.html / src/main.js). Components read this
 // global directly, so tests need the same global available before any
 // custom element is defined/constructed.

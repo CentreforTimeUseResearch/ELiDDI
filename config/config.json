@@ -1,4 +1,5 @@
 {
+  "$schema": "./config.schema.json",
   "general": {
     "experimentID": "eR8ENvJPgQth",
     "app_name": "O-TUD",

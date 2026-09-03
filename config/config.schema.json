@@ -1,0 +1,207 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ELiDDI activities configuration",
+  "description": "Validates config/config.json. `general` metadata is documented but not read by build code; `day_boundary` and `instructions` (onboarding steps) are read directly off the top level by src/ at runtime; `timeline[0..4]` are read positionally by scripts/generate_no_js.js (Primary, Secondary, Location, Who, Device) - order matters.",
+  "type": "object",
+  "required": ["general", "day_boundary", "instructions", "timeline"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "general": { "$ref": "#/definitions/general" },
+    "day_boundary": {
+      "type": "string",
+      "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+      "description": "Clock time (HH:MM) that the diary day starts at - read as GLOBALS.DATA.day_boundary by src/utils/time.js and others, not by any field under general."
+    },
+    "instructions": {
+      "type": "array",
+      "description": "Onboarding walkthrough steps, read as GLOBALS.DATA.instructions by src/components/onboarding and src/components/contextualHelp.",
+      "items": { "$ref": "#/definitions/onboardingStep" }
+    },
+    "timeline": { "$ref": "#/definitions/timeline" }
+  },
+  "definitions": {
+    "hexColor": {
+      "type": "string",
+      "pattern": "^#[0-9a-fA-F]{6}$"
+    },
+    "general": {
+      "type": "object",
+      "required": ["experimentID", "primary_redirect_url"],
+      "properties": {
+        "experimentID": { "type": "string" },
+        "app_name": { "type": "string" },
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+(\\.\\d+){0,2}$"
+        },
+        "author": { "type": "string" },
+        "language": {
+          "type": "string",
+          "pattern": "^[a-zA-Z]{2}$"
+        },
+        "instructions": {
+          "type": "boolean",
+          "description": "Despite the name, this is a boolean toggle, not text - the actual onboarding step text lives in the top-level `instructions` array."
+        },
+        "primary_redirect_url": { "type": "string" },
+        "fallbackToCSV": { "type": "boolean" },
+        "accessibility": { "$ref": "#/definitions/accessibility" }
+      }
+    },
+    "accessibility": {
+      "type": "object",
+      "properties": {
+        "enableReducedMotion": { "type": "boolean" },
+        "enableHighContrast": { "type": "boolean" },
+        "enableForcedColors": { "type": "boolean" },
+        "autoscrollSpeed": {
+          "type": "number",
+          "description": "ELiDDI-specific extension - not part of the upstream O-TUD accessibility spec."
+        }
+      }
+    },
+    "onboardingStep": {
+      "type": "object",
+      "required": ["title", "text", "spotlight"],
+      "properties": {
+        "title": { "type": "string" },
+        "text": { "type": "string" },
+        "spotlight": {
+          "type": "array",
+          "items": { "type": "number" }
+        },
+        "modalTop": { "type": "string" },
+        "showPanel": { "type": "string" }
+      }
+    },
+    "timeline": {
+      "type": "array",
+      "minItems": 5,
+      "items": [
+        {
+          "allOf": [{ "$ref": "#/definitions/timelineColumn" }],
+          "description": "Index 0 - Primary activity"
+        },
+        {
+          "allOf": [{ "$ref": "#/definitions/timelineColumn" }],
+          "description": "Index 1 - Secondary activity"
+        },
+        {
+          "allOf": [{ "$ref": "#/definitions/timelineColumn" }],
+          "description": "Index 2 - Location"
+        },
+        {
+          "allOf": [{ "$ref": "#/definitions/timelineColumn" }],
+          "description": "Index 3 - Who"
+        },
+        {
+          "allOf": [{ "$ref": "#/definitions/timelineColumn" }],
+          "description": "Index 4 - Device"
+        }
+      ],
+      "additionalItems": {
+        "allOf": [{ "$ref": "#/definitions/timelineColumn" }],
+        "description": "Index 5+ - conventionally Enjoyment; not read positionally by generate_no_js.js"
+      }
+    },
+    "timelineColumn": {
+      "type": "object",
+      "required": ["name", "description", "mode", "min_coverage", "categories"],
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "instruction": { "type": "string" },
+        "mode": {
+          "type": "string",
+          "enum": ["single-choice", "multiple-choice"]
+        },
+        "min_coverage": {
+          "type": "string",
+          "pattern": "^\\d+$",
+          "description": "A string of digits, not a number, despite representing a numeric minimum coverage."
+        },
+        "allow_free_text": { "type": "boolean" },
+        "categories": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/category" }
+        }
+      }
+    },
+    "category": {
+      "type": "object",
+      "required": ["name", "activities"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "A literal single space (\" \") is used as a dummy name on columns with no real category grouping - deliberately not restricted to non-whitespace."
+        },
+        "color": { "$ref": "#/definitions/hexColor" },
+        "activities": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/activity" }
+        }
+      }
+    },
+    "activity": {
+      "type": "object",
+      "description": "Activities come in two observed flavors: 'coded' (code/label/short/vshort, used by Primary/Secondary) and 'example' (examples, always \"\", used by Location/Who/Device/Enjoyment) - plus a minimal third shape (name + color only) for some 'Other' entries.",
+      "required": ["name", "color"],
+      "properties": {
+        "name": { "type": "string" },
+        "code": { "type": "integer" },
+        "label": { "type": "string" },
+        "short": { "type": "string" },
+        "vshort": { "type": "string" },
+        "color": { "$ref": "#/definitions/hexColor" },
+        "examples": { "type": "string" },
+        "childItems": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/childItem" }
+        },
+        "subselection": { "$ref": "#/definitions/subselection" }
+      },
+      "dependencies": {
+        "label": ["short", "vshort"],
+        "short": ["label", "vshort"],
+        "vshort": ["label", "short"]
+      }
+    },
+    "childItem": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" },
+        "code": { "type": "integer" },
+        "label": { "type": "string" },
+        "short": { "type": "string" },
+        "vshort": { "type": "string" },
+        "color": { "$ref": "#/definitions/hexColor" },
+        "examples": { "type": "string" },
+        "childItems": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/childItem" }
+        },
+        "subselection": { "$ref": "#/definitions/subselection" }
+      },
+      "dependencies": {
+        "label": ["short", "vshort"],
+        "short": ["label", "vshort"],
+        "vshort": ["label", "short"]
+      }
+    },
+    "subselection": {
+      "type": "object",
+      "required": ["questions"],
+      "properties": {
+        "questions": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

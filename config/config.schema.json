@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "ELiDDI activities configuration",
-  "description": "Validates config/config.json. `general` metadata is documented but not read by build code; `day_boundary` and `instructions` (onboarding steps) are read directly off the top level by src/ at runtime; `timeline[0..4]` are read positionally by scripts/generate_no_js.js (Primary, Secondary, Location, Who, Device) - order matters.",
+  "description": "Validates config/config.json. `general` metadata is documented but not read by build code; `day_boundary` and `instructions` (onboarding steps) are read directly off the top level by src/ at runtime; `timeline` order controls display order in the JS-enhanced layer (see the `timeline` definition below) - scripts/generate_no_js.js itself is order-independent.",
   "type": "object",
   "required": ["general", "day_boundary", "instructions", "timeline"],
   "properties": {
@@ -77,32 +77,8 @@
     "timeline": {
       "type": "array",
       "minItems": 5,
-      "items": [
-        {
-          "allOf": [{ "$ref": "#/definitions/timelineColumn" }],
-          "description": "Index 0 - Primary activity"
-        },
-        {
-          "allOf": [{ "$ref": "#/definitions/timelineColumn" }],
-          "description": "Index 1 - Secondary activity"
-        },
-        {
-          "allOf": [{ "$ref": "#/definitions/timelineColumn" }],
-          "description": "Index 2 - Location"
-        },
-        {
-          "allOf": [{ "$ref": "#/definitions/timelineColumn" }],
-          "description": "Index 3 - Who"
-        },
-        {
-          "allOf": [{ "$ref": "#/definitions/timelineColumn" }],
-          "description": "Index 4 - Device"
-        }
-      ],
-      "additionalItems": {
-        "allOf": [{ "$ref": "#/definitions/timelineColumn" }],
-        "description": "Index 5+ - conventionally Enjoyment; not read positionally by generate_no_js.js"
-      }
+      "description": "Order controls display order only, in the JS-enhanced layer: src/components/timelineStack/timelineStack.js assigns each dimension a 0-based index in array order, and that index is what Timeline/ActivityPicker use to look up GLOBALS.DATA.timeline[dimensionIndex] - so array position determines which dimension shows first and the picker's left-to-right sequence, not which dimension it must be. No dimension is required at a specific index. scripts/generate_no_js.js itself is order-independent - it builds every dimension's no-JS form generically from that dimension's own `mode`/`name` fields, never by position.",
+      "items": { "$ref": "#/definitions/timelineColumn" }
     },
     "timelineColumn": {
       "type": "object",

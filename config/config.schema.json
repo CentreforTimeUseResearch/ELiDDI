@@ -5,8 +5,12 @@
   "type": "object",
   "required": ["general", "day_boundary", "instructions", "timeline"],
   "properties": {
-    "$schema": { "type": "string" },
-    "general": { "$ref": "#/definitions/general" },
+    "$schema": {
+      "type": "string"
+    },
+    "general": {
+      "$ref": "#/definitions/general"
+    },
     "day_boundary": {
       "type": "string",
       "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
@@ -15,9 +19,13 @@
     "instructions": {
       "type": "array",
       "description": "Onboarding walkthrough steps, read as GLOBALS.DATA.instructions by src/components/onboarding and src/components/contextualHelp.",
-      "items": { "$ref": "#/definitions/onboardingStep" }
+      "items": {
+        "$ref": "#/definitions/onboardingStep"
+      }
     },
-    "timeline": { "$ref": "#/definitions/timeline" }
+    "timeline": {
+      "$ref": "#/definitions/timeline"
+    }
   },
   "definitions": {
     "hexColor": {
@@ -28,13 +36,19 @@
       "type": "object",
       "required": ["experimentID", "primary_redirect_url"],
       "properties": {
-        "experimentID": { "type": "string" },
-        "app_name": { "type": "string" },
+        "experimentID": {
+          "type": "string"
+        },
+        "app_name": {
+          "type": "string"
+        },
         "version": {
           "type": "string",
           "pattern": "^\\d+(\\.\\d+){0,2}$"
         },
-        "author": { "type": "string" },
+        "author": {
+          "type": "string"
+        },
         "language": {
           "type": "string",
           "pattern": "^[a-zA-Z]{2}$"
@@ -43,17 +57,29 @@
           "type": "boolean",
           "description": "Despite the name, this is a boolean toggle, not text - the actual onboarding step text lives in the top-level `instructions` array."
         },
-        "primary_redirect_url": { "type": "string" },
-        "fallbackToCSV": { "type": "boolean" },
-        "accessibility": { "$ref": "#/definitions/accessibility" }
+        "primary_redirect_url": {
+          "type": "string"
+        },
+        "fallbackToCSV": {
+          "type": "boolean"
+        },
+        "accessibility": {
+          "$ref": "#/definitions/accessibility"
+        }
       }
     },
     "accessibility": {
       "type": "object",
       "properties": {
-        "enableReducedMotion": { "type": "boolean" },
-        "enableHighContrast": { "type": "boolean" },
-        "enableForcedColors": { "type": "boolean" },
+        "enableReducedMotion": {
+          "type": "boolean"
+        },
+        "enableHighContrast": {
+          "type": "boolean"
+        },
+        "enableForcedColors": {
+          "type": "boolean"
+        },
         "autoscrollSpeed": {
           "type": "number",
           "description": "ELiDDI-specific extension - not part of the upstream O-TUD accessibility spec."
@@ -64,29 +90,47 @@
       "type": "object",
       "required": ["title", "text", "spotlight"],
       "properties": {
-        "title": { "type": "string" },
-        "text": { "type": "string" },
+        "title": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
         "spotlight": {
           "type": "array",
-          "items": { "type": "number" }
+          "items": {
+            "type": "number"
+          }
         },
-        "modalTop": { "type": "string" },
-        "showPanel": { "type": "string" }
+        "modalTop": {
+          "type": "string"
+        },
+        "showPanel": {
+          "type": "string"
+        }
       }
     },
     "timeline": {
       "type": "array",
       "minItems": 5,
       "description": "Order controls display order only, in the JS-enhanced layer: src/components/timelineStack/timelineStack.js assigns each dimension a 0-based index in array order, and that index is what Timeline/ActivityPicker use to look up GLOBALS.DATA.timeline[dimensionIndex] - so array position determines which dimension shows first and the picker's left-to-right sequence, not which dimension it must be. No dimension is required at a specific index. scripts/generate_no_js.js itself is order-independent - it builds every dimension's no-JS form generically from that dimension's own `mode`/`name` fields, never by position.",
-      "items": { "$ref": "#/definitions/timelineColumn" }
+      "items": {
+        "$ref": "#/definitions/timelineColumn"
+      }
     },
     "timelineColumn": {
       "type": "object",
       "required": ["name", "description", "mode", "min_coverage", "categories"],
       "properties": {
-        "name": { "type": "string" },
-        "description": { "type": "string" },
-        "instruction": { "type": "string" },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "instruction": {
+          "type": "string"
+        },
         "mode": {
           "type": "string",
           "enum": ["single-choice", "multiple-choice"]
@@ -96,10 +140,14 @@
           "pattern": "^\\d+$",
           "description": "A string of digits, not a number, despite representing a numeric minimum coverage."
         },
-        "allow_free_text": { "type": "boolean" },
+        "allow_free_text": {
+          "type": "boolean"
+        },
         "categories": {
           "type": "array",
-          "items": { "$ref": "#/definitions/category" }
+          "items": {
+            "$ref": "#/definitions/category"
+          }
         }
       }
     },
@@ -112,10 +160,14 @@
           "minLength": 1,
           "description": "A literal single space (\" \") is used as a dummy name on columns with no real category grouping - deliberately not restricted to non-whitespace."
         },
-        "color": { "$ref": "#/definitions/hexColor" },
+        "color": {
+          "$ref": "#/definitions/hexColor"
+        },
         "activities": {
           "type": "array",
-          "items": { "$ref": "#/definitions/activity" }
+          "items": {
+            "$ref": "#/definitions/activity"
+          }
         }
       }
     },
@@ -124,18 +176,36 @@
       "description": "Activities come in two observed flavors: 'coded' (code/label/short/vshort, used by Primary/Secondary) and 'example' (examples, always \"\", used by Location/Who/Device/Enjoyment) - plus a minimal third shape (name + color only) for some 'Other' entries.",
       "required": ["name", "color"],
       "properties": {
-        "name": { "type": "string" },
-        "code": { "type": "integer" },
-        "label": { "type": "string" },
-        "short": { "type": "string" },
-        "vshort": { "type": "string" },
-        "color": { "$ref": "#/definitions/hexColor" },
-        "examples": { "type": "string" },
+        "name": {
+          "type": "string"
+        },
+        "code": {
+          "type": "integer"
+        },
+        "label": {
+          "type": "string"
+        },
+        "short": {
+          "type": "string"
+        },
+        "vshort": {
+          "type": "string"
+        },
+        "color": {
+          "$ref": "#/definitions/hexColor"
+        },
+        "examples": {
+          "type": "string"
+        },
         "childItems": {
           "type": "array",
-          "items": { "$ref": "#/definitions/childItem" }
+          "items": {
+            "$ref": "#/definitions/childItem"
+          }
         },
-        "subselection": { "$ref": "#/definitions/subselection" }
+        "subselection": {
+          "$ref": "#/definitions/subselection"
+        }
       },
       "dependencies": {
         "label": ["short", "vshort"],
@@ -147,18 +217,36 @@
       "type": "object",
       "required": ["name"],
       "properties": {
-        "name": { "type": "string" },
-        "code": { "type": "integer" },
-        "label": { "type": "string" },
-        "short": { "type": "string" },
-        "vshort": { "type": "string" },
-        "color": { "$ref": "#/definitions/hexColor" },
-        "examples": { "type": "string" },
+        "name": {
+          "type": "string"
+        },
+        "code": {
+          "type": "integer"
+        },
+        "label": {
+          "type": "string"
+        },
+        "short": {
+          "type": "string"
+        },
+        "vshort": {
+          "type": "string"
+        },
+        "color": {
+          "$ref": "#/definitions/hexColor"
+        },
+        "examples": {
+          "type": "string"
+        },
         "childItems": {
           "type": "array",
-          "items": { "$ref": "#/definitions/childItem" }
+          "items": {
+            "$ref": "#/definitions/childItem"
+          }
         },
-        "subselection": { "$ref": "#/definitions/subselection" }
+        "subselection": {
+          "$ref": "#/definitions/subselection"
+        }
       },
       "dependencies": {
         "label": ["short", "vshort"],
@@ -174,7 +262,9 @@
           "type": "array",
           "items": {
             "type": "array",
-            "items": { "type": "string" }
+            "items": {
+              "type": "string"
+            }
           }
         }
       }

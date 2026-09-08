@@ -17,6 +17,10 @@ _Avoid_: Column
 **Timeline**:
 One Respondent's filled-in record of Entries for a single Dimension, within one Diary — e.g. "the Location timeline" is everywhere they've recorded where they were, across the whole day.
 
+**Primary activity mirror**:
+A read-only reference view of the Respondent's Primary activity Timeline, displayed alongside every other Dimension's Timeline so they can see what they logged for Primary activity while recording other Dimensions. Not independently editable — Entries can only be changed on the Primary activity Timeline itself.
+_Avoid_: Shadow (the internal code name for this — fine in implementation, but keep "mirror" as the domain-facing term)
+
 **Respondent**:
 The person filling in the diary. Every other term here is defined from their point of view — they're the implicit actor behind every Entry.
 

@@ -322,6 +322,12 @@ export class Timeline extends TinyBase {
 
   onEntryPointerMove(e) {
     if (this.activeDrag && e.pointerId === this.activeDrag.pointerId) {
+      // touch-action:none on the handle/SVG (see startHandleDrag and
+      // timeline.css) should already stop the scrollable timeline stack
+      // from panning during this drag, but SVG shape elements have a long
+      // history of unreliable touch-action support on their own - this is
+      // the reliable fallback, independent of that CSS support level
+      e.preventDefault?.();
       this.updateDragToSvgY(this.clientYToSvgY(e.clientX, e.clientY));
       return;
     }
@@ -377,6 +383,10 @@ export class Timeline extends TinyBase {
       // pointer capture is best-effort - the delegated listeners on the SVG
       // still track the drag correctly without it in the common case
     }
+    // stops the scrollable timeline stack (see timelineStack.css) from
+    // panning under a touch drag - see the pointermove preventDefault() in
+    // onEntryPointerMove for why this alone isn't relied on
+    this.timeLineElement?.classList.add('dragging-handle');
     // fixed for the whole drag, rather than recomputed as the pointer moves
     // past other entries - "the adjacent entry" means this entry's immediate
     // temporal neighbors as they stood when the drag started
@@ -559,6 +569,7 @@ export class Timeline extends TinyBase {
       return;
     }
     this.releaseDragCapture(drag);
+    this.timeLineElement?.classList.remove('dragging-handle');
     const entry = this.entries.find((entry) => entry.id === drag.entryId);
     if (!entry) {
       return;
@@ -589,6 +600,7 @@ export class Timeline extends TinyBase {
       return;
     }
     this.releaseDragCapture(drag);
+    this.timeLineElement?.classList.remove('dragging-handle');
     const entry = this.entries.find((entry) => entry.id === drag.entryId);
     if (!entry) {
       this.hideHandles();

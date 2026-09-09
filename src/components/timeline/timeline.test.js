@@ -618,6 +618,76 @@ describe('Timeline drag-to-resize handles', () => {
     expect(openNewEntry).not.toHaveBeenCalled();
     expect(el.activeHandleEntryId).toBe(1); // unaffected - handles stay up
   });
+
+  // regression coverage: touch dragging a handle was scrolling the
+  // timeline's scrollable ancestor (see timelineStack.css's overflow-y:
+  // auto) instead of just resizing the entry, because SVG shape elements
+  // have unreliable touch-action support on their own in some browsers -
+  // fixed with both a touch-action:none class on the SVG itself for the
+  // duration of the drag, and a belt-and-braces preventDefault() on each
+  // pointermove while dragging
+  it('marks the SVG as dragging (touch-action:none) for the duration of a drag, clearing it on commit', () => {
+    const entry = { id: 1, startOffsetMins: 0, endOffsetMins: 30, activity: 'Reading' };
+    const el = createTimeline(2, [entry]);
+    const hitArea = revealHandle(el, 1, 'end');
+    expect(el.timeLineElement.classList.contains('dragging-handle')).toBe(false);
+
+    el.onEntryPointerDown({
+      target: hitArea,
+      pointerId: 2,
+      pointerType: 'touch',
+      clientX: 0,
+      clientY: 0,
+    });
+    expect(el.timeLineElement.classList.contains('dragging-handle')).toBe(true);
+
+    el.onEntryPointerMove({ target: hitArea, pointerId: 2, clientX: 0, clientY: 103 });
+    expect(el.timeLineElement.classList.contains('dragging-handle')).toBe(true);
+
+    el.commitDrag();
+    expect(el.timeLineElement.classList.contains('dragging-handle')).toBe(false);
+  });
+
+  it('clears the dragging SVG class when a drag is cancelled instead of committed', () => {
+    const entry = { id: 1, startOffsetMins: 0, endOffsetMins: 30, activity: 'Reading' };
+    const el = createTimeline(2, [entry]);
+    const hitArea = revealHandle(el, 1, 'end');
+
+    el.onEntryPointerDown({
+      target: hitArea,
+      pointerId: 2,
+      pointerType: 'touch',
+      clientX: 0,
+      clientY: 0,
+    });
+    el.cancelDrag();
+
+    expect(el.timeLineElement.classList.contains('dragging-handle')).toBe(false);
+  });
+
+  it('prevents the default action on pointermove events during an active drag, to stop the timeline from scrolling under a touch drag', () => {
+    const entry = { id: 1, startOffsetMins: 0, endOffsetMins: 30, activity: 'Reading' };
+    const el = createTimeline(2, [entry]);
+    const hitArea = revealHandle(el, 1, 'end');
+    el.onEntryPointerDown({
+      target: hitArea,
+      pointerId: 2,
+      pointerType: 'touch',
+      clientX: 0,
+      clientY: 0,
+    });
+    const preventDefault = vi.fn();
+
+    el.onEntryPointerMove({
+      target: hitArea,
+      pointerId: 2,
+      clientX: 0,
+      clientY: 103,
+      preventDefault,
+    });
+
+    expect(preventDefault).toHaveBeenCalledOnce();
+  });
 });
 
 // Phase 3 of the drag-handle resize feature (see plans/drag-handle-resize.md):

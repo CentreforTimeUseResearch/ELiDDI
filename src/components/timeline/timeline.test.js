@@ -152,14 +152,29 @@ describe('Timeline panelActions contract', () => {
     expect(el.panelActions).toBeDefined();
   });
 
-  it('calls panelActions.openNewEntry (not a direct method call) when clicking empty space', () => {
+  it('calls panelActions.openNewEntry (not a direct method call) when clicking the gridline zone', () => {
     const el = createTimeline(4); // Device
     const openNewEntry = vi.fn();
     el.panelActions.openNewEntry = openNewEntry;
 
-    el.onTimelineClick({ target: { dataset: {} }, offsetY: 40 });
+    el.onTimelineClick({ target: { id: 'gridline_zone', dataset: {} }, offsetY: 40 });
 
     expect(openNewEntry).toHaveBeenCalledWith(20); // calculateTheTimeSlotClicked(40) -> 20
+  });
+
+  // regression coverage: only a click that actually lands on the gridline
+  // zone creates a new entry - any other empty-space click (e.g. one meant
+  // to dismiss visible drag handles) is a no-op, rather than being read as
+  // "create an entry" the way any non-entry click used to be
+  it('does not call panelActions.openNewEntry when an empty-space click lands outside the gridline zone', () => {
+    const el = createTimeline(4); // Device
+    const openNewEntry = vi.fn();
+    el.panelActions.openNewEntry = openNewEntry;
+
+    el.onTimelineClick({ target: { dataset: {} }, offsetY: 40 }); // no id at all
+    el.onTimelineClick({ target: { id: 'hour-labels', dataset: {} }, offsetY: 40 });
+
+    expect(openNewEntry).not.toHaveBeenCalled();
   });
 
   it('calls panelActions.openEntry with the clicked entry when clicking an existing block', () => {

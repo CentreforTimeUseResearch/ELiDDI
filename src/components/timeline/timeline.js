@@ -725,6 +725,10 @@ export class Timeline extends TinyBase {
       this.panelActions.openEntry(entry);
       // we need to do soemthing different on save
     } else {
+      // is click in the timeline target zone in the gridlines
+      if (e.target.id !== 'gridline_zone') {
+        return;
+      }
       // starting a brand new entry - clear out anything left over from a
       // previous edit that was opened but never saved/deleted
       this.selectedID = undefined;

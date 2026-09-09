@@ -59,4 +59,40 @@ describe('DetailsPanel', () => {
     el.setEndTime(30);
     expect(saveButton.classList.contains('opaque')).toBe(false);
   });
+
+  // regression coverage for defaulting a new entry to a 10-minute span, so
+  // it has an immediately-visible, drag-resizable block on the timeline
+  // instead of a zero-length one the respondent has to fix by hand first
+  it("defaults a new entry's end time to ten minutes after its start time", () => {
+    const el = createPanel();
+
+    el.openNewEntry(60);
+
+    expect(el.state.startOffsetMins).toBe(60);
+    expect(el.state.endOffsetMins).toBe(70);
+  });
+
+  it('activates the save button as soon as an activity is set for a new entry, since both times are already filled in', () => {
+    const el = createPanel();
+
+    // openNewEntry() calls reset() internally, which fully re-renders the
+    // panel (a fresh save button included) - so the button must be looked
+    // up after this call, not before
+    el.openNewEntry(60);
+    const saveButton = el.querySelector('.btn-save-btn');
+    expect(saveButton.classList.contains('opaque')).toBe(true);
+
+    el.setActivity('Sleep');
+    expect(saveButton.classList.contains('opaque')).toBe(false);
+  });
+
+  it("passes the ten-minute-later end time through to the time picker panel's end-time attribute", () => {
+    const el = createPanel();
+
+    el.openNewEntry(60);
+
+    const startTime = Number(el.timelinePickerPanel.getAttribute('start-time'));
+    const endTime = Number(el.timelinePickerPanel.getAttribute('end-time'));
+    expect(endTime - startTime).toBe(10);
+  });
 });

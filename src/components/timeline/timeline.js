@@ -280,6 +280,38 @@ export class Timeline extends TinyBase {
         }
         this.cancelPendingLongPress();
       });
+      // belt-and-braces against the scrollable timeline stack panning
+      // during a touch drag (see timelineStack.css's overflow-y: auto).
+      // touch-action:none (on the handle, and for the drag's duration the
+      // whole SVG - see startHandleDrag/timeline.css) is the primary
+      // defense, but freshly-inserted SVG shape elements have a documented
+      // history of Chromium sometimes not honouring it on the very first
+      // touch that lands on them (the compositor's touch-action hit
+      // regions can be a frame stale right after a DOM insert) - a genuine
+      // non-passive touchstart/touchmove preventDefault() forces main-
+      // thread arbitration and is honoured unconditionally regardless of
+      // that, so it's kept as the reliable fallback alongside the Pointer
+      // Events handling above (which alone was not enough - see the
+      // pointercancel firing on the very first drag attempt after a fresh
+      // long-press, and only that first attempt, that prompted this)
+      this.timeLineElement?.addEventListener(
+        'touchstart',
+        (e) => {
+          if (e.target?.closest?.('.resize-handle')) {
+            e.preventDefault();
+          }
+        },
+        { passive: false }
+      );
+      this.timeLineElement?.addEventListener(
+        'touchmove',
+        (e) => {
+          if (this.activeDrag) {
+            e.preventDefault();
+          }
+        },
+        { passive: false }
+      );
       const onKeyDown = (e) => this.onGlobalKeyDown(e);
       document.addEventListener('keydown', onKeyDown);
       this.registerCleanup(() => document.removeEventListener('keydown', onKeyDown));

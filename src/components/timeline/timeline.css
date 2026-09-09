@@ -21,6 +21,16 @@ el-timeline {
   touch-action: none;
 }
 
+/* toggled on the <svg> itself for the duration of a handle drag - SVG shape
+   elements have a long history of unreliable touch-action support on their
+   own (notably in Safari/iOS), so the hit-area's touch-action:none above
+   isn't always enough on its own to stop the scrollable timeline stack
+   (see timelineStack.css) from panning under the drag; belt-and-braces with
+   the pointermove preventDefault() in timeline.js */
+.dragging-handle {
+  touch-action: none;
+}
+
 .resize-handle-grip {
   fill: #ffffff;
   stroke: #3a3d4d;

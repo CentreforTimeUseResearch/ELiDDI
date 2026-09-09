@@ -8,6 +8,7 @@
     "language": "en",
     "instructions": true,
     "primary_redirect_url": "pages/thank-you.html",
+    "submit_completed_diary_url": "https://pipe.jspsych.org/api/data/",
     "fallbackToCSV": true,
     "accessibility": {
       "enableReducedMotion": false,

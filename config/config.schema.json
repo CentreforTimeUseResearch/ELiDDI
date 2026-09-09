@@ -60,6 +60,10 @@
         "primary_redirect_url": {
           "type": "string"
         },
+        "submit_completed_diary_url": {
+          "type": "string",
+          "description": "URL a completed diary will be submitted to. Not yet consumed by ELiDDI itself - reserved for a future diary-submission feature."
+        },
         "fallbackToCSV": {
           "type": "boolean"
         },

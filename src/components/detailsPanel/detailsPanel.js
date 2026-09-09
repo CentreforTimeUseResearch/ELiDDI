@@ -136,6 +136,7 @@ export class DetailsPanel extends TinyBase {
   openNewEntry(startOffsetMins) {
     this.reset();
     this.setStartTime(startOffsetMins);
+    this.setEndTime(startOffsetMins + 10);
   }
 
   setStartTime(starttime) {

@@ -157,9 +157,45 @@ describe('Timeline panelActions contract', () => {
     const openNewEntry = vi.fn();
     el.panelActions.openNewEntry = openNewEntry;
 
-    el.onTimelineClick({ target: { id: 'gridline_zone', dataset: {} }, offsetY: 40 });
+    // clientYToSvgY falls back to raw clientY in this test environment
+    // (no SVG geometry APIs), same as the real getScreenCTM path would
+    // resolve to for a click 40px into an unscaled SVG
+    el.onTimelineClick({ target: { id: 'gridline_zone', dataset: {} }, clientX: 0, clientY: 40 });
 
     expect(openNewEntry).toHaveBeenCalledWith(20); // calculateTheTimeSlotClicked(40) -> 20
+  });
+
+  // regression coverage: found on a real device (Chrome, not Firefox, same
+  // device) - creating an entry at a visual 12:00 opened the panel at
+  // 11:00. Root cause: raw offsetY assumes 1 CSS px === 1 viewBox unit,
+  // which breaks once the SVG's rendered width (100vw) comes out narrower
+  // than its 375-unit viewBox - preserveAspectRatio then uniformly shrinks
+  // the whole coordinate system, time axis included, to fit. The error
+  // grows with distance down the day, which is what pointed at a scale
+  // mismatch rather than a fixed offset.
+  it('accounts for the SVG rendering at a smaller scale than its viewBox, not just raw offsetY', () => {
+    const el = createTimeline(4); // Device
+    const openNewEntry = vi.fn();
+    el.panelActions.openNewEntry = openNewEntry;
+    const svg = el.timeLineElement;
+
+    // simulate the SVG rendering at 87.5% of its viewBox size, matching
+    // what was actually measured on the real device
+    const SCALE = 0.875;
+    svg.createSVGPoint = () => ({
+      x: 0,
+      y: 0,
+      matrixTransform(matrix) {
+        return { x: this.x * matrix.a, y: this.y * matrix.d };
+      },
+    });
+    svg.getScreenCTM = () => ({ inverse: () => ({ a: 1 / SCALE, d: 1 / SCALE }) });
+
+    el.onTimelineClick({ target: { id: 'gridline_zone', dataset: {} }, clientX: 0, clientY: 850 });
+
+    // 850 rendered px, unscaled to ~971 viewBox units -> 12:00 (480min).
+    // Raw offsetY would have given floor(850/20)*10 = 420min -> 11:00.
+    expect(openNewEntry).toHaveBeenCalledWith(480);
   });
 
   // regression coverage: only a click that actually lands on the gridline

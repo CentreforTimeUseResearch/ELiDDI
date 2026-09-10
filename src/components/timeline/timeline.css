@@ -73,4 +73,12 @@ el-timeline {
   word-break: break-word;
   box-sizing: border-box;
   padding: 2px;
+  /* it's plain text content, so a long-press on it (starting the same
+     entry-long-press gesture as elsewhere on the block) would otherwise be
+     read by the browser as "select this text" and win the race against our
+     own long-press handler, showing the native selection/callout UI instead
+     of our resize handles - confirmed on a real Android device */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }

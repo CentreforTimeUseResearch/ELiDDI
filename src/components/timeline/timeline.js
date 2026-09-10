@@ -776,8 +776,16 @@ export class Timeline extends TinyBase {
       // starting a brand new entry - clear out anything left over from a
       // previous edit that was opened but never saved/deleted
       this.selectedID = undefined;
-      const { offsetY } = e;
-      const startOffsetMins = this.calculateTheTimeSlotClicked(offsetY >= 0 ? offsetY : 0);
+      // not offsetY - that assumes 1 CSS px === 1 viewBox unit, which breaks
+      // whenever the SVG's rendered width comes out narrower than its
+      // viewBox (100vw can be less than the 375-unit viewBox width, e.g.
+      // under certain zoom/accessibility text-scaling conditions - seen on
+      // a real device in Chrome but not Firefox): preserveAspectRatio then
+      // uniformly shrinks the whole coordinate system, including the time
+      // axis, to fit - the same reason the drag handles use this helper
+      // instead of raw offsets (see clientYToSvgY/getScreenCTM)
+      const svgY = this.clientYToSvgY(e.clientX, e.clientY);
+      const startOffsetMins = this.calculateTheTimeSlotClicked(svgY >= 0 ? svgY : 0);
       this.panelActions.openNewEntry(startOffsetMins);
     }
 

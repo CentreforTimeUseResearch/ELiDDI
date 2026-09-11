@@ -807,7 +807,7 @@ describe('Timeline drag hard limits', () => {
     const entry = { id: 1, startOffsetMins: 0, endOffsetMins: 30, activity: 'Reading' };
     const el = createTimeline(2, [entry]);
     const hitArea = revealHandle(el, 1, 'start');
-    const flashSpy = vi.spyOn(el, 'flashLimitCue');
+    const flashSpy = vi.spyOn(el.resizeController, 'flashLimitCue');
 
     el.onEntryPointerDown({
       target: hitArea,

@@ -14,20 +14,11 @@ import {
   DELETE_ENTRY,
   HIDE_PANEL,
 } from '../../store/actionTypes';
+import { EntryResizeController } from './entryResizeController';
+import { SVGNS, XHTMLNS, PX_PER_MINUTE, MINUTES_PER_DAY } from './timelineConstants';
 import './timeline.css';
 
-const SVGNS = 'http://www.w3.org/2000/svg';
-const XHTMLNS = 'http://www.w3.org/1999/xhtml';
-
 const INDEX = 'index';
-const PX_PER_MINUTE = 2;
-const MINUTES_PER_DAY = 24 * 60; // -> 2880px, matches the SVG viewBox height
-const LONG_PRESS_MS = 500;
-const LONG_PRESS_CANCEL_DISTANCE_PX = 10; // pointer movement past this before the timer fires reads as a scroll/mis-tap, not a long-press
-const HANDLE_HIT_RADIUS = 22; // ~44px hit target (WCAG target-size guidance), independent of the visible grip size
-const HANDLE_GRIP_RADIUS = 6;
-const MIN_ENTRY_DURATION_MINS = 10; // one slot - the shortest a drag can resize an entry to
-const LIMIT_FLASH_MS = 300;
 // stable shared reference so a not-yet-touched dimension/date compares
 // === equal to itself across calls, preserving renderShadowDimension's
 // skip-if-unchanged check instead of allocating a fresh [] every time
@@ -71,12 +62,7 @@ export class Timeline extends TinyBase {
   shadowDimensionEntries;
   futureOverlayElement;
   handlesLayer;
-  longPressTimer;
-  longPressCandidate; // { entryId, pointerId, startX, startY } while a press is pending
-  suppressNextClick = false; // set when a long-press fires, so the click it also triggers doesn't open the panel
-  activeHandleEntryId; // id of the entry currently showing resize handles, if any
-  activeDrag; // { entryId, edge, pointerId, currentStart, currentEnd, captureElement, previousNeighborEnd, nextNeighborStart, wasAtLimit } while a handle is being dragged
-  limitFlashTimer;
+  resizeController; // owns the long-press/drag/resize-handle pipeline - see entryResizeController.js
 
   constructor() {
     super();
@@ -99,6 +85,27 @@ export class Timeline extends TinyBase {
     super.connectedCallback();
     this.registerCleanup(this.store.subscribe(() => this.updateState()));
     this.getChildElementReferences();
+    this.resizeController = new EntryResizeController({
+      svg: this.timeLineElement,
+      entriesLayer: this.entriesLayer,
+      handlesLayer: this.handlesLayer,
+      getEntries: () => this.entries,
+      isSingleChoiceDimension: () => this.isSingleChoiceDimension,
+      getCurrentDate: () => this.currentDate,
+      isPanelOpen: () => this.store.getState().uipanel === 'activity',
+      clientYToSvgY: (clientX, clientY) => this.clientYToSvgY(clientX, clientY),
+      calculateTheTimeSlotClicked: (y) => this.calculateTheTimeSlotClicked(y),
+      onCommitResize: (entryId, { startOffsetMins, endOffsetMins }) => {
+        const entry = this.entries.find((entry) => entry.id === entryId);
+        if (!entry) {
+          return undefined;
+        }
+        this.selectedID = entryId;
+        this.updateEntry({ ...entry, startOffsetMins, endOffsetMins });
+        this.renderEntries();
+        return this.entries.find((entry) => entry.id === entryId);
+      },
+    });
     this.updateFutureOverlay();
     const futureOverlayIntervalId = setInterval(this.updateFutureOverlay.bind(this), 30000);
     this.registerCleanup(() => clearInterval(futureOverlayIntervalId));
@@ -153,7 +160,7 @@ export class Timeline extends TinyBase {
       // re-renders itself after), nothing else triggers a re-render here
       this.renderEntries();
       this.updateFutureOverlay();
-      this.hideHandles(); // the entry any showing handles belonged to may no longer exist on the new date
+      this.resizeController.hideHandles(); // the entry any showing handles belonged to may no longer exist on the new date
     }
     if (this.dimensionIndex !== this.shadowIndex && currentDimensionIndex === this.dimensionIndex) {
       // this is not primary activity timeline and we're currently viewing this timeline
@@ -252,33 +259,16 @@ export class Timeline extends TinyBase {
         this.onTimelineClick(e);
       });
       this.timeLineElement?.addEventListener('pointerdown', (e) => {
-        this.onEntryPointerDown(e);
+        this.resizeController.onEntryPointerDown(e);
       });
       this.timeLineElement?.addEventListener('pointermove', (e) => {
-        this.onEntryPointerMove(e);
+        this.resizeController.onEntryPointerMove(e);
       });
       this.timeLineElement?.addEventListener('pointerup', (e) => {
-        if (this.activeDrag && e.pointerId === this.activeDrag.pointerId) {
-          this.commitDrag();
-          return;
-        }
-        this.cancelPendingLongPress();
-        if (this.suppressNextClick) {
-          // normally consumed by the 'click' this same press also fires
-          // right after this - fallback in case that click never arrives
-          // (e.g. the element moves before it does), so a stuck flag can't
-          // swallow an unrelated later click
-          setTimeout(() => {
-            this.suppressNextClick = false;
-          }, 0);
-        }
+        this.resizeController.handlePointerUp(e);
       });
       this.timeLineElement?.addEventListener('pointercancel', (e) => {
-        if (this.activeDrag && e.pointerId === this.activeDrag.pointerId) {
-          this.cancelDrag();
-          return;
-        }
-        this.cancelPendingLongPress();
+        this.resizeController.handlePointerCancel(e);
       });
       // belt-and-braces against the scrollable timeline stack panning
       // during a touch drag (see timelineStack.css's overflow-y: auto).
@@ -297,18 +287,14 @@ export class Timeline extends TinyBase {
       this.timeLineElement?.addEventListener(
         'touchstart',
         (e) => {
-          if (e.target?.closest?.('.resize-handle')) {
-            e.preventDefault();
-          }
+          this.resizeController.handleTouchStart(e);
         },
         { passive: false }
       );
       this.timeLineElement?.addEventListener(
         'touchmove',
         (e) => {
-          if (this.activeDrag) {
-            e.preventDefault();
-          }
+          this.resizeController.handleTouchMove(e);
         },
         { passive: false }
       );
@@ -319,139 +305,35 @@ export class Timeline extends TinyBase {
     }
   }
 
-  // long-press detection - a press held on an entry (never on the read-only
-  // shadow/mirror strip) without moving far, for long enough, reveals resize
-  // handles instead of the click that would otherwise open the details panel
+  // Phase 1-4 of the drag-handle resize feature (see
+  // plans/drag-handle-resize.md) - long-press to reveal handles, drag to
+  // live-resize, commit/cancel on release - lives in EntryResizeController
+  // (entryResizeController.js). These are thin delegating wrappers, kept so
+  // this remains the single entry point external callers (and the existing
+  // test suite) use; the controller itself is only reachable from inside
+  // Timeline via the event listeners wired up in assignEventHandlers.
   onEntryPointerDown(e) {
-    if (e.pointerType === 'mouse' && e.button !== 0) {
-      return;
-    }
-    const handleGroup = e.target?.closest?.('.resize-handle');
-    if (handleGroup) {
-      this.startHandleDrag(e, handleGroup);
-      return;
-    }
-    const entryIdRaw = e.target?.dataset?.id;
-    if (entryIdRaw === undefined || !this.entriesLayer?.contains(e.target)) {
-      // no entry under the pointer, or it's on the shadow/mirror strip -
-      // never a long-press candidate
-      return;
-    }
-    if (this.store.getState().uipanel === 'activity') {
-      // the details panel is open (for this entry or any other) - long-press
-      // is a no-op while it is, to keep a typed edit and a live drag from
-      // ever being in flight at the same time
-      return;
-    }
-    this.longPressCandidate = {
-      entryId: Number(entryIdRaw),
-      pointerId: e.pointerId,
-      startX: e.clientX,
-      startY: e.clientY,
-    };
-    this.longPressTimer = setTimeout(() => this.onLongPressFire(), LONG_PRESS_MS);
+    this.resizeController.onEntryPointerDown(e);
   }
 
   onEntryPointerMove(e) {
-    if (this.activeDrag && e.pointerId === this.activeDrag.pointerId) {
-      // touch-action:none on the handle/SVG (see startHandleDrag and
-      // timeline.css) should already stop the scrollable timeline stack
-      // from panning during this drag, but SVG shape elements have a long
-      // history of unreliable touch-action support on their own - this is
-      // the reliable fallback, independent of that CSS support level
-      e.preventDefault?.();
-      this.updateDragToSvgY(this.clientYToSvgY(e.clientX, e.clientY));
-      return;
-    }
-    if (!this.longPressCandidate || e.pointerId !== this.longPressCandidate.pointerId) {
-      return;
-    }
-    const dx = e.clientX - this.longPressCandidate.startX;
-    const dy = e.clientY - this.longPressCandidate.startY;
-    if (Math.hypot(dx, dy) > LONG_PRESS_CANCEL_DISTANCE_PX) {
-      // moved too far before the hold completed - read as a scroll/mis-tap,
-      // not a long-press
-      this.cancelPendingLongPress();
-    }
+    this.resizeController.onEntryPointerMove(e);
   }
 
-  cancelPendingLongPress() {
-    clearTimeout(this.longPressTimer);
-    this.longPressTimer = undefined;
-    this.longPressCandidate = undefined;
+  commitDrag() {
+    this.resizeController.commitDrag();
   }
 
-  onLongPressFire() {
-    const candidate = this.longPressCandidate;
-    this.longPressTimer = undefined;
-    this.longPressCandidate = undefined;
-    if (!candidate) {
-      return;
-    }
-    const entry = this.entries.find((entry) => entry.id === candidate.entryId);
-    if (!entry) {
-      return;
-    }
-    this.showHandles(entry);
-    // the pointerup that ends this same press still fires a 'click' after
-    // this - swallow that one click so it doesn't also open the panel
-    this.suppressNextClick = true;
+  cancelDrag() {
+    this.resizeController.cancelDrag();
   }
 
-  // starts dragging a handle that's already visible (long-press already
-  // fired) - captures the pointer so drag tracking keeps working even if
-  // the pointer strays outside the handle's small hit area mid-drag
-  startHandleDrag(e, handleGroup) {
-    const entryId = Number(handleGroup.dataset.handleEntryId);
-    const edge = handleGroup.dataset.handleEdge;
-    const entry = this.entries.find((entry) => entry.id === entryId);
-    if (!entry) {
-      return;
-    }
-    e.preventDefault?.();
-    try {
-      e.target?.setPointerCapture?.(e.pointerId);
-    } catch {
-      // pointer capture is best-effort - the delegated listeners on the SVG
-      // still track the drag correctly without it in the common case
-    }
-    // stops the scrollable timeline stack (see timelineStack.css) from
-    // panning under a touch drag - see the pointermove preventDefault() in
-    // onEntryPointerMove for why this alone isn't relied on
-    this.timeLineElement?.classList.add('dragging-handle');
-    // fixed for the whole drag, rather than recomputed as the pointer moves
-    // past other entries - "the adjacent entry" means this entry's immediate
-    // temporal neighbors as they stood when the drag started
-    const neighborBounds = this.isSingleChoiceDimension
-      ? this.findNeighborBounds(entry)
-      : { previousEnd: 0, nextStart: MINUTES_PER_DAY };
-    this.activeDrag = {
-      entryId,
-      edge,
-      pointerId: e.pointerId,
-      currentStart: entry.startOffsetMins,
-      currentEnd: entry.endOffsetMins,
-      captureElement: e.target,
-      previousNeighborEnd: neighborBounds.previousEnd,
-      nextNeighborStart: neighborBounds.nextStart,
-      wasAtLimit: false,
-    };
+  get activeDrag() {
+    return this.resizeController.activeDrag;
   }
 
-  // among this entry's timeline siblings, the latest end time at or before
-  // this entry's own start, and the earliest start time at or after this
-  // entry's own end - the immediate temporal neighbors a drag can't cross
-  // in a single-choice dimension (dimensions that already tolerate
-  // overlapping entries have no such neighbors to respect)
-  findNeighborBounds(entry) {
-    const others = this.entries.filter((other) => other.id !== entry.id);
-    const previousEnd = others
-      .filter((other) => other.endOffsetMins <= entry.startOffsetMins)
-      .reduce((max, other) => Math.max(max, other.endOffsetMins), 0);
-    const nextStart = others
-      .filter((other) => other.startOffsetMins >= entry.endOffsetMins)
-      .reduce((min, other) => Math.min(min, other.startOffsetMins), MINUTES_PER_DAY);
-    return { previousEnd, nextStart };
+  get activeHandleEntryId() {
+    return this.resizeController.activeHandleEntryId;
   }
 
   // converts a pointer event's screen coordinates into this SVG's own user
@@ -474,270 +356,8 @@ export class Timeline extends TinyBase {
     return point.matrixTransform(ctm.inverse()).y;
   }
 
-  updateDragToSvgY(svgY) {
-    if (!this.activeDrag) {
-      return;
-    }
-    const rawOffsetMins = this.calculateTheTimeSlotClicked(svgY >= 0 ? svgY : 0);
-    const clampedOffsetMins = this.clampDragOffset(rawOffsetMins);
-    const hitLimit = clampedOffsetMins !== rawOffsetMins;
-    if (this.activeDrag.edge === 'start') {
-      this.activeDrag.currentStart = clampedOffsetMins;
-    } else {
-      this.activeDrag.currentEnd = clampedOffsetMins;
-    }
-    this.renderDragFeedback();
-    // flash once per approach, not on every tick still pressed against the
-    // same wall - otherwise holding at a limit reads as a constant strobe
-    if (hitLimit && !this.activeDrag.wasAtLimit) {
-      this.flashLimitCue();
-    }
-    this.activeDrag.wasAtLimit = hitLimit;
-  }
-
-  // the [min, max] this drag's moving edge may snap to - the day's own
-  // bounds, this entry's minimum duration, this entry's fixed neighbors
-  // (see startHandleDrag), and, only for the current diary day, "now"
-  clampDragOffset(rawOffsetMins) {
-    const { min, max } = this.getDragBounds(this.activeDrag);
-    return Math.min(Math.max(rawOffsetMins, min), max);
-  }
-
-  getDragBounds(drag) {
-    // floored to the grid, like every other offset here - otherwise the
-    // "now" wall could land on a non-slot minute no other time in the app
-    // ever produces
-    const nowLimit =
-      this.currentDate === getCurrentDiaryDateKey()
-        ? Math.floor(getCurrentOffsetMins() / 10) * 10
-        : MINUTES_PER_DAY;
-    if (drag.edge === 'start') {
-      const min = drag.previousNeighborEnd;
-      const max = Math.min(drag.currentEnd - MIN_ENTRY_DURATION_MINS, nowLimit);
-      return { min, max: Math.max(max, min) }; // never let max fall below min if there's no room left
-    }
-    const min = drag.currentStart + MIN_ENTRY_DURATION_MINS;
-    const max = Math.min(drag.nextNeighborStart, MINUTES_PER_DAY, nowLimit);
-    return { min, max: Math.max(max, min) };
-  }
-
-  flashLimitCue() {
-    const rect = this.entriesLayer?.querySelector(`rect[data-id="${this.activeDrag.entryId}"]`);
-    if (!rect) {
-      return;
-    }
-    rect.classList.remove('resize-limit-flash');
-    void rect.offsetWidth; // force reflow so re-adding the class restarts the animation mid-flash
-    rect.classList.add('resize-limit-flash');
-    clearTimeout(this.limitFlashTimer);
-    this.limitFlashTimer = setTimeout(() => {
-      rect.classList.remove('resize-limit-flash');
-    }, LIMIT_FLASH_MS);
-  }
-
-  // live visual feedback while a handle is being dragged: resizes the
-  // entry's actual rect/label in place (no store dispatch yet - see
-  // commitDrag) and repositions the handles, with a clock-time readout on
-  // the one currently being dragged. Updates the existing handle elements'
-  // attributes rather than rebuilding them (unlike renderHandles) - this
-  // runs on every pointermove, and the handle being dragged holds pointer
-  // capture (see startHandleDrag), which is silently lost the instant its
-  // element is removed from the DOM, breaking the rest of the drag
-  renderDragFeedback() {
-    const drag = this.activeDrag;
-    if (!drag) {
-      return;
-    }
-    this.updateEntryRectLive(drag);
-    this.updateHandlePosition('start', drag.currentStart, drag.edge === 'start');
-    this.updateHandlePosition('end', drag.currentEnd, drag.edge === 'end');
-  }
-
-  updateHandlePosition(edge, offsetMins, showReadout) {
-    const group = this.handlesLayer?.querySelector(`.resize-handle[data-handle-edge="${edge}"]`);
-    if (!group) {
-      return;
-    }
-    const cy = offsetMins * PX_PER_MINUTE;
-    group.querySelectorAll('circle').forEach((circle) => circle.setAttributeNS(null, 'cy', cy));
-    let readout = group.querySelector('.resize-handle-readout');
-    if (!showReadout) {
-      readout?.remove();
-      return;
-    }
-    if (!readout) {
-      const cx = group.querySelector('.resize-handle-hit-area')?.getAttribute('cx');
-      readout = document.createElementNS(SVGNS, 'text');
-      readout.setAttribute('class', 'resize-handle-readout');
-      readout.setAttributeNS(null, 'x', Number(cx) + HANDLE_HIT_RADIUS + 6);
-      readout.setAttribute('dominant-baseline', 'middle');
-      group.appendChild(readout);
-    }
-    readout.setAttributeNS(null, 'y', cy);
-    readout.textContent = formatOffsetAsClockTime(offsetMins);
-  }
-
-  updateEntryRectLive({ entryId, currentStart, currentEnd }) {
-    const rect = this.entriesLayer?.querySelector(`rect[data-id="${entryId}"]`);
-    if (!rect) {
-      return;
-    }
-    const startOffsetPx = currentStart * PX_PER_MINUTE;
-    const endOffsetPx = currentEnd * PX_PER_MINUTE;
-    const height = endOffsetPx - startOffsetPx;
-    rect.setAttributeNS(null, 'y', startOffsetPx);
-    rect.setAttributeNS(null, 'height', height > 0 ? height : 20);
-    const foreignObject = rect.parentElement?.querySelector('foreignObject');
-    if (foreignObject) {
-      foreignObject.setAttributeNS(null, 'y', startOffsetPx);
-      foreignObject.setAttributeNS(null, 'height', height > 0 ? height : 20);
-    }
-  }
-
-  commitDrag() {
-    const drag = this.activeDrag;
-    this.activeDrag = undefined;
-    if (!drag) {
-      return;
-    }
-    this.releaseDragCapture(drag);
-    this.timeLineElement?.classList.remove('dragging-handle');
-    const entry = this.entries.find((entry) => entry.id === drag.entryId);
-    if (!entry) {
-      return;
-    }
-    this.selectedID = drag.entryId;
-    this.updateEntry({
-      ...entry,
-      startOffsetMins: drag.currentStart,
-      endOffsetMins: drag.currentEnd,
-    });
-    this.renderEntries();
-    const updatedEntry = this.entries.find((entry) => entry.id === drag.entryId);
-    if (updatedEntry) {
-      // handles stay up, re-draggable, at the just-committed position -
-      // no need to re-trigger long-press for a follow-up adjustment
-      this.showHandles(updatedEntry);
-    } else {
-      this.hideHandles();
-    }
-  }
-
-  // an interrupted drag (pointercancel) or Escape mid-drag - nothing was
-  // ever dispatched, so this only has to undo the live visual feedback
-  cancelDrag() {
-    const drag = this.activeDrag;
-    this.activeDrag = undefined;
-    if (!drag) {
-      return;
-    }
-    this.releaseDragCapture(drag);
-    this.timeLineElement?.classList.remove('dragging-handle');
-    const entry = this.entries.find((entry) => entry.id === drag.entryId);
-    if (!entry) {
-      this.hideHandles();
-      return;
-    }
-    this.updateEntryRectLive({
-      entryId: drag.entryId,
-      currentStart: entry.startOffsetMins,
-      currentEnd: entry.endOffsetMins,
-    });
-    this.showHandles(entry);
-  }
-
-  releaseDragCapture(drag) {
-    try {
-      drag.captureElement?.releasePointerCapture?.(drag.pointerId);
-    } catch {
-      // already released (e.g. by the browser on pointerup) - nothing to do
-    }
-  }
-
-  showHandles(entry) {
-    this.activeHandleEntryId = entry.id;
-    this.renderHandles(entry);
-  }
-
-  hideHandles() {
-    this.activeHandleEntryId = undefined;
-    this.activeDrag = undefined;
-    if (this.handlesLayer) {
-      this.handlesLayer.innerHTML = '';
-    }
-  }
-
-  renderHandles(entry, { activeEdge } = {}) {
-    this.handlesLayer.innerHTML = '';
-    const startOffsetPx = (entry.startOffsetMins || 0) * PX_PER_MINUTE;
-    const endOffsetPx = (entry.endOffsetMins || 0) * PX_PER_MINUTE;
-    const centerX = 100 + 220 / 2; // matches the entriesLayer block's x="100" width="220"
-    this.handlesLayer.appendChild(
-      this.createHandle({
-        edge: 'start',
-        cx: centerX,
-        cy: startOffsetPx,
-        entryId: entry.id,
-        showReadout: activeEdge === 'start',
-        offsetMins: entry.startOffsetMins,
-      })
-    );
-    this.handlesLayer.appendChild(
-      this.createHandle({
-        edge: 'end',
-        cx: centerX,
-        cy: endOffsetPx,
-        entryId: entry.id,
-        showReadout: activeEdge === 'end',
-        offsetMins: entry.endOffsetMins,
-      })
-    );
-  }
-
-  createHandle({ edge, cx, cy, entryId, showReadout, offsetMins }) {
-    const group = document.createElementNS(SVGNS, 'g');
-    group.setAttribute('class', 'resize-handle');
-    group.setAttribute('data-handle-edge', edge);
-    group.setAttribute('data-handle-entry-id', entryId);
-
-    const hitArea = document.createElementNS(SVGNS, 'circle');
-    hitArea.setAttributeNS(null, 'cx', cx);
-    hitArea.setAttributeNS(null, 'cy', cy);
-    hitArea.setAttributeNS(null, 'r', HANDLE_HIT_RADIUS);
-    hitArea.setAttribute('class', 'resize-handle-hit-area');
-    group.appendChild(hitArea);
-
-    const grip = document.createElementNS(SVGNS, 'circle');
-    grip.setAttributeNS(null, 'cx', cx);
-    grip.setAttributeNS(null, 'cy', cy);
-    grip.setAttributeNS(null, 'r', HANDLE_GRIP_RADIUS);
-    grip.setAttribute('class', 'resize-handle-grip');
-    group.appendChild(grip);
-
-    if (showReadout) {
-      const readout = document.createElementNS(SVGNS, 'text');
-      readout.setAttribute('class', 'resize-handle-readout');
-      readout.setAttributeNS(null, 'x', cx + HANDLE_HIT_RADIUS + 6);
-      readout.setAttributeNS(null, 'y', cy);
-      readout.setAttribute('dominant-baseline', 'middle');
-      readout.textContent = formatOffsetAsClockTime(offsetMins);
-      group.appendChild(readout);
-    }
-
-    return group;
-  }
-
   onGlobalKeyDown(e) {
-    if (e.key !== 'Escape') {
-      return;
-    }
-    if (this.activeDrag) {
-      this.cancelDrag();
-      return;
-    }
-    if (this.activeHandleEntryId !== undefined) {
-      this.hideHandles();
-    }
+    this.resizeController.handleGlobalKeyDown(e);
   }
 
   onTimelineClick(e) {
@@ -745,14 +365,13 @@ export class Timeline extends TinyBase {
       // a click landing on a handle itself is never a normal timeline click
       return;
     }
-    if (this.suppressNextClick) {
-      this.suppressNextClick = false;
+    if (this.resizeController.consumeSuppressedClick()) {
       return;
     }
-    if (this.activeHandleEntryId !== undefined) {
+    if (this.resizeController.activeHandleEntryId !== undefined) {
       // any real click - elsewhere on the timeline, or on a different entry -
       // dismisses whatever handles are currently showing
-      this.hideHandles();
+      this.resizeController.hideHandles();
     }
     const element_id = e.target?.dataset?.id;
     if (element_id !== undefined) {
@@ -859,9 +478,7 @@ export class Timeline extends TinyBase {
       // already gone (e.g. a stray double-click) - nothing to do
       return;
     }
-    if (this.activeHandleEntryId === id) {
-      this.hideHandles();
-    }
+    this.resizeController.hideHandlesIfActiveFor(id);
     this.store.dispatch({
       type: DELETE_ENTRY,
       payload: { dimensionIndex, date: this.currentDate, id },

@@ -6,7 +6,7 @@
 
 ## What it does
 
-Renders a guided-tour step, one at a time, from `GLOBALS.DATA.instructions` (see `config/activities.json`). It's mounted inside an [`<el-dialog>`](../dialogWidget/README.md) by [DynamicTimelineUI](../dynamicTimelineUI/README.md), and can also spotlight a specific area of the screen or open a particular panel while a given step is showing.
+Renders a guided-tour step, one at a time, from `GLOBALS.DATA.instructions` (see `config/config.json`). It's mounted inside an [`<el-dialog>`](../dialogWidget/README.md) by [DynamicTimelineUI](../dynamicTimelineUI/README.md), and can also spotlight a specific area of the screen or open a particular panel while a given step is showing.
 
 ## Custom element
 
@@ -27,7 +27,7 @@ Renders a guided-tour step, one at a time, from `GLOBALS.DATA.instructions` (see
 
 ## Behaviour notes
 
-- Each instruction entry in the config can carry `title`, `text`, `spotlight` (an `[x, y, size]` triple), `modalTop`, and `showPanel` — see `config/activities.json`'s `general.instructions` (documented in `json_schema.md`).
+- Each instruction entry in the config can carry `title`, `text`, `spotlight` (an `[x, y, size]` triple), `modalTop`, and `showPanel` — see `config/config.json`'s `instructions` array (documented in `json_schema.md`).
 - `onboardingStep` is clamped to `>= 0` on "back" but has no explicit upper clamp here — the last step's Next button dispatches `DISMISS_ONBOARDING` instead of `NEXT_INSTRUCTION`, so it never actually reads past the end of the array.
 
 ---

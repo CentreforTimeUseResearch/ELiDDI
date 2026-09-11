@@ -10,7 +10,7 @@
 
 ELiDDI is an Extended Light Digital Diary Instrument — a web-based tool for collecting daily activities in a timeline format, built for research studies and time-use surveys.
 
-Respondents record their day as a series of Entries against fixed Dimensions (Primary activity, Secondary activity, Location, Who, Device, Enjoyment) on a scrollable timeline, with drag-to-resize and an accessible searchable Activity picker. Activity categories, Dimensions, wording, and onboarding instructions are all driven by a single configuration file (`config/activities.json`), rather than hard-coded, so the instrument can be adapted to a different study without touching application code.
+Respondents record their day as a series of Entries against fixed Dimensions (Primary activity, Secondary activity, Location, Who, Device, Enjoyment) on a scrollable timeline, with drag-to-resize and an accessible searchable Activity picker. Activity categories, Dimensions, wording, and onboarding instructions are all driven by a single configuration file (`config/config.json`), rather than hard-coded, so the instrument can be adapted to a different study without touching application code.
 
 See [CONTEXT.md](CONTEXT.md) for the full domain glossary (Diary, Dimension, Timeline, Entry, Respondent, Activity, Category, Mode) used throughout the codebase and this documentation.
 
@@ -47,7 +47,7 @@ npm run lint          # ESLint over src/ and scripts/
 npm run format        # Prettier over src/ and scripts/
 ```
 
-The diary's content (Dimensions, Activities, wording, onboarding) comes from `config/activities.json` — see [json_schema.md](json_schema.md) for the schema.
+The diary's content (Dimensions, Activities, wording, onboarding) comes from `config/config.json` — see [json_schema.md](json_schema.md) for the schema.
 
 ---
 

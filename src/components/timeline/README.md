@@ -10,6 +10,14 @@ Renders one Dimension's Timeline for the currently-viewed Diary day as an SVG ti
 
 Terminology (Dimension, Timeline, Entry, Primary activity mirror) follows [CONTEXT.md](../../../CONTEXT.md).
 
+## Files in this folder
+
+| File                       | Role                                                                                                                                                                                                                                                                                                         |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `timeline.js`              | The custom element itself: rendering Entries as SVG, click routing (open/create), the entries-vs-store CRUD (`createEntry`/`updateEntry`/`deleteEntry`/`saveEntry`), and the "Primary activity mirror" shadow layer.                                                                                         |
+| `entryResizeController.js` | A plain (non-`HTMLElement`) `EntryResizeController` class that owns the long-press → reveal-handles → drag → live-resize → commit/cancel pipeline. Pulled out of `timeline.js` because it's almost entirely self-contained state (see below) and was, by line count, the single largest concern in the file. |
+| `timelineConstants.js`     | Tiny shared constants (`SVGNS`, `XHTMLNS`, `PX_PER_MINUTE`, `MINUTES_PER_DAY`) used by both of the above, kept in their own module to avoid a circular import between them.                                                                                                                                  |
+
 ## Custom element
 
 `<el-timeline index="…">`
@@ -24,18 +32,16 @@ Terminology (Dimension, Timeline, Entry, Primary activity mirror) follows [CONTE
 - Dispatches `SHOW_PANEL`/`HIDE_PANEL` to open/close [DetailsPanel](../detailsPanel/README.md).
 - Non-Primary-activity Timelines additionally read the Primary activity Dimension's own Entries to render the read-only "mirror" strip alongside their own — see `renderShadowDimension()` (internal name "shadow"; the domain-facing term is "Primary activity mirror" — see [CONTEXT.md](../../../CONTEXT.md)).
 
-## The long-press / drag-resize pipeline
+## Interaction pipeline (`entryResizeController.js`)
 
-This is the largest single piece of behaviour in the file — long-press detection, drag tracking and live visual feedback, clamping, and commit/cancel all currently live directly on the `Timeline` class (`onEntryPointerDown`, `startHandleDrag`, `updateDragToSvgY`, `commitDrag`/`cancelDrag`, `renderHandles`/`createHandle`, and related state fields like `activeDrag`/`activeHandleEntryId`).
-
-> **In progress:** a branch exists (`refactor/timeline-class-refactor`) that pulls this whole pipeline out into its own `EntryResizeController` class, since by line count it's the single biggest concern mixed into `Timeline`. It hadn't landed on `main` as of this writing — check whether it has before assuming this section is still accurate, and update this README once it does.
-
-Behaviour, regardless of which file it ends up living in:
+`EntryResizeController` is constructed by `Timeline.connectedCallback` with a small set of injected dependencies (the SVG element, the entries/handles layers, and callbacks for reading entries, checking single- vs multiple-choice Mode, checking whether the details panel is open, coordinate conversion, and committing a resize back to the store) rather than reaching into `Timeline` directly. It owns:
 
 - Long-press detection (hold ~500ms without moving far → reveal resize handles).
 - Drag tracking and live visual feedback as a handle is dragged.
 - Clamping a drag to: the 10-minute minimum duration, this Entry's immediate temporal neighbours (single-choice Dimensions only — multiple-choice Dimensions tolerate overlapping Entries), the Diary day's own bounds, and — only when editing the actual current Diary day — "now".
-- Committing a completed drag as a single `UPDATE_ENTRY` dispatch, or reverting a cancelled one with no dispatch at all.
+- Committing a completed drag as a single `UPDATE_ENTRY` dispatch (via a callback into `Timeline`), or reverting a cancelled one with no dispatch at all.
+
+`Timeline` keeps thin delegating methods (`onEntryPointerDown`, `onEntryPointerMove`, `commitDrag`, `cancelDrag`, `onGlobalKeyDown`, plus `activeDrag`/`activeHandleEntryId` getters) so this remains the single entry point external callers — and the test suite — use.
 
 ## Behaviour notes
 

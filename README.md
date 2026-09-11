@@ -57,7 +57,7 @@ ELiDDI is built as a **progressive enhancement** time-use diary: it must work as
 
 - **No-JS layer** — a build-time script (`scripts/generate_no_js.js`) reads `config/activities.json` and generates the full diary as a real, submittable `<form>` of time-slot cards, injected into `index.html`.
 - **JS layer** — a hand-rolled set of Web Components (extending a small shared base class, `TinyBase`) takes over rendering once JavaScript loads, replacing the no-JS form with the interactive timeline UI.
-- **State management** — a single, hand-rolled Redux-style store (no external state-management library — see the "no runtime JS dependencies" rule in [CLAUDE.md](CLAUDE.md)) holds all diary data, persisted to `localStorage`.
+- **State management** — a single, hand-rolled Redux-style store holds all diary data, persisted to `localStorage`.
 
 Full documentation of every component and the store lives alongside the code itself:
 

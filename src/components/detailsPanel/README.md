@@ -38,7 +38,7 @@ DetailsPanel, in turn, receives (via props) `saveEntry(entry)`, `deleteEntry(id)
 ## Store interaction
 
 - Reads `currentDimensionIndex` to decide whether it's the panel that should currently be visible.
-- Subscribes to the store and shows/hides itself in response to `uipanel === 'activity'`.
+- Subscribes to the store and shows/hides itself in response to `uipanel === 'details'`.
 - Dispatches `SHOW_PANEL`/`HIDE_PANEL` when its own open/close button is used.
 
 ## Behaviour notes

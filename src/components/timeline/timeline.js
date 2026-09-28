@@ -85,6 +85,7 @@ export class Timeline extends TinyBase {
     super.connectedCallback();
     this.registerCleanup(this.store.subscribe(() => this.updateState()));
     this.getChildElementReferences();
+
     this.resizeController = new EntryResizeController({
       svg: this.timeLineElement,
       entriesLayer: this.entriesLayer,
@@ -92,7 +93,7 @@ export class Timeline extends TinyBase {
       getEntries: () => this.entries,
       isSingleChoiceDimension: () => this.isSingleChoiceDimension,
       getCurrentDate: () => this.currentDate,
-      isPanelOpen: () => this.store.getState().uipanel === 'activity',
+      isPanelOpen: () => this.store.getState().uipanel === 'details',
       clientYToSvgY: (clientX, clientY) => this.clientYToSvgY(clientX, clientY),
       calculateTheTimeSlotClicked: (y) => this.calculateTheTimeSlotClicked(y),
       onCommitResize: (entryId, { startOffsetMins, endOffsetMins }) => {
@@ -106,6 +107,7 @@ export class Timeline extends TinyBase {
         return this.entries.find((entry) => entry.id === entryId);
       },
     });
+
     this.updateFutureOverlay();
     const futureOverlayIntervalId = setInterval(this.updateFutureOverlay.bind(this), 30000);
     this.registerCleanup(() => clearInterval(futureOverlayIntervalId));
@@ -408,10 +410,10 @@ export class Timeline extends TinyBase {
       this.panelActions.openNewEntry(startOffsetMins);
     }
 
-    // open activity panel
+    // open details panel
     this.store.dispatch({
       type: SHOW_PANEL,
-      payload: 'activity',
+      payload: 'details',
     });
   }
 

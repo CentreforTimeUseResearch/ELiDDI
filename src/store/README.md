@@ -47,14 +47,14 @@ Every component gets this same instance via `TinyBase.getStore()` — there is e
 
 Combines these top-level reducers:
 
-| State key               | Shape                   | Handles                                                                                                                               |
-| ----------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `onboarding`            | `boolean`               | `RESET_ONBOARDING` (→ `true`), `DISMISS_ONBOARDING` (→ `false`)                                                                       |
-| `onboardingStep`        | `number`                | `NEXT_INSTRUCTION`, `PREVIOUS_INSTRUCTION` (clamped at 0), `RESET_ONBOARDING`                                                         |
-| `uipanel`               | `string \| undefined`   | `SHOW_PANEL` (→ `action.payload`, e.g. `'activity'` or `'date'`), `HIDE_PANEL` (→ `undefined`) — only one panel can be open at a time |
-| `currentDimensionIndex` | `number`                | `SWITCH_DIMENSION`, `RESET_DIMENSION_INDEX`                                                                                           |
-| `currentDate`           | `string` (`YYYY-MM-DD`) | `SWITCH_DATE` — defaults to `getCurrentDiaryDateKey()`, which only matters before anything has ever been persisted                    |
-| `diaries`               | `{ [date]: Diary }`     | see below                                                                                                                             |
+| State key               | Shape                   | Handles                                                                                                                              |
+| ----------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `onboarding`            | `boolean`               | `RESET_ONBOARDING` (→ `true`), `DISMISS_ONBOARDING` (→ `false`)                                                                      |
+| `onboardingStep`        | `number`                | `NEXT_INSTRUCTION`, `PREVIOUS_INSTRUCTION` (clamped at 0), `RESET_ONBOARDING`                                                        |
+| `uipanel`               | `string \| undefined`   | `SHOW_PANEL` (→ `action.payload`, e.g. `'details'` or `'date'`), `HIDE_PANEL` (→ `undefined`) — only one panel can be open at a time |
+| `currentDimensionIndex` | `number`                | `SWITCH_DIMENSION`, `RESET_DIMENSION_INDEX`                                                                                          |
+| `currentDate`           | `string` (`YYYY-MM-DD`) | `SWITCH_DATE` — defaults to `getCurrentDiaryDateKey()`, which only matters before anything has ever been persisted                   |
+| `diaries`               | `{ [date]: Diary }`     | see below                                                                                                                            |
 
 A `Diary` is `{ timelines: Timeline[], status }`, where `Timeline` is one Dimension's array of `{ startOffsetMins, endOffsetMins, id, activity }` Entry objects.
 

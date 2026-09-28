@@ -76,7 +76,7 @@ describe('DynamicTimelineUI', () => {
     });
 
     it('closes the date dialog when uipanel is anything else', () => {
-      appStore.dispatch({ type: SHOW_PANEL, payload: 'activity' });
+      appStore.dispatch({ type: SHOW_PANEL, payload: 'details' });
       const el = createUnmounted();
 
       el.onStoreUpdate();

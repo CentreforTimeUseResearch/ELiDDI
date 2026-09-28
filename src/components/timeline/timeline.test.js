@@ -365,7 +365,7 @@ describe('Timeline long-press resize handles', () => {
     const entry = { id: 1, startOffsetMins: 0, endOffsetMins: 30, activity: 'Reading' };
     const el = createTimeline(2, [entry]);
     const rect = el.querySelector('#events rect[data-id="1"]');
-    appStore.dispatch({ type: SHOW_PANEL, payload: 'activity' });
+    appStore.dispatch({ type: SHOW_PANEL, payload: 'details' });
 
     el.onEntryPointerDown(pointerDownOn(rect));
     vi.advanceTimersByTime(500);

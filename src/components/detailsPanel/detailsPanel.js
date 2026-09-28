@@ -77,7 +77,7 @@ export class DetailsPanel extends TinyBase {
       } else {
         this.store.dispatch({
           type: SHOW_PANEL,
-          payload: 'activity',
+          payload: 'details',
         });
       }
     });
@@ -215,7 +215,7 @@ export class DetailsPanel extends TinyBase {
     const { uipanel, currentDimensionIndex } = this.store.getState();
     this.currentDimensionIndex = currentDimensionIndex;
     const isMyDimension = Number(this[DIMENSION_INDEX]) === this.currentDimensionIndex;
-    const showActivityPanel = uipanel === 'activity';
+    const showActivityPanel = uipanel === 'details';
 
     if (showActivityPanel) {
       this.showPanel();

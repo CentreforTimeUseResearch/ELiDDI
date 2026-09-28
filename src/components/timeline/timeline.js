@@ -452,6 +452,7 @@ export class Timeline extends TinyBase {
         id,
       },
     });
+    return id;
   }
 
   updateEntry(entry) {
@@ -507,8 +508,9 @@ export class Timeline extends TinyBase {
         return;
       }
     }
+    let newEntryId;
     if (this.selectedID === undefined) {
-      this.createEntry(entry);
+      newEntryId = this.createEntry(entry);
     } else {
       this.updateEntry(entry);
     }
@@ -517,6 +519,12 @@ export class Timeline extends TinyBase {
     });
     this.panelActions.close();
     this.renderEntries();
+    if (newEntryId !== undefined) {
+      const createdEntry = this.entries.find((entry) => entry.id === newEntryId);
+      if (createdEntry) {
+        this.resizeController.showHandles(createdEntry);
+      }
+    }
   }
 
   render() {

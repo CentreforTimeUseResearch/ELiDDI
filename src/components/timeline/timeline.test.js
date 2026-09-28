@@ -248,6 +248,27 @@ describe('Timeline panelActions contract', () => {
     expect(reportSaveConflict).toHaveBeenCalledOnce();
     expect(close).not.toHaveBeenCalled();
   });
+
+  it('shows resize handles on the newly-created entry after saving a brand-new entry', () => {
+    const el = createTimeline(4); // Device (multiple-choice, no overlap-conflict path)
+
+    el.saveEntry({ startOffsetMins: 0, endOffsetMins: 30, activity: 'Reading' });
+
+    const newEntry = el.entries[el.entries.length - 1];
+    expect(el.activeHandleEntryId).toBe(newEntry.id);
+    expect(el.querySelectorAll('#drag-handles .resize-handle')).toHaveLength(2);
+  });
+
+  it('does not show resize handles when saving an edit to an existing entry', () => {
+    const el = createTimeline(4); // Device
+    el.entries = [{ id: 3, startOffsetMins: 0, endOffsetMins: 30, activity: 'Reading' }];
+    el.selectedID = 3;
+
+    el.saveEntry({ startOffsetMins: 0, endOffsetMins: 45, activity: 'Reading' });
+
+    expect(el.activeHandleEntryId).toBeUndefined();
+    expect(el.querySelectorAll('#drag-handles .resize-handle')).toHaveLength(0);
+  });
 });
 
 // Phase 1 of the drag-handle resize feature (see plans/drag-handle-resize.md):

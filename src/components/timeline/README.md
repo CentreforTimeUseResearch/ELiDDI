@@ -28,7 +28,7 @@ Terminology (Dimension, Timeline, Entry, Primary activity mirror) follows [CONTE
 
 ## Store interaction
 
-- Reads/writes this Dimension's Entry array for the current Diary date (`state.diaries[currentDate].timelines[dimensionIndex]`), dispatching `ADD_TIMELINE` (first mount), `ADD_ENTRY`, `UPDATE_ENTRY`, and `DELETE_ENTRY`.
+- Reads/writes this Dimension's Entry array for the current Diary date (`state.diaries[currentDate].timelines[dimensionIndex]`), dispatching `ADD_TIMELINE` (first mount), `ADD_ENTRY`, `UPDATE_ENTRY`, and `DELETE_ENTRY`. Saving a brand-new Entry (not an edit) also immediately reveals its resize handles, as if it had just been long-pressed — see `saveEntry()`/`createEntry()`.
 - Dispatches `SHOW_PANEL`/`HIDE_PANEL` to open/close [DetailsPanel](../detailsPanel/README.md).
 - Non-Primary-activity Timelines additionally read the Primary activity Dimension's own Entries to render the read-only "mirror" strip alongside their own — see `renderShadowDimension()` (internal name "shadow"; the domain-facing term is "Primary activity mirror" — see [CONTEXT.md](../../../CONTEXT.md)).
 

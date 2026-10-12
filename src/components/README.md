@@ -26,6 +26,8 @@ Each component subfolder has its own `README.md`:
 | [timePicker](timePicker/README.md)               | `<el-time-picker>`       | Single 24-hour time field.                                 |
 | [timePickerPanel](timePickerPanel/README.md)     | `<el-time-picker-panel>` | Start/end/duration group for one Entry.                    |
 
+See also: [Class Diagram](CLASS_DIAGRAM.md) — every class in `src/`, how they inherit from `TinyBase`, and how they're actually wired together (real object composition vs. rendered-as-a-custom-element dependency).
+
 ## `base.js`
 
 Every custom element in this app extends `TinyBase`, a thin base class over `HTMLElement`:

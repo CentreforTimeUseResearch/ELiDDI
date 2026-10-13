@@ -55,7 +55,7 @@ The diary's content (Dimensions, Activities, wording, onboarding) comes from `co
 
 ELiDDI is built as a **progressive enhancement** time-use diary: it must work as a plain HTML form with no JavaScript at all, then be enhanced by a set of Web Components when JavaScript is available.
 
-- **No-JS layer** — a build-time script (`scripts/generate_no_js.js`) reads `config/activities.json` and generates the full diary as a real, submittable `<form>` of time-slot cards, injected into `index.html`.
+- **No-JS layer** — a build-time script (`scripts/generate_no_js.js`) reads `config/config.json` and generates the full diary as a real, submittable `<form>` of time-slot cards, injected into `index.html`.
 - **JS layer** — a hand-rolled set of Web Components (extending a small shared base class, `TinyBase`) takes over rendering once JavaScript loads, replacing the no-JS form with the interactive timeline UI.
 - **State management** — a single, hand-rolled Redux-style store holds all diary data, persisted to `localStorage`.
 
@@ -100,6 +100,8 @@ Immediate priorities:
 3. Publish formal contribution guidelines
 4. First tagged release
 5. Build a user-friendly deployment pipeline with configuration tooling
+
+Day-to-day work is tracked on the [project board](https://github.com/users/CentreforTimeUseResearch/projects/1); larger, not-yet-broken-down work and rough target dates live in [ROADMAP.md](ROADMAP.md).
 
 ---
 

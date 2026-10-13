@@ -230,6 +230,13 @@ export class DetailsPanel extends TinyBase {
     }
   }
 
+  // a rapid double-click/double-activation of this button cannot save
+  // twice: Timeline.saveEntry() calls back into this.reset() synchronously
+  // (via panelActions.close()) before this click's handler returns, which
+  // clears `this.state` - so even a second click already queued on this
+  // exact button sees an empty state and bails out below. This only holds
+  // because saveEntry's whole commit path is synchronous end-to-end; don't
+  // make any of it async without re-checking this guarantee.
   onSaveButtonClick() {
     //create a new entry.
     if (!this.isEntryComplete()) return;

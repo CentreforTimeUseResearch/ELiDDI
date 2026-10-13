@@ -95,4 +95,28 @@ describe('DetailsPanel', () => {
     const endTime = Number(el.timelinePickerPanel.getAttribute('end-time'));
     expect(endTime - startTime).toBe(10);
   });
+
+  // regression coverage: a rapid double-click/double-activation of Save
+  // must not call saveEntry twice for one submission. The real
+  // Timeline.saveEntry() calls back into reset() synchronously (via
+  // panelActions.close()) before returning - this mock replicates that one
+  // real side effect to prove the second click (already queued on the same
+  // button, same as a real double-click) sees emptied state and bails via
+  // isEntryComplete(), rather than actually relying on two real browser
+  // click events never overlapping.
+  it('does not call saveEntry a second time from a rapid double-click on Save', () => {
+    const el = createPanel();
+    el.setActivity('Sleep');
+    el.setStartTime(0);
+    el.setEndTime(30);
+
+    const saveEntry = vi.fn(() => el.reset());
+    el.props.saveEntry = saveEntry;
+
+    const saveButton = el.querySelector('.btn-save-btn');
+    saveButton.click();
+    saveButton.click(); // simulates a rapid second click on the same button
+
+    expect(saveEntry).toHaveBeenCalledOnce();
+  });
 });

@@ -87,6 +87,10 @@
         "autoscrollSpeed": {
           "type": "number",
           "description": "ELiDDI-specific extension - not part of the upstream O-TUD accessibility spec."
+        },
+        "generateHtmlFallback": {
+          "type": "boolean",
+          "description": "ELiDDI-specific extension - not part of the upstream O-TUD accessibility spec. Controls whether scripts/generate_no_js.js emits the full no-JS diary form (progressive enhancement) or just the minimal markup the JS layer needs. Absent or true = generate it; only an explicit false skips it, so configs predating this field keep their current behavior."
         }
       }
     },

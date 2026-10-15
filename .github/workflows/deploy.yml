@@ -5,8 +5,13 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
     inputs:
-        data:
-            type: string
+      data:
+        type: string
+      researcher_email:
+        description: 'Email address to notify (with the live URL) once the deploy finishes - leave blank to skip'
+        type: string
+        required: false
+        default: ''
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
@@ -17,7 +22,7 @@ permissions:
 # Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
 # However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
 concurrency:
-  group: "pages"
+  group: 'pages'
   cancel-in-progress: false
 
 jobs:
@@ -34,14 +39,14 @@ jobs:
       - name: Use Node.js 25.9.0
         uses: actions/setup-node@v2
         with:
-            node-version: 25
+          node-version: 25
 
       - name: Install and Build
         env:
-            ACTIONS_ENV: ${{ github.event.inputs.data }}
+          ACTIONS_ENV: ${{ github.event.inputs.data }}
         run: |
-            npm ci
-            npm run build    
+          npm ci
+          npm run build
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -55,3 +60,27 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
+
+      - name: Notify researcher
+        if: ${{ github.event.inputs.researcher_email != '' }}
+        continue-on-error: true
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          RECIPIENT: ${{ github.event.inputs.researcher_email }}
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          node -e "
+            const fs = require('fs');
+            const body = {
+              from: 'ELiDDI <notifications@mail.timeuse.online>',
+              to: [process.env.RECIPIENT],
+              subject: 'Your ELiDDI diary is ready',
+              html: '<p>Your ELiDDI time-use diary has been deployed and is ready to use:</p><p><a href=\"' + process.env.PAGE_URL + '\">' + process.env.PAGE_URL + '</a></p>'
+            };
+            fs.writeFileSync('resend_payload.json', JSON.stringify(body));
+          "
+          curl -sS -X POST 'https://api.resend.com/emails' \
+            -H "Authorization: Bearer $RESEND_API_KEY" \
+            -H 'Content-Type: application/json' \
+            -H 'User-Agent: eliddi-deploy-notify/1.0' \
+            --data @resend_payload.json

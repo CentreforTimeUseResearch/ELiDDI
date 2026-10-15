@@ -304,22 +304,35 @@ function generateScriptBlockForEnvironmentVariables(jsonData) {
 
 function processJsonToHTML(jsonData) {
   const data = JSON.parse(jsonData);
-  const dimensionsWithFlattenedActivities = createDimensionsWithFlattenedActivities(data.timeline);
+
+  // absent or true = generate the no-JS fallback (progressive enhancement);
+  // only an explicit false skips it, so configs predating this flag are unaffected
+  const generateHtmlFallback = data.general?.accessibility?.generateHtmlFallback !== false;
 
   let html = generateScriptBlockForEnvironmentVariables(jsonData);
 
-  html += generateDataLists(dimensionsWithFlattenedActivities);
-  html += '<el-dynamic-timeline><header><h1>Time use diary</h1></header>';
-  html += '<form method="post" action="/">';
-  for (let i = 0; i < numChunks; i++) {
-    // break the table into chunks of 18 (3 hours = 3 * (60 / 10))
-    const chunkTimeSlots = timeSlots.slice(i * rowsChunkSize, (i + 1) * rowsChunkSize);
+  if (generateHtmlFallback) {
+    const dimensionsWithFlattenedActivities = createDimensionsWithFlattenedActivities(
+      data.timeline
+    );
 
-    html += `${createCardsHTML(dimensionsWithFlattenedActivities, chunkTimeSlots, i)}`;
+    html += generateDataLists(dimensionsWithFlattenedActivities);
+    html += '<el-dynamic-timeline><header><h1>Time use diary</h1></header>';
+    html += '<form method="post" action="/">';
+    for (let i = 0; i < numChunks; i++) {
+      // break the table into chunks of 18 (3 hours = 3 * (60 / 10))
+      const chunkTimeSlots = timeSlots.slice(i * rowsChunkSize, (i + 1) * rowsChunkSize);
+
+      html += `${createCardsHTML(dimensionsWithFlattenedActivities, chunkTimeSlots, i)}`;
+    }
+    html += generateFooter();
+
+    html += '</form></el-dynamic-timeline>';
+  } else {
+    // no-JS fallback skipped: the JS layer only needs the GLOBALS data above
+    // plus an empty mount point for DynamicTimelineUI.render() to take over
+    html += '<el-dynamic-timeline></el-dynamic-timeline>';
   }
-  html += generateFooter();
-
-  html += '</form></el-dynamic-timeline>';
 
   console.log(html);
   // console.log('<hr />');

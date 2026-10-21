@@ -57,11 +57,15 @@ export class Navbar extends TinyBase {
     this.innerHTML = `
 
         <div class="off-screen-menu">
-            <ul>
-                <li><button class="reset-to-div instructions-button" type="button">Instructions</button></li>
+          <div class="menu-container">
+            <ul class="menu-list">
+                <li class="menu-item"><button class="reset-to-div instructions-button" type="button">Instructions</button></li>
            
-                <li>Reset</li>
+                <li class="menu-item">Reset (clears all entries)</li>
+                <li class="menu-item">View stats</li>
+                <li class="menu-item">About this study</li>
             </ul>
+          </div>
         </div>
 
         <nav>

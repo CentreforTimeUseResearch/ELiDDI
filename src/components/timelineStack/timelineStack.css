@@ -1,16 +1,32 @@
 el-timeline-stack {
-    background-color: var(--color-canvas);
-    flex-grow: 1;
-    overflow-y: auto;
-    display: flex;
-    overflow-x: scroll;
-    scroll-behavior: smooth !important;
-    scroll-snap-type: x mandatory !important;
+  background-color: var(--color-canvas);
+  flex-grow: 1;
+  overflow-y: auto;
+  display: flex;
+  overflow-x: scroll;
+  scroll-behavior: smooth !important;
+  scroll-snap-type: x mandatory !important;
+  max-width: 375px;
+  /* horizontal centering only - NOT the `margin: auto` shorthand: that
+       also sets margin-top/bottom to auto, which per the CSS Box Alignment
+       spec disables a grid item's default `align-items: stretch`. At the
+       >=630px breakpoint below, that silently broke this element's height:
+       instead of being constrained to its grid row it grew to fit its full
+       (multi-thousand-pixel) content, with the rest invisibly clipped by
+       el-dynamic-timeline's `overflow: hidden` - no internal scrollbar, and
+       most of the timeline unreachable for clicks. */
+  margin: 0 auto;
 
-    /* background-image: url(../../assets/images/timeline.png);
+  /* background-image: url(../../assets/images/timeline.png);
     background-size: contain; */
-    &>* {
-        scroll-snap-align: start !important;
-        scroll-snap-stop: always !important;
-    }
+  & > * {
+    scroll-snap-align: start !important;
+    scroll-snap-stop: always !important;
+  }
+
+  /* keep in sync with --medium-width in style.css's :root - media queries
+       can't read custom properties, so this is a hand-kept literal */
+  @media (min-width: 630px) {
+    grid-area: main;
+  }
 }

@@ -1,22 +1,16 @@
 el-details-panel {
-  position: fixed;
-  top: calc(100dvh - 8rem);
-  left: 50%;
+  display: block;
+  position: sticky;
+  bottom: 0;
   background-color: var(--color-surface-tile);
-  height: 100vh;
+  height: 8rem;
   text-align: center;
-  transition: all 0.3s ease;
-  transition-behavior: allow-discrete;
+  transition: height 0.3s ease;
   opacity: 1;
   z-index: 1;
-  transform: translate(-50%, 0);
-  width: 400px;
+  overflow: hidden;
 
   /* mobile only for now */
-
-  @starting-style {
-    opacity: 0;
-  }
 
   &.hide {
     visibility: hidden;
@@ -50,14 +44,11 @@ el-details-panel {
 }
 
 el-details-panel.active {
-  top: calc(100dvh - 36rem);
+  height: 36rem;
+  overflow-y: auto;
 
   .right svg {
     transform: rotate(180deg);
-  }
-
-  &.higher {
-    top: 10px;
   }
 }
 

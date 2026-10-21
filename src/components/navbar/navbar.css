@@ -4,28 +4,47 @@
 
 .off-screen-menu {
   position: fixed;
-  top: 4.4rem;
+  top: 4.9rem;
   left: -450px;
   background-color: var(--color-surface-tile);
   color: var(--color-on-dark);
   height: 100vh;
   width: 100%;
-  max-width: 350px;
-
+  max-width: 256px;
   display: flex;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 3rem;
-  line-height: 1;
+  box-sizing: border-box;
+  padding: 18px 16px 0;
   transition: 0.3s ease;
   z-index: 2;
+
+  /* keep in sync with --medium-width in style.css's :root - media queries
+     can't read custom properties, so this is a hand-kept literal */
+  @media (min-width: 630px) {
+    grid-area: sidebar;
+    position: static;
+    width: 256px;
+    height: 100%;
+  }
 }
 
 .off-screen-menu.active {
   left: 0;
+}
+
+.menu-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid #3b3b40;
+  font-size: 20px;
+  color: #e4e4e8;
+  cursor: pointer;
 }
 
 .instructions-button:focus-visible {
@@ -46,6 +65,12 @@ nav {
   font-size: var(--text-fine-print-size);
   line-height: var(--text-fine-print-lh);
   letter-spacing: var(--text-fine-print-ls);
+
+  /* keep in sync with --medium-width in style.css's :root - media queries
+     can't read custom properties, so this is a hand-kept literal */
+  @media (min-width: 630px) {
+    grid-area: nav;
+  }
 }
 
 .left-pane {
@@ -78,6 +103,16 @@ nav {
   width: 50px;
   margin-right: auto;
   position: relative;
+}
+
+.left-pane .ham-menu {
+  /* two-class selector needed to outweigh style.css's `button.reset-to-div`
+     (element+class), which otherwise wins the display:block/none fight -
+     keep in sync with --medium-width in style.css's :root: media queries
+     can't read custom properties, so this is a hand-kept literal */
+  @media (min-width: 630px) {
+    display: none;
+  }
 }
 
 .ham-menu span {

@@ -503,12 +503,17 @@
       </svg>
     </template>
 
-    <!-- Phase 10.3 (HorizontalTimeline): one Dimension's entries as a
-         horizontal row. No gridline-click-zone or drag-handles layer yet -
-         those are Phase 10.6 (entry interactions). -->
+    <!-- Phase 10.6 (HorizontalTimeline entry interactions): one Dimension's
+         entries as a horizontal row. #gridline_zone is the click-to-add hit
+         target + visible background (mirrors #svg-timeline's own), sized
+         live by HorizontalTimeline.updateDimensions(). #drag-handles sits
+         above #events, populated live by long-press/drag, same as
+         #svg-timeline's own. -->
     <template id="svg-horizontal-timeline-row">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2880 110">
+        <rect id="gridline_zone" x="0" y="0" width="2880" height="110" fill="#ffffff" />
         <g id="events"></g>
+        <g id="drag-handles"></g>
       </svg>
     </template>
 

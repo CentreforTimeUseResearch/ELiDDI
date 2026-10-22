@@ -1,6 +1,15 @@
 import { TinyBase } from '../base';
 import { getActivityColor } from '../../utils/activities';
-import { ADD_TIMELINE } from '../../store/actionTypes';
+import { findOverlappingEntry, findNextEntry } from '../../utils/entries';
+import { formatOffsetAsClockTime } from '../../utils/time';
+import {
+  ADD_TIMELINE,
+  ADD_ENTRY,
+  UPDATE_ENTRY,
+  DELETE_ENTRY,
+  HIDE_PANEL,
+} from '../../store/actionTypes';
+import { EntryResizeController, X_AXIS } from '../timeline/entryResizeController';
 import { SVGNS, XHTMLNS, MINUTES_PER_DAY } from '../timeline/timelineConstants';
 import { NATIVE_ZOOM, getEffectivePxPerMinute } from '../horizontalTimelineAxis/zoomConstants';
 // .event-label is shared with the vertical timeline's entry labels - import
@@ -42,10 +51,21 @@ function createLabelForeignObject({ x, width, label, id }) {
 }
 
 // One Dimension's entries rendered as a horizontal row, zoom-aware (Phase
-// 10.5: geometry is recomputed from the current horizontalZoomLevel on every
-// store update, keeping 1 viewBox unit = 1 CSS px at every zoom level). No
-// click-to-add/select or drag-resize yet (Phase 10.6), no shadow-dimension
+// 10.5) and interactive (Phase 10.6): click-to-add/select, long-press to
+// reveal resize handles, drag-to-resize - ported from timeline.js, axis-
+// swapped via EntryResizeController's X_AXIS config. No shadow-dimension
 // strip (see the Phase 10.3 plan's decision to omit it).
+//
+// panelActions differs from Timeline's: this component does not own/create
+// its own <el-details-panel> - HorizontalTimelineStack mounts a single
+// shared panel and injects each row with a panelActions-shaped props object
+// (openEntry/openNewEntry/close/reportSaveConflict) via setProps/key, same
+// shape Timeline's own self-made panel registers for itself. Unlike
+// Timeline.onTimelineClick, this component does not dispatch
+// SWITCH_DIMENSION/SHOW_PANEL itself - that's the stack's job (it needs to
+// detect an actual dimension change first, to decide whether the shared
+// panel needs a full reset()), reached via the injected openEntry/
+// openNewEntry closures.
 export class HorizontalTimeline extends TinyBase {
   static observedAttributes = [INDEX];
 
@@ -54,10 +74,15 @@ export class HorizontalTimeline extends TinyBase {
   fragment;
   timeLineElement;
   entriesLayer;
+  handlesLayer;
+  gridlineZoneElement;
   entries = [];
+  panelActions;
+  selectedID;
   dimensionIndex;
   currentDate;
   zoomLevel = NATIVE_ZOOM;
+  resizeController;
 
   constructor() {
     super();
@@ -79,15 +104,65 @@ export class HorizontalTimeline extends TinyBase {
       this.entries = timeline;
     }
     super.connectedCallback();
+    this.panelActions = this.props;
     this.registerCleanup(this.store.subscribe(() => this.updateState()));
     this.getChildElementReferences();
     this.updateDimensions();
     this.renderEntries();
+
+    this.resizeController = new EntryResizeController({
+      svg: this.timeLineElement,
+      entriesLayer: this.entriesLayer,
+      handlesLayer: this.handlesLayer,
+      getEntries: () => this.entries,
+      isSingleChoiceDimension: () => this.isSingleChoiceDimension,
+      getCurrentDate: () => this.currentDate,
+      isPanelOpen: () => this.store.getState().uipanel === 'details',
+      clientToSvgCoord: (clientX, clientY) => this.clientXToSvgX(clientX, clientY),
+      calculateTheTimeSlotClicked: (x) => this.calculateTheTimeSlotClicked(x),
+      axis: X_AXIS,
+      getPxPerMinute: () => getEffectivePxPerMinute(this.zoomLevel),
+      crossAxisCenter: ROW_HEIGHT / 2,
+      onCommitResize: (entryId, { startOffsetMins, endOffsetMins }) => {
+        const entry = this.entries.find((entry) => entry.id === entryId);
+        if (!entry) {
+          return undefined;
+        }
+        this.selectedID = entryId;
+        this.updateEntry({ ...entry, startOffsetMins, endOffsetMins });
+        this.renderEntries();
+        return this.entries.find((entry) => entry.id === entryId);
+      },
+    });
+
+    this.assignEventHandlers();
   }
 
+  // Uses attribute selectors ('[id="x"]'), not ID selectors ('#x') - up to
+  // six HorizontalTimeline rows are mounted simultaneously (HorizontalTimelineStack),
+  // each cloning the same template, so ids like #events are duplicated
+  // across the document. Real browsers correctly scope a #id selector to
+  // the calling element's own subtree regardless of document-wide
+  // duplicates, but jsdom (this project's test environment) doesn't -
+  // confirmed empirically: querySelector('#events') on a second instance's
+  // own <svg> returned null while the id was genuinely present, even though
+  // querySelector('[id="events"]') found it correctly. Attribute selectors
+  // sidestep whatever fast-path jsdom's ID matching takes, with identical
+  // results in real browsers.
   getChildElementReferences() {
     this.timeLineElement = this.querySelector('svg');
-    this.entriesLayer = this.timeLineElement.querySelector('#events');
+    this.entriesLayer = this.timeLineElement.querySelector('[id="events"]');
+    this.gridlineZoneElement = this.timeLineElement.querySelector('[id="gridline_zone"]');
+    // real markup (index.html) always has this above #events; test fixtures
+    // that build a minimal <svg> don't, so fall back to creating it -
+    // appended last so it renders above entries either way (mirrors
+    // Timeline's own getChildElementReferences)
+    this.handlesLayer = this.timeLineElement.querySelector('[id="drag-handles"]');
+    if (!this.handlesLayer) {
+      this.handlesLayer = document.createElementNS(SVGNS, 'g');
+      this.handlesLayer.setAttribute('id', 'drag-handles');
+      (this.entriesLayer?.parentNode ?? this.timeLineElement).appendChild(this.handlesLayer);
+    }
   }
 
   // keeps 1 viewBox unit = 1 CSS px as an invariant at every zoom level,
@@ -101,6 +176,7 @@ export class HorizontalTimeline extends TinyBase {
     this.timeLineElement.setAttribute('viewBox', `0 0 ${totalWidthPx} ${ROW_HEIGHT}`);
     this.timeLineElement.setAttribute('width', totalWidthPx);
     this.style.width = `${totalWidthPx}px`;
+    this.gridlineZoneElement?.setAttribute('width', totalWidthPx);
   }
 
   updateState() {
@@ -110,9 +186,7 @@ export class HorizontalTimeline extends TinyBase {
     this.entries = state.diaries[this.currentDate]?.timelines[this.dimensionIndex] ?? EMPTY_ENTRIES;
     // re-render on every store update, not just a date/zoom change - an
     // entry for this dimension may have changed elsewhere (e.g. the
-    // vertical timeline on a smaller breakpoint), and there's no
-    // interaction loop of its own yet (Phase 10.6) to otherwise trigger a
-    // re-render after an edit
+    // vertical timeline on a smaller breakpoint)
     this.updateDimensions();
     this.renderEntries();
   }
@@ -169,9 +243,239 @@ export class HorizontalTimeline extends TinyBase {
     });
   }
 
+  calculateTheTimeSlotClicked(x) {
+    // zoom-aware, unlike Timeline's fixed-constant version - the vertical
+    // timeline has no zoom, so PX_PER_MINUTE alone is always correct there
+    return Math.floor(x / (getEffectivePxPerMinute(this.zoomLevel) * 10)) * 10;
+  }
+
+  assignEventHandlers() {
+    if (!this.ready) {
+      this.timeLineElement?.addEventListener('click', (e) => {
+        this.onTimelineClick(e);
+      });
+      this.timeLineElement?.addEventListener('pointerdown', (e) => {
+        this.resizeController.onEntryPointerDown(e);
+      });
+      this.timeLineElement?.addEventListener('pointermove', (e) => {
+        this.resizeController.onEntryPointerMove(e);
+      });
+      this.timeLineElement?.addEventListener('pointerup', (e) => {
+        this.resizeController.handlePointerUp(e);
+      });
+      this.timeLineElement?.addEventListener('pointercancel', (e) => {
+        this.resizeController.handlePointerCancel(e);
+      });
+      // belt-and-braces against the stack's horizontal scroll (see
+      // horizontalTimelineStack.css's overflow-x: auto) panning during a
+      // touch drag - axis-flipped from Timeline's own vertical-scroll
+      // defense, see timeline.js for the full reasoning
+      this.timeLineElement?.addEventListener(
+        'touchstart',
+        (e) => {
+          this.resizeController.handleTouchStart(e);
+        },
+        { passive: false }
+      );
+      this.timeLineElement?.addEventListener(
+        'touchmove',
+        (e) => {
+          this.resizeController.handleTouchMove(e);
+        },
+        { passive: false }
+      );
+      const onKeyDown = (e) => this.onGlobalKeyDown(e);
+      document.addEventListener('keydown', onKeyDown);
+      this.registerCleanup(() => document.removeEventListener('keydown', onKeyDown));
+      this.ready = true;
+    }
+  }
+
+  onEntryPointerDown(e) {
+    this.resizeController.onEntryPointerDown(e);
+  }
+
+  onEntryPointerMove(e) {
+    this.resizeController.onEntryPointerMove(e);
+  }
+
+  commitDrag() {
+    this.resizeController.commitDrag();
+  }
+
+  cancelDrag() {
+    this.resizeController.cancelDrag();
+  }
+
+  get activeDrag() {
+    return this.resizeController.activeDrag;
+  }
+
+  get activeHandleEntryId() {
+    return this.resizeController.activeHandleEntryId;
+  }
+
+  // converts a pointer event's screen coordinates into this SVG's own user
+  // coordinate space - axis-swapped from Timeline.clientYToSvgY, reads .x
+  // instead of .y off the transformed point. See that method's own comment
+  // for why this goes through getScreenCTM()/matrixTransform() rather than
+  // assuming a 1:1 CSS-px-to-viewBox-unit mapping.
+  clientXToSvgX(clientX, clientY) {
+    const svg = this.timeLineElement;
+    if (typeof svg?.createSVGPoint !== 'function' || typeof svg.getScreenCTM !== 'function') {
+      return clientX; // no SVG geometry support (e.g. a test environment)
+    }
+    const ctm = svg.getScreenCTM();
+    if (!ctm) {
+      return clientX;
+    }
+    const point = svg.createSVGPoint();
+    point.x = clientX;
+    point.y = clientY;
+    return point.matrixTransform(ctm.inverse()).x;
+  }
+
+  onGlobalKeyDown(e) {
+    this.resizeController.handleGlobalKeyDown(e);
+  }
+
+  // unlike Timeline.onTimelineClick, this does not dispatch SWITCH_DIMENSION
+  // or SHOW_PANEL itself - that's HorizontalTimelineStack's job (reached via
+  // panelActions.openEntry/openNewEntry below), since it needs to detect an
+  // actual dimension change first to decide whether the shared panel needs
+  // a full reset() (see the Phase 10.6 plan)
+  onTimelineClick(e) {
+    if (e.target?.closest?.('.resize-handle')) {
+      return;
+    }
+    if (this.resizeController.consumeSuppressedClick()) {
+      return;
+    }
+    if (this.resizeController.activeHandleEntryId !== undefined) {
+      this.resizeController.hideHandles();
+    }
+    const element_id = e.target?.dataset?.id;
+    if (element_id !== undefined) {
+      const entry_id = Number(e.target?.dataset?.id);
+      if (typeof entry_id !== 'number') {
+        console.error('Problem with identifying entry from click', e.target);
+        return;
+      }
+      this.selectedID = entry_id;
+      const entry = this.entries.find((entry) => entry.id === entry_id);
+      this.panelActions.openEntry(entry);
+    } else {
+      if (e.target.id !== 'gridline_zone') {
+        return;
+      }
+      this.selectedID = undefined;
+      const svgX = this.clientXToSvgX(e.clientX, e.clientY);
+      const startOffsetMins = this.calculateTheTimeSlotClicked(svgX >= 0 ? svgX : 0);
+      this.panelActions.openNewEntry(startOffsetMins);
+    }
+  }
+
+  get isSingleChoiceDimension() {
+    return GLOBALS.DATA.timeline[Number(this.dimensionIndex)].mode !== 'multiple-choice';
+  }
+
+  formatOverlapMessage(conflict) {
+    const start = formatOffsetAsClockTime(conflict.startOffsetMins);
+    const end = formatOffsetAsClockTime(conflict.endOffsetMins);
+    return `This overlaps with your existing "${conflict.activity}" entry (${start}–${end}). Adjust the time, or edit/delete that entry first.`;
+  }
+
+  getNextEntryId() {
+    return this.entries.reduce((maxId, entry) => Math.max(maxId, entry.id), -1) + 1;
+  }
+
+  findNextEntryAfter(afterOffsetMins) {
+    return findNextEntry(this.entries, afterOffsetMins, this.selectedID);
+  }
+
+  createEntry(entry) {
+    const id = this.getNextEntryId();
+    const dimensionIndex = this.dimensionIndex;
+    if (typeof dimensionIndex !== 'number') {
+      console.error('Problem with identifying dimension index', dimensionIndex);
+      return;
+    }
+    this.store.dispatch({
+      type: ADD_ENTRY,
+      payload: {
+        dimensionIndex,
+        date: this.currentDate,
+        ...entry,
+        id,
+      },
+    });
+    return id;
+  }
+
+  updateEntry(entry) {
+    const dimensionIndex = this.dimensionIndex;
+    if (typeof dimensionIndex !== 'number') {
+      console.error('Problem with identifying dimension index', dimensionIndex);
+      return;
+    }
+    const index = this.entries.findIndex((entry) => entry.id === this.selectedID);
+    this.store.dispatch({
+      type: UPDATE_ENTRY,
+      payload: {
+        id: this.selectedID,
+        dimensionIndex,
+        date: this.currentDate,
+        index,
+        ...entry,
+      },
+    });
+    this.selectedID = undefined;
+  }
+
+  deleteEntry(id) {
+    const dimensionIndex = this.dimensionIndex;
+    if (!this.entries.some((entry) => entry.id === id)) {
+      return;
+    }
+    this.resizeController.hideHandlesIfActiveFor(id);
+    this.store.dispatch({
+      type: DELETE_ENTRY,
+      payload: { dimensionIndex, date: this.currentDate, id },
+    });
+    this.store.dispatch({ type: HIDE_PANEL });
+    this.selectedID = undefined;
+    this.panelActions.close();
+    this.renderEntries();
+  }
+
   attributeChangedCallback(name, oldValue, newValue) {
     if (this[name] !== newValue) {
       this[name] = newValue;
+    }
+  }
+
+  saveEntry(entry) {
+    if (this.isSingleChoiceDimension) {
+      const conflict = findOverlappingEntry(this.entries, entry, this.selectedID);
+      if (conflict) {
+        this.panelActions.reportSaveConflict(this.formatOverlapMessage(conflict));
+        return;
+      }
+    }
+    let newEntryId;
+    if (this.selectedID === undefined) {
+      newEntryId = this.createEntry(entry);
+    } else {
+      this.updateEntry(entry);
+    }
+    this.store.dispatch({ type: HIDE_PANEL });
+    this.panelActions.close();
+    this.renderEntries();
+    if (newEntryId !== undefined) {
+      const createdEntry = this.entries.find((entry) => entry.id === newEntryId);
+      if (createdEntry) {
+        this.resizeController.showHandles(createdEntry);
+      }
     }
   }
 

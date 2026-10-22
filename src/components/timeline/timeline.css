@@ -52,8 +52,7 @@ el-timeline {
 }
 
 .resize-handle-readout {
-  font-size: 13px;
-  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14px;
   fill: #3a3d4d;
   pointer-events: none;
 }
@@ -65,7 +64,6 @@ el-timeline {
   align-items: center;
   justify-content: center;
   text-align: center;
-  font-family: Arial, Helvetica, sans-serif;
   color: #3a3d4d;
   line-height: 1.2;
   overflow: hidden;

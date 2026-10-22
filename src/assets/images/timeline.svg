@@ -1,9 +1,8 @@
-<svg 
-  xmlns="http://www.w3.org/2000/svg" 
-  viewBox="0 0 340 2400" 
-  width="340" 
-  height="2400" 
-  font-family="Arial, Helvetica, sans-serif"
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 340 2400"
+  width="340"
+  height="2400"
 >
 
   <!-- ============ DEFS ============ -->
@@ -82,7 +81,7 @@
   <rect x="85" y="0" width="4" height="2400" rx="2" fill="url(#timeGradient)"/>
 
   <!-- ============ HOUR LABELS ============ -->
-  <g id="hour-labels" font-size="13" fill="#8a8f98" text-anchor="end">
+  <g id="hour-labels" font-size="14" fill="#8a8f98" text-anchor="end">
     <text x="65" y="10">04:00</text>
     <text x="65" y="105">05:00</text>
     <text x="65" y="205">06:00</text>
@@ -113,7 +112,7 @@
   <!-- ============ EVENTS ============ -->
   <g id="events">
     <rect class="event-block" x="105" y="800" width="230" height="450" fill="#9aa0c3" fill-opacity="0.45"/>
-    <text x="220" y="1025" text-anchor="middle" dominant-baseline="middle" font-size="13" fill="#3a3d4d">c/ch</text>
+    <text x="220" y="1025" text-anchor="middle" dominant-baseline="middle" font-size="14" fill="#3a3d4d">c/ch</text>
   </g>
 
 </svg>

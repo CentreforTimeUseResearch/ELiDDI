@@ -178,7 +178,7 @@ export class Timeline extends TinyBase {
   // entry element looks like this:
   // <g>
   //   <rect class="event-block" x="105" y="800" width="230" height="450" fill="#9aa0c3" fill-opacity="0.45" />
-  //   <text x="220" y="1025" text-anchor="middle" dominant-baseline="middle" font-size="13" fill="#3a3d4d">c/ch</text>
+  //   <text x="220" y="1025" text-anchor="middle" dominant-baseline="middle" font-size="14" fill="#3a3d4d">c/ch</text>
   // </g>
   renderEntriesInto({ layer, entries, dimensionIndex, blockWidth, labelX, labelWidth }) {
     layer.innerHTML = '';
@@ -207,7 +207,7 @@ export class Timeline extends TinyBase {
         width: labelWidth,
         height,
         label,
-        fontSize: 13,
+        fontSize: 14,
         id: entry.id,
       });
       entryGroup.appendChild(labelForeignObject);

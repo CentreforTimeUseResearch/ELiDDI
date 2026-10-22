@@ -336,9 +336,9 @@ function processJsonToHTML(jsonData) {
 
   console.log(html);
   // console.log('<hr />');
-  console.log('<pre>');
-  console.log(environment);
-  console.log('</pre>');
+  // console.log('<pre>');
+  // console.log(environment);
+  // console.log('</pre>');
 }
 
 //console.log('<span>'+filePath+'</span>');

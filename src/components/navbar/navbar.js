@@ -1,17 +1,44 @@
 import '../timelinePicker/timelinePicker.js';
 import '../contextualHelp/contextualHelp.js';
 import { TinyBase } from '../base';
-import { RESET_ONBOARDING, SHOW_PANEL } from '../../store/actionTypes';
+import {
+  RESET_ONBOARDING,
+  SHOW_PANEL,
+  HIDE_PANEL,
+  SWITCH_DIMENSION,
+} from '../../store/actionTypes';
 import { formatDateKeyAsDDMMYYYY } from '../../utils/time';
 import './navbar.css';
+
+// the sidebar's generic menu options - rendered twice (sidebar drawer below
+// 1024px, nav bar at/above it, see renderMenuItems) rather than switched via
+// JS, so this is the one place their labels/handlers are defined
+const MENU_ITEMS = [
+  { label: 'Instructions', buttonClass: 'instructions-button' },
+  { label: 'Reset (clears all entries)' },
+  { label: 'View stats' },
+  { label: 'About this study' },
+];
 
 export class Navbar extends TinyBase {
   ready = false;
   store = super.getStore();
   dateIndicator;
+  dimensionNames;
 
   constructor() {
     super();
+    this.parseDimensionNamesFromData();
+  }
+
+  parseDimensionNamesFromData() {
+    const dimensionsData = GLOBALS.DATA.timeline;
+    if (!Array.isArray(dimensionsData)) {
+      console.error('invalid dimension array');
+      this.dimensionNames = [];
+      return;
+    }
+    this.dimensionNames = dimensionsData.map((dimension) => dimension.name);
   }
 
   connectedCallback() {
@@ -38,18 +65,49 @@ export class Navbar extends TinyBase {
         hamMenu.classList.toggle('active');
         offScreenMenu.classList.toggle('active');
       });
-      this.querySelector('.instructions-button')?.addEventListener('click', () => {
-        this.store.dispatch({ type: RESET_ONBOARDING });
-        hamMenu.classList.toggle('active');
-        offScreenMenu.classList.toggle('active');
+      // the Instructions button is duplicated (sidebar drawer + nav bar, see
+      // renderMenuItems) so every copy needs wiring, not just the first
+      this.querySelectorAll('.instructions-button').forEach((button) => {
+        button.addEventListener('click', () => {
+          this.store.dispatch({ type: RESET_ONBOARDING });
+          hamMenu.classList.toggle('active');
+          offScreenMenu.classList.toggle('active');
+        });
       });
       this.querySelector('.change-date-button')?.addEventListener('click', () => {
         this.store.dispatch({ type: SHOW_PANEL, payload: 'date' });
         // hamMenu.classList.toggle('active');
         // offScreenMenu.classList.toggle('active');
       });
+      this.querySelectorAll('.dimension-item').forEach((item) => {
+        item.addEventListener('click', () => {
+          const index = Number(item.dataset.dimensionIndex);
+          this.store.dispatch({ type: HIDE_PANEL });
+          this.store.dispatch({ type: SWITCH_DIMENSION, payload: index });
+        });
+      });
       this.ready = true;
     }
+  }
+
+  // shared between the sidebar's generic-menu <ul> and its >=1024px nav-bar
+  // duplicate (see navbar.css) - same items/labels/handlers, only the
+  // wrapping classes differ so each copy can be styled for where it lives
+  renderMenuItems(itemClass) {
+    return MENU_ITEMS.map((item) =>
+      item.buttonClass
+        ? `<li class="${itemClass}"><button class="reset-to-div ${item.buttonClass}" type="button">${item.label}</button></li>`
+        : `<li class="${itemClass}">${item.label}</li>`
+    ).join('');
+  }
+
+  renderDimensionItems() {
+    return this.dimensionNames
+      .map(
+        (name, index) =>
+          `<li class="menu-item dimension-item" data-dimension-index="${index}">${name}</li>`
+      )
+      .join('');
   }
 
   render() {
@@ -57,11 +115,14 @@ export class Navbar extends TinyBase {
     this.innerHTML = `
 
         <div class="off-screen-menu">
-            <ul>
-                <li><button class="reset-to-div instructions-button" type="button">Instructions</button></li>
-           
-                <li>Reset</li>
+          <div class="menu-container">
+            <ul class="menu-list" data-menu="generic">
+                ${this.renderMenuItems('menu-item')}
             </ul>
+            <ul class="menu-list" data-menu="dimension">
+                ${this.renderDimensionItems()}
+            </ul>
+          </div>
         </div>
 
         <nav>
@@ -71,6 +132,9 @@ export class Navbar extends TinyBase {
                     <span></span>
                     <span></span>
                 </button>
+                <ul class="nav-menu-list">
+                    ${this.renderMenuItems('nav-menu-item')}
+                </ul>
             </div>
             <div class="middle-pane">
                 <el-timeline-picker></el-timeline-picker>

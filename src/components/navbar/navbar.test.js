@@ -1,7 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Navbar } from './navbar';
 import { appStore } from '../../store/appStore';
-import { SWITCH_DATE } from '../../store/actionTypes';
+import { SWITCH_DATE, DISMISS_ONBOARDING } from '../../store/actionTypes';
+
+const DIMENSION_NAMES = GLOBALS.DATA.timeline.map((dimension) => dimension.name);
 
 describe('Navbar', () => {
   beforeEach(() => {
@@ -62,4 +64,43 @@ describe('Navbar', () => {
   });
 
   // todo: test that sidebar menu options are present
+
+  it('renders the generic menu items twice - once in the sidebar, once duplicated into the nav bar - for the >=1024px CSS-only switch', () => {
+    const el = document.createElement('el-nav-bar');
+    document.body.appendChild(el);
+
+    const sidebarButtons = el.querySelectorAll(
+      '.menu-list[data-menu="generic"] .instructions-button'
+    );
+    const navButtons = el.querySelectorAll('.nav-menu-list .instructions-button');
+    expect(sidebarButtons.length).toBe(1);
+    expect(navButtons.length).toBe(1);
+  });
+
+  it("dispatches RESET_ONBOARDING when the nav bar's duplicated Instructions button is clicked, same as the sidebar one", () => {
+    appStore.dispatch({ type: DISMISS_ONBOARDING });
+    const el = document.createElement('el-nav-bar');
+    document.body.appendChild(el);
+
+    el.querySelector('.nav-menu-list .instructions-button').click();
+
+    expect(el.store.getState().onboarding).toBe(true);
+  });
+
+  it('renders a Dimension list item per Dimension in GLOBALS.DATA.timeline', () => {
+    const el = document.createElement('el-nav-bar');
+    document.body.appendChild(el);
+
+    const items = [...el.querySelectorAll('.dimension-item')];
+    expect(items.map((item) => item.textContent)).toEqual(DIMENSION_NAMES);
+  });
+
+  it("dispatches SWITCH_DIMENSION with the clicked item's index when a Dimension list item is clicked", () => {
+    const el = document.createElement('el-nav-bar');
+    document.body.appendChild(el);
+
+    el.querySelectorAll('.dimension-item')[2].click();
+
+    expect(el.store.getState().currentDimensionIndex).toBe(2);
+  });
 });

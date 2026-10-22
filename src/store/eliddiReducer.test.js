@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { eliddiReducer } from './eliddiReducer';
-import { SET_STATUS, RESET_STATUS, SET_COMPLETE, SWITCH_DATE } from './actionTypes';
+import {
+  SET_STATUS,
+  RESET_STATUS,
+  SET_COMPLETE,
+  SWITCH_DATE,
+  SET_HORIZONTAL_ZOOM,
+} from './actionTypes';
 
 const DATE = '2026-08-21';
 
@@ -47,5 +53,17 @@ describe('eliddiReducer - currentDate', () => {
   it('switches the current date on SWITCH_DATE', () => {
     const state = eliddiReducer(undefined, { type: SWITCH_DATE, payload: DATE });
     expect(state.currentDate).toBe(DATE);
+  });
+});
+
+describe('eliddiReducer - horizontalZoomLevel', () => {
+  it('defaults to native scale (1)', () => {
+    const state = eliddiReducer(undefined, { type: '@@INIT' });
+    expect(state.horizontalZoomLevel).toBe(1);
+  });
+
+  it('sets the zoom level on SET_HORIZONTAL_ZOOM', () => {
+    const state = eliddiReducer(undefined, { type: SET_HORIZONTAL_ZOOM, payload: 2.5 });
+    expect(state.horizontalZoomLevel).toBe(2.5);
   });
 });

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { HorizontalTimeline } from './horizontalTimeline';
 import { appStore } from '../../store/appStore';
-import { ADD_ENTRY, SWITCH_DATE } from '../../store/actionTypes';
+import { ADD_ENTRY, SWITCH_DATE, SET_HORIZONTAL_ZOOM } from '../../store/actionTypes';
 
 // renderEntriesInto doesn't touch `this`, so it can be called directly off
 // the prototype without constructing a full HorizontalTimeline instance
@@ -148,5 +148,68 @@ describe('HorizontalTimeline mounted', () => {
     });
 
     expect(el.querySelector('#events rect[data-id="7"]')).not.toBeNull();
+  });
+
+  // Phase 10.5: geometry and the svg's own width/viewBox are both
+  // recomputed from the current horizontalZoomLevel, keeping 1 viewBox
+  // unit = 1 CSS px at every zoom level (see the Phase 10.5 plan)
+  describe('zoom', () => {
+    beforeEach(() => {
+      appStore.dispatch({ type: SET_HORIZONTAL_ZOOM, payload: 1 });
+    });
+
+    it('sizes the svg to the native width at zoom 1', () => {
+      const el = createHorizontalTimeline(0);
+      expect(el.querySelector('svg').getAttribute('width')).toBe('2880'); // 1440min * 2px/min
+    });
+
+    it('rescales the svg and entry geometry on a zoom change', () => {
+      const date = '2026-10-01';
+      appStore.dispatch({ type: SWITCH_DATE, payload: date });
+      appStore.dispatch({
+        type: ADD_ENTRY,
+        payload: {
+          dimensionIndex: 5,
+          date,
+          startOffsetMins: 60,
+          endOffsetMins: 90,
+          activity: '5',
+          id: 9,
+        },
+      });
+      const el = createHorizontalTimeline(5); // Enjoyment
+      const rectBefore = el.querySelector('rect[data-id="9"]');
+      expect(rectBefore.getAttribute('x')).toBe('120'); // 60min * 2px/min
+      expect(rectBefore.getAttribute('width')).toBe('60'); // 30min * 2px/min
+
+      appStore.dispatch({ type: SET_HORIZONTAL_ZOOM, payload: 2 });
+
+      expect(el.querySelector('svg').getAttribute('width')).toBe('5760'); // 1440min * 4px/min
+      const rectAfter = el.querySelector('rect[data-id="9"]');
+      expect(rectAfter.getAttribute('x')).toBe('240'); // 60min * 4px/min
+      expect(rectAfter.getAttribute('width')).toBe('120'); // 30min * 4px/min
+    });
+
+    it('keeps the entry label at a constant 14px font-size regardless of zoom', () => {
+      const date = '2026-10-02';
+      appStore.dispatch({ type: SWITCH_DATE, payload: date });
+      appStore.dispatch({
+        type: ADD_ENTRY,
+        payload: {
+          dimensionIndex: 1,
+          date,
+          startOffsetMins: 0,
+          endOffsetMins: 30,
+          activity: 'Reading',
+          id: 10,
+        },
+      });
+      const el = createHorizontalTimeline(1);
+
+      appStore.dispatch({ type: SET_HORIZONTAL_ZOOM, payload: 4 });
+
+      const label = el.querySelector('.event-label[data-id="10"]');
+      expect(label.style.fontSize).toBe('14px');
+    });
   });
 });

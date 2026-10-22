@@ -11,6 +11,7 @@ import {
   RESET_DIMENSION_INDEX,
   SWITCH_DATE,
   SET_DESKTOP_LAYOUT,
+  SET_HORIZONTAL_ZOOM,
   ADD_TIMELINE,
   ADD_ENTRY,
   UPDATE_ENTRY,
@@ -73,6 +74,19 @@ const currentDimensionIndex = (state = 0, action) => {
 const isDesktopLayout = (state = false, action) => {
   switch (action?.type) {
     case SET_DESKTOP_LAYOUT:
+      return action.payload;
+    default:
+      return state;
+  }
+};
+
+// transient viewport state (Phase 10.5), same treatment as isDesktopLayout
+// above - not diary data, so excluded from persistence (see appStore.js).
+// 1 = native scale (PX_PER_MINUTE); set by HorizontalTimelineAxis's zoom
+// buttons (src/components/horizontalTimelineAxis/zoomConstants.js)
+const horizontalZoomLevel = (state = 1, action) => {
+  switch (action?.type) {
+    case SET_HORIZONTAL_ZOOM:
       return action.payload;
     default:
       return state;
@@ -184,6 +198,7 @@ export const eliddiReducer = combineReducers({
   uipanel,
   currentDimensionIndex,
   isDesktopLayout,
+  horizontalZoomLevel,
   currentDate,
   diaries,
 });

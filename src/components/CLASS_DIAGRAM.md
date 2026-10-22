@@ -104,11 +104,16 @@ classDiagram
         <<el-horizontal-timeline>>
         +renderEntries()
         +renderEntriesInto(args)
+        +updateDimensions()
     }
 
     class HorizontalTimelineAxis {
         <<el-horizontal-timeline-axis>>
+        +renderAxis()
+        +renderGrid(effectivePxPerMinute)
         +updateFutureOverlay()
+        +changeZoom(delta)
+        +computeMinZoom()
     }
 
     class HorizontalTimelineStack {

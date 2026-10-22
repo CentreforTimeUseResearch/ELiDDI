@@ -5,16 +5,12 @@ el-horizontal-timeline-stack {
 
   /* the single shared horizontal scrollbar driving the axis and all six
      rows together, so they stay time-aligned while panning - each child
-     SVG renders at its native pixel width rather than auto-scaling to fit
-     the container, so nothing silently shrinks before Phase 10.5 (zoom)
-     exists to manage scale deliberately. 2880px = MINUTES_PER_DAY (1440) *
-     PX_PER_MINUTE (2) from timeline/timelineConstants.js - CSS can't import
-     that, so this is a hand-kept literal, same convention as this
-     codebase's breakpoint custom properties. */
-  svg {
-    display: block;
-    width: 2880px;
-  }
+     SVG's own width/viewBox attributes are set directly by
+     HorizontalTimelineAxis/HorizontalTimeline (Phase 10.5), scaling with
+     the current zoom level, rather than a fixed CSS width here (which
+     would silently override any JS-set width attribute, the same
+     CSS-beats-presentation-attribute issue the Phase 10.1 font-family fix
+     dealt with). */
 
   el-horizontal-timeline {
     /* matches the designer's row rhythm (deferred from Phase 10.3) */

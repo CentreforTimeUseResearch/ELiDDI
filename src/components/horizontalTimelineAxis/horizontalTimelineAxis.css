@@ -1,3 +1,49 @@
 el-horizontal-timeline-axis {
   display: block;
+
+  svg {
+    display: block;
+  }
+}
+
+/* Phase 10.5 zoom control - DESIGN.md's button-icon-circular component:
+   44x44px, translucent chip background (floats over content, same token
+   detailsPanel.css already uses), ink icon, full radius. position: sticky
+   (not the vertical sticky-while-scrolling nicety Phase 10.4 deferred) so
+   the control stays reachable while the stack is scrolled horizontally -
+   its containing block (this element) is as wide as its svg content, so
+   sticky can track within that as the ancestor HorizontalTimelineStack
+   (overflow-x: auto) scrolls. */
+.zoom-controls {
+  position: sticky;
+  right: var(--space-sm);
+  top: 0;
+  display: flex;
+  gap: var(--space-xs);
+  width: fit-content;
+  margin-left: auto;
+  padding-top: var(--space-xs);
+}
+
+.zoom-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background-color: rgba(210, 210, 215, 0.64);
+  color: var(--color-ink);
+  border-radius: var(--radius-full);
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.zoom-button:disabled {
+  color: var(--color-ink-muted-48);
+  cursor: default;
+}
+
+.zoom-button:focus-visible {
+  outline: 2px solid var(--color-primary-focus);
+  outline-offset: 2px;
 }

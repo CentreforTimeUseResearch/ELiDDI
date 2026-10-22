@@ -14,5 +14,6 @@ appStore.subscribe(() => {
     uipanel: undefined,
     currentDimensionIndex: undefined,
     isDesktopLayout: undefined,
+    horizontalZoomLevel: undefined,
   });
 });

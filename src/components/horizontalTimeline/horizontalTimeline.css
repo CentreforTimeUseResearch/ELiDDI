@@ -5,4 +5,8 @@
  */
 el-horizontal-timeline {
   display: block;
+
+  svg {
+    display: block;
+  }
 }

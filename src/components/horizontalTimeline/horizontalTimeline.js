@@ -1,7 +1,8 @@
 import { TinyBase } from '../base';
 import { getActivityColor } from '../../utils/activities';
 import { ADD_TIMELINE } from '../../store/actionTypes';
-import { SVGNS, XHTMLNS, PX_PER_MINUTE } from '../timeline/timelineConstants';
+import { SVGNS, XHTMLNS, MINUTES_PER_DAY } from '../timeline/timelineConstants';
+import { NATIVE_ZOOM, getEffectivePxPerMinute } from '../horizontalTimelineAxis/zoomConstants';
 // .event-label is shared with the vertical timeline's entry labels - import
 // its CSS directly rather than relying on timeline.js happening to already
 // be loaded elsewhere, so this component's labels are styled correctly even
@@ -40,10 +41,11 @@ function createLabelForeignObject({ x, width, label, id }) {
   return foreignObject;
 }
 
-// Phase 10.3: one Dimension's entries rendered as a horizontal row. Rendering
-// only - no click-to-add/select, no drag-resize (Phase 10.6), no zoom (Phase
-// 10.5), no shadow-dimension strip (see the Phase 10.3 plan's decision to
-// omit it). Not yet mounted anywhere in the real app (Phase 10.4).
+// One Dimension's entries rendered as a horizontal row, zoom-aware (Phase
+// 10.5: geometry is recomputed from the current horizontalZoomLevel on every
+// store update, keeping 1 viewBox unit = 1 CSS px at every zoom level). No
+// click-to-add/select or drag-resize yet (Phase 10.6), no shadow-dimension
+// strip (see the Phase 10.3 plan's decision to omit it).
 export class HorizontalTimeline extends TinyBase {
   static observedAttributes = [INDEX];
 
@@ -55,6 +57,7 @@ export class HorizontalTimeline extends TinyBase {
   entries = [];
   dimensionIndex;
   currentDate;
+  zoomLevel = NATIVE_ZOOM;
 
   constructor() {
     super();
@@ -65,6 +68,7 @@ export class HorizontalTimeline extends TinyBase {
     const state = this.store.getState();
     this.dimensionIndex = Number(this.getAttribute(INDEX));
     this.currentDate = state.currentDate;
+    this.zoomLevel = state.horizontalZoomLevel;
     const timeline = state.diaries[this.currentDate]?.timelines[this.dimensionIndex];
     if (!Array.isArray(timeline)) {
       this.store.dispatch({
@@ -77,6 +81,7 @@ export class HorizontalTimeline extends TinyBase {
     super.connectedCallback();
     this.registerCleanup(this.store.subscribe(() => this.updateState()));
     this.getChildElementReferences();
+    this.updateDimensions();
     this.renderEntries();
   }
 
@@ -85,14 +90,30 @@ export class HorizontalTimeline extends TinyBase {
     this.entriesLayer = this.timeLineElement.querySelector('#events');
   }
 
+  // keeps 1 viewBox unit = 1 CSS px as an invariant at every zoom level,
+  // rather than ever relying on implicit viewBox-stretching (see the Phase
+  // 10.5 plan) - the row's own height never changes, only its width. Also
+  // sets this host element's own width to match the svg's, not just the
+  // svg's own attribute - see HorizontalTimelineAxis.renderAxis()'s comment
+  // for why a too-wide replaced child alone doesn't grow its parent's box.
+  updateDimensions() {
+    const totalWidthPx = MINUTES_PER_DAY * getEffectivePxPerMinute(this.zoomLevel);
+    this.timeLineElement.setAttribute('viewBox', `0 0 ${totalWidthPx} ${ROW_HEIGHT}`);
+    this.timeLineElement.setAttribute('width', totalWidthPx);
+    this.style.width = `${totalWidthPx}px`;
+  }
+
   updateState() {
     const state = this.store.getState();
     this.currentDate = state.currentDate;
+    this.zoomLevel = state.horizontalZoomLevel;
     this.entries = state.diaries[this.currentDate]?.timelines[this.dimensionIndex] ?? EMPTY_ENTRIES;
-    // re-render on every store update, not just a date change - an entry for
-    // this dimension may have changed elsewhere (e.g. the vertical timeline
-    // on a smaller breakpoint), and there's no interaction loop of its own
-    // yet (Phase 10.6) to otherwise trigger a re-render after an edit
+    // re-render on every store update, not just a date/zoom change - an
+    // entry for this dimension may have changed elsewhere (e.g. the
+    // vertical timeline on a smaller breakpoint), and there's no
+    // interaction loop of its own yet (Phase 10.6) to otherwise trigger a
+    // re-render after an edit
+    this.updateDimensions();
     this.renderEntries();
   }
 
@@ -101,7 +122,12 @@ export class HorizontalTimeline extends TinyBase {
   //   <rect class="event-block" x="120" y="0" width="60" height="110" fill="#9aa0c3" fill-opacity="0.45" />
   //   <foreignObject x="120" y="0" width="60" height="110"><div class="event-label">c/ch</div></foreignObject>
   // </g>
-  renderEntriesInto({ layer, entries, dimensionIndex }) {
+  renderEntriesInto({
+    layer,
+    entries,
+    dimensionIndex,
+    effectivePxPerMinute = getEffectivePxPerMinute(NATIVE_ZOOM),
+  }) {
     layer.innerHTML = '';
 
     const dimensionData = GLOBALS.DATA.timeline[dimensionIndex];
@@ -109,8 +135,8 @@ export class HorizontalTimeline extends TinyBase {
     entries.forEach((entry) => {
       const entryGroup = document.createElementNS(SVGNS, 'g');
       const rect = document.createElementNS(SVGNS, 'rect');
-      const startOffsetPx = (entry.startOffsetMins || 0) * PX_PER_MINUTE;
-      const endOffsetPx = (entry.endOffsetMins || 0) * PX_PER_MINUTE;
+      const startOffsetPx = (entry.startOffsetMins || 0) * effectivePxPerMinute;
+      const endOffsetPx = (entry.endOffsetMins || 0) * effectivePxPerMinute;
       const width = endOffsetPx - startOffsetPx;
       rect.setAttributeNS(null, 'x', startOffsetPx);
       rect.setAttributeNS(null, 'y', '0');
@@ -139,6 +165,7 @@ export class HorizontalTimeline extends TinyBase {
       layer: this.entriesLayer,
       entries: this.entries,
       dimensionIndex: this.dimensionIndex,
+      effectivePxPerMinute: getEffectivePxPerMinute(this.zoomLevel),
     });
   }
 

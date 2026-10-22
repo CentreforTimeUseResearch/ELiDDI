@@ -6,6 +6,7 @@ import {
   RESET_ONBOARDING,
   SHOW_PANEL,
   HIDE_PANEL,
+  SET_DESKTOP_LAYOUT,
 } from '../../store/actionTypes';
 
 describe('DynamicTimelineUI', () => {
@@ -19,17 +20,50 @@ describe('DynamicTimelineUI', () => {
   });
 
   // render() is checked on a disconnected instance - connecting it would
-  // upgrade every child tag (el-nav-bar, el-timeline-stack, el-dialog) and
-  // cascade into their full render trees, which need DOM/markup (e.g. the
-  // #svg-timeline <template> in index.html) this unit test isn't set up to
-  // provide.
-  it('renders el-nav-bar, timeline-stack, and both dialogs', () => {
+  // upgrade every child tag (el-nav-bar, el-dialog) and cascade into their
+  // full render trees, which need DOM/markup (e.g. the #svg-timeline
+  // <template> in index.html) this unit test isn't set up to provide. The
+  // stack itself isn't rendered by render() directly any more - see
+  // renderStack()/#stack-container below.
+  it('renders el-nav-bar, an empty stack container, and both dialogs', () => {
     const el = document.createElement('el-dynamic-timeline');
     el.render();
     expect(el.innerHTML).toContain('<el-nav-bar>');
-    expect(el.innerHTML).toContain('<el-timeline-stack>');
+    expect(el.innerHTML).toContain('id="stack-container"');
     expect(el.innerHTML).toContain('id="dialog"');
     expect(el.innerHTML).toContain('id="date-dialog"');
+    expect(el.stackContainer).not.toBeNull();
+  });
+
+  // renderStack() swaps #stack-container's contents without touching
+  // anything else in the tree - checked directly (not via onStoreUpdate)
+  // since it doesn't itself need onboardingDialogActions/dateDialogActions
+  describe('renderStack', () => {
+    function createRendered() {
+      const el = document.createElement('el-dynamic-timeline');
+      el.render();
+      return el;
+    }
+
+    it('mounts el-timeline-stack when isDesktopLayout is false', () => {
+      const el = createRendered();
+      el.isDesktopLayout = false;
+
+      el.renderStack();
+
+      expect(el.stackContainer.innerHTML).toBe('<el-timeline-stack></el-timeline-stack>');
+    });
+
+    it('mounts el-horizontal-timeline-stack when isDesktopLayout is true', () => {
+      const el = createRendered();
+      el.isDesktopLayout = true;
+
+      el.renderStack();
+
+      expect(el.stackContainer.innerHTML).toBe(
+        '<el-horizontal-timeline-stack></el-horizontal-timeline-stack>'
+      );
+    });
   });
 
   // regression coverage for DynamicTimelineUI now owning onboarding state
@@ -42,6 +76,7 @@ describe('DynamicTimelineUI', () => {
       const el = document.createElement('el-dynamic-timeline');
       el.onboardingDialogActions = { open: vi.fn(), close: vi.fn() };
       el.dateDialogActions = { open: vi.fn(), close: vi.fn() };
+      el.stackContainer = document.createElement('div');
       return el;
     }
 
@@ -83,6 +118,45 @@ describe('DynamicTimelineUI', () => {
 
       expect(el.dateDialogActions.close).toHaveBeenCalledOnce();
       expect(el.dateDialogActions.open).not.toHaveBeenCalled();
+    });
+
+    // Phase 10.4: the stack swap itself - only re-render #stack-container on
+    // an actual isDesktopLayout crossing, never on an unrelated store update
+    it('mounts the horizontal stack on the first update when isDesktopLayout is already true', () => {
+      appStore.dispatch({ type: SET_DESKTOP_LAYOUT, payload: true });
+      const el = createUnmounted();
+
+      el.onStoreUpdate();
+
+      expect(el.stackContainer.innerHTML).toBe(
+        '<el-horizontal-timeline-stack></el-horizontal-timeline-stack>'
+      );
+    });
+
+    it('swaps from the vertical to the horizontal stack when isDesktopLayout turns true', () => {
+      appStore.dispatch({ type: SET_DESKTOP_LAYOUT, payload: false });
+      const el = createUnmounted();
+      el.onStoreUpdate();
+      expect(el.stackContainer.innerHTML).toBe('<el-timeline-stack></el-timeline-stack>');
+
+      appStore.dispatch({ type: SET_DESKTOP_LAYOUT, payload: true });
+      el.onStoreUpdate();
+
+      expect(el.stackContainer.innerHTML).toBe(
+        '<el-horizontal-timeline-stack></el-horizontal-timeline-stack>'
+      );
+    });
+
+    it('does not re-render the stack container on an update where isDesktopLayout is unchanged', () => {
+      appStore.dispatch({ type: SET_DESKTOP_LAYOUT, payload: false });
+      const el = createUnmounted();
+      el.onStoreUpdate();
+      el.stackContainer.innerHTML = '<div data-sentinel="untouched"></div>'; // simulate live stack state
+
+      appStore.dispatch({ type: SHOW_PANEL, payload: 'details' }); // unrelated update
+      el.onStoreUpdate();
+
+      expect(el.stackContainer.querySelector('[data-sentinel]')).not.toBeNull();
     });
   });
 });

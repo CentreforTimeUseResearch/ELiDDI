@@ -76,6 +76,7 @@ classDiagram
     class DynamicTimelineUI {
         <<el-dynamic-timeline>>
         +onStoreUpdate()
+        +renderStack()
     }
 
     class Navbar {
@@ -97,6 +98,21 @@ classDiagram
         +updateEntry(entry)
         +deleteEntry(id)
         +onTimelineClick(e)
+    }
+
+    class HorizontalTimeline {
+        <<el-horizontal-timeline>>
+        +renderEntries()
+        +renderEntriesInto(args)
+    }
+
+    class HorizontalTimelineAxis {
+        <<el-horizontal-timeline-axis>>
+        +updateFutureOverlay()
+    }
+
+    class HorizontalTimelineStack {
+        <<el-horizontal-timeline-stack>>
     }
 
     class TimelinePicker {
@@ -153,6 +169,9 @@ classDiagram
     TinyBase <|-- Navbar
     TinyBase <|-- Onboarding
     TinyBase <|-- Timeline
+    TinyBase <|-- HorizontalTimeline
+    TinyBase <|-- HorizontalTimelineAxis
+    TinyBase <|-- HorizontalTimelineStack
     TinyBase <|-- TimelinePicker
     TinyBase <|-- TimelineStack
     TinyBase <|-- TimePicker
@@ -166,10 +185,13 @@ classDiagram
     %% dependency: renders as a child custom element + props-registry handshake
     %% (no direct object reference - see TinyBase.setProps/getProps)
     DynamicTimelineUI ..> Navbar : renders
-    DynamicTimelineUI ..> TimelineStack : renders
+    DynamicTimelineUI ..> TimelineStack : renders into #stack-container, when not isDesktopLayout
+    DynamicTimelineUI ..> HorizontalTimelineStack : renders into #stack-container, when isDesktopLayout
     DynamicTimelineUI ..> DialogWidget : renders x2
     DynamicTimelineUI ..> Onboarding : renders (inside a dialog)
     DynamicTimelineUI ..> DatePicker : renders (inside a dialog)
+    HorizontalTimelineStack ..> HorizontalTimelineAxis : renders
+    HorizontalTimelineStack ..> HorizontalTimeline : renders x6
     Navbar ..> TimelinePicker : renders
     Navbar ..> ContextualHelp : renders
     Timeline ..> DetailsPanel : renders, panelActions contract

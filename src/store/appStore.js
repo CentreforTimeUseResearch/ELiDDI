@@ -13,5 +13,6 @@ appStore.subscribe(() => {
     ...appStore.getState(),
     uipanel: undefined,
     currentDimensionIndex: undefined,
+    isDesktopLayout: undefined,
   });
 });

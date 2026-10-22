@@ -23,10 +23,4 @@ el-timeline-stack {
     scroll-snap-align: start !important;
     scroll-snap-stop: always !important;
   }
-
-  /* keep in sync with --medium-width in style.css's :root - media queries
-       can't read custom properties, so this is a hand-kept literal */
-  @media (min-width: 630px) {
-    grid-area: main;
-  }
 }

@@ -16,6 +16,8 @@ export const RESET_DIMENSION_INDEX = 'RESET_DIMENSION_INDEX';
 
 export const SWITCH_DATE = 'SWITCH_DATE';
 
+export const SET_DESKTOP_LAYOUT = 'SET_DESKTOP_LAYOUT';
+
 export const ADD_TIMELINE = 'ADD_TIMELINE';
 export const ADD_ENTRY = 'ADD_ENTRY';
 export const UPDATE_ENTRY = 'UPDATE_ENTRY';

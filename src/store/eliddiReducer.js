@@ -10,6 +10,7 @@ import {
   SWITCH_DIMENSION,
   RESET_DIMENSION_INDEX,
   SWITCH_DATE,
+  SET_DESKTOP_LAYOUT,
   ADD_TIMELINE,
   ADD_ENTRY,
   UPDATE_ENTRY,
@@ -61,6 +62,18 @@ const currentDimensionIndex = (state = 0, action) => {
       return action.payload;
     case RESET_DIMENSION_INDEX:
       return 0;
+    default:
+      return state;
+  }
+};
+
+// transient viewport state (Phase 10.4) - driven by watchDesktopBreakpoint
+// (src/utils/breakpoint.js), not diary data, so excluded from persistence
+// (see appStore.js) same as uipanel/currentDimensionIndex above
+const isDesktopLayout = (state = false, action) => {
+  switch (action?.type) {
+    case SET_DESKTOP_LAYOUT:
+      return action.payload;
     default:
       return state;
   }
@@ -170,6 +183,7 @@ export const eliddiReducer = combineReducers({
   onboardingStep,
   uipanel,
   currentDimensionIndex,
+  isDesktopLayout,
   currentDate,
   diaries,
 });

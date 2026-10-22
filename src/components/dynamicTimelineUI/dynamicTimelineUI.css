@@ -20,5 +20,18 @@ el-dynamic-timeline {
     el-dialog {
       display: contents;
     }
+
+    /* whichever stack component DynamicTimelineUI.renderStack() has
+       mounted inside here fills "main" - grid-area lives on this wrapper,
+       not on el-timeline-stack/el-horizontal-timeline-stack themselves,
+       since only a direct grid child's grid-area is honoured. min-width: 0
+       overrides the grid item's default min-width: auto, which would
+       otherwise size this track to fit el-horizontal-timeline-stack's
+       2880px-wide content instead of letting that component's own
+       overflow-x: auto clip and scroll it. */
+    #stack-container {
+      grid-area: main;
+      min-width: 0;
+    }
   }
 }

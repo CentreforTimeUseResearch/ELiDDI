@@ -2,7 +2,7 @@
 
 ### Extended Light Digital Diary Instrument
 
-> **🌱 Early-stage, active development.** A working prototype exists — a full time-use diary that runs with or without JavaScript — but the feature set, accessibility conformance, and documentation are all still being built out. Watch or star the repo to follow along, and see [Contributing](#contributing) if you'd like to get involved.
+> **🌱 Early-stage, active development.** A working prototype exists — a full time-use diary that runs with or without JavaScript — but the feature set, accessibility conformance, and documentation are all still being built out. Watch or star the repo to follow along, and see [Contributing](#contributing) if you'd like to get involved. It is based on the work of [Andrei Foldes' O-timeusediary (OTUD)](https://github.com/andreifoldes/o-timeusediary)  
 
 ---
 

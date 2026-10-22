@@ -9,4 +9,12 @@ el-horizontal-timeline {
   svg {
     display: block;
   }
+
+  /* timeline.css's .resize-handle-hit-area sets cursor: ns-resize (correct
+     for Timeline's vertical drag) - two-class selector needed to outweigh
+     that bare class selector, same specificity trick as navbar.css's
+     .left-pane .ham-menu override, since horizontal dragging is left-right */
+  .resize-handle-hit-area {
+    cursor: ew-resize;
+  }
 }

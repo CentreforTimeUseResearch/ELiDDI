@@ -98,6 +98,9 @@
      source of truth to keep in sync by hand - every `@media (min-width:
      630px)` rule in the codebase should match this value. */
   --medium-width: 630px;
+  /* Phase 10's desktop tier (DESIGN.md's "small desktop" breakpoint) - every
+     `@media (min-width: 1024px)` rule in the codebase should match this. */
+  --desktop-width: 1024px;
 
   color-scheme: light;
   font-family: var(--font-text);

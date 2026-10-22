@@ -503,6 +503,321 @@
       </svg>
     </template>
 
+    <!-- Phase 10.3 (HorizontalTimeline): one Dimension's entries as a
+         horizontal row. No gridline-click-zone or drag-handles layer yet -
+         those are Phase 10.6 (entry interactions). -->
+    <template id="svg-horizontal-timeline-row">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2880 110">
+        <g id="events"></g>
+      </svg>
+    </template>
+
+    <!-- Phase 10.3 (HorizontalTimelineAxis): the shared, rendered-once time
+         axis (grid tick marks, hour labels, time-of-day gradient bar, live
+         future-overlay) that sits above all six HorizontalTimeline rows.
+         Grid/gradient colors and hour-label spacing are ported verbatim from
+         the designer's plans/designs/timeline-horizontal.svg handoff (see
+         the Phase 10.1 visual-spec decision to leave this data-viz palette
+         unchanged). Uses its own horizontalTimeGradient id, distinct from
+         #svg-timeline's timeGradient, since both templates' clones can be
+         live in the document at once. -->
+    <template id="svg-horizontal-timeline-axis">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2880 40">
+        <defs>
+          <linearGradient id="horizontalTimeGradient" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#ff9500" />
+            <stop offset="8%" stop-color="#ffe600" />
+            <stop offset="30%" stop-color="#7ed321" />
+            <stop offset="50%" stop-color="#22d3ee" />
+            <stop offset="70%" stop-color="#3b82f6" />
+            <stop offset="90%" stop-color="#8b5cf6" />
+            <stop offset="100%" stop-color="#4c1d95" />
+          </linearGradient>
+        </defs>
+
+        <!-- "Future" shading (now -> end of day) - x/width are set live by
+             HorizontalTimelineAxis.updateFutureOverlay() -->
+        <rect id="future-overlay" x="0" y="0" width="0" height="40" fill="#eef0f3" />
+
+        <!-- ============ GRID TICKS ============ -->
+        <g id="grid-lines">
+          <line x1="0" y1="28" x2="0" y2="40" stroke="#8f97a3" stroke-width="1" />
+          <line
+            x1="60"
+            y1="28"
+            x2="60"
+            y2="40"
+            stroke="#d8dbe0"
+            stroke-width="1"
+            stroke-dasharray="2,3"
+          />
+          <line x1="120" y1="28" x2="120" y2="40" stroke="#8f97a3" stroke-width="1" />
+          <line
+            x1="180"
+            y1="28"
+            x2="180"
+            y2="40"
+            stroke="#d8dbe0"
+            stroke-width="1"
+            stroke-dasharray="2,3"
+          />
+          <line x1="240" y1="28" x2="240" y2="40" stroke="#8f97a3" stroke-width="1" />
+          <line
+            x1="300"
+            y1="28"
+            x2="300"
+            y2="40"
+            stroke="#d8dbe0"
+            stroke-width="1"
+            stroke-dasharray="2,3"
+          />
+          <line x1="360" y1="28" x2="360" y2="40" stroke="#8f97a3" stroke-width="1" />
+          <line
+            x1="420"
+            y1="28"
+            x2="420"
+            y2="40"
+            stroke="#d8dbe0"
+            stroke-width="1"
+            stroke-dasharray="2,3"
+          />
+          <line x1="480" y1="28" x2="480" y2="40" stroke="#8f97a3" stroke-width="1" />
+          <line
+            x1="540"
+            y1="28"
+            x2="540"
+            y2="40"
+            stroke="#d8dbe0"
+            stroke-width="1"
+            stroke-dasharray="2,3"
+          />
+          <line x1="600" y1="28" x2="600" y2="40" stroke="#8f97a3" stroke-width="1" />
+          <line
+            x1="660"
+            y1="28"
+            x2="660"
+            y2="40"
+            stroke="#d8dbe0"
+            stroke-width="1"
+            stroke-dasharray="2,3"
+          />
+          <line x1="720" y1="28" x2="720" y2="40" stroke="#8f97a3" stroke-width="1" />
+          <line
+            x1="780"
+            y1="28"
+            x2="780"
+            y2="40"
+            stroke="#d8dbe0"
+            stroke-width="1"
+            stroke-dasharray="2,3"
+          />
+          <line x1="840" y1="28" x2="840" y2="40" stroke="#8f97a3" stroke-width="1" />
+          <line
+            x1="900"
+            y1="28"
+            x2="900"
+            y2="40"
+            stroke="#d8dbe0"
+            stroke-width="1"
+            stroke-dasharray="2,3"
+          />
+          <line x1="960" y1="28" x2="960" y2="40" stroke="#8f97a3" stroke-width="1" />
+          <line
+            x1="1020"
+            y1="28"
+            x2="1020"
+            y2="40"
+            stroke="#d8dbe0"
+            stroke-width="1"
+            stroke-dasharray="2,3"
+          />
+          <line x1="1080" y1="28" x2="1080" y2="40" stroke="#8f97a3" stroke-width="1" />
+          <line
+            x1="1140"
+            y1="28"
+            x2="1140"
+            y2="40"
+            stroke="#d8dbe0"
+            stroke-width="1"
+            stroke-dasharray="2,3"
+          />
+          <line x1="1200" y1="28" x2="1200" y2="40" stroke="#8f97a3" stroke-width="1" />
+          <line
+            x1="1260"
+            y1="28"
+            x2="1260"
+            y2="40"
+            stroke="#d8dbe0"
+            stroke-width="1"
+            stroke-dasharray="2,3"
+          />
+          <line x1="1320" y1="28" x2="1320" y2="40" stroke="#8f97a3" stroke-width="1" />
+          <line
+            x1="1380"
+            y1="28"
+            x2="1380"
+            y2="40"
+            stroke="#d8dbe0"
+            stroke-width="1"
+            stroke-dasharray="2,3"
+          />
+          <line x1="1440" y1="28" x2="1440" y2="40" stroke="#8f97a3" stroke-width="1" />
+          <line
+            x1="1500"
+            y1="28"
+            x2="1500"
+            y2="40"
+            stroke="#d8dbe0"
+            stroke-width="1"
+            stroke-dasharray="2,3"
+          />
+          <line x1="1560" y1="28" x2="1560" y2="40" stroke="#8f97a3" stroke-width="1" />
+          <line
+            x1="1620"
+            y1="28"
+            x2="1620"
+            y2="40"
+            stroke="#d8dbe0"
+            stroke-width="1"
+            stroke-dasharray="2,3"
+          />
+          <line x1="1680" y1="28" x2="1680" y2="40" stroke="#8f97a3" stroke-width="1" />
+          <line
+            x1="1740"
+            y1="28"
+            x2="1740"
+            y2="40"
+            stroke="#d8dbe0"
+            stroke-width="1"
+            stroke-dasharray="2,3"
+          />
+          <line x1="1800" y1="28" x2="1800" y2="40" stroke="#8f97a3" stroke-width="1" />
+          <line
+            x1="1860"
+            y1="28"
+            x2="1860"
+            y2="40"
+            stroke="#d8dbe0"
+            stroke-width="1"
+            stroke-dasharray="2,3"
+          />
+          <line x1="1920" y1="28" x2="1920" y2="40" stroke="#8f97a3" stroke-width="1" />
+          <line
+            x1="1980"
+            y1="28"
+            x2="1980"
+            y2="40"
+            stroke="#d8dbe0"
+            stroke-width="1"
+            stroke-dasharray="2,3"
+          />
+          <line x1="2040" y1="28" x2="2040" y2="40" stroke="#8f97a3" stroke-width="1" />
+          <line
+            x1="2100"
+            y1="28"
+            x2="2100"
+            y2="40"
+            stroke="#d8dbe0"
+            stroke-width="1"
+            stroke-dasharray="2,3"
+          />
+          <line x1="2160" y1="28" x2="2160" y2="40" stroke="#8f97a3" stroke-width="1" />
+          <line
+            x1="2220"
+            y1="28"
+            x2="2220"
+            y2="40"
+            stroke="#d8dbe0"
+            stroke-width="1"
+            stroke-dasharray="2,3"
+          />
+          <line x1="2280" y1="28" x2="2280" y2="40" stroke="#8f97a3" stroke-width="1" />
+          <line
+            x1="2340"
+            y1="28"
+            x2="2340"
+            y2="40"
+            stroke="#d8dbe0"
+            stroke-width="1"
+            stroke-dasharray="2,3"
+          />
+          <line x1="2400" y1="28" x2="2400" y2="40" stroke="#8f97a3" stroke-width="1" />
+          <line
+            x1="2460"
+            y1="28"
+            x2="2460"
+            y2="40"
+            stroke="#d8dbe0"
+            stroke-width="1"
+            stroke-dasharray="2,3"
+          />
+          <line x1="2520" y1="28" x2="2520" y2="40" stroke="#8f97a3" stroke-width="1" />
+          <line
+            x1="2580"
+            y1="28"
+            x2="2580"
+            y2="40"
+            stroke="#d8dbe0"
+            stroke-width="1"
+            stroke-dasharray="2,3"
+          />
+          <line x1="2640" y1="28" x2="2640" y2="40" stroke="#8f97a3" stroke-width="1" />
+          <line
+            x1="2700"
+            y1="28"
+            x2="2700"
+            y2="40"
+            stroke="#d8dbe0"
+            stroke-width="1"
+            stroke-dasharray="2,3"
+          />
+          <line x1="2760" y1="28" x2="2760" y2="40" stroke="#8f97a3" stroke-width="1" />
+          <line
+            x1="2820"
+            y1="28"
+            x2="2820"
+            y2="40"
+            stroke="#d8dbe0"
+            stroke-width="1"
+            stroke-dasharray="2,3"
+          />
+          <line x1="2880" y1="28" x2="2880" y2="40" stroke="#8f97a3" stroke-width="1" />
+        </g>
+
+        <!-- ============ TIME GRADIENT BAR ============ -->
+        <rect x="0" y="20" width="2880" height="4" rx="2" fill="url(#horizontalTimeGradient)" />
+
+        <!-- ============ HOUR LABELS ============ -->
+        <g id="hour-labels" font-size="14" fill="#8a8f98" text-anchor="middle">
+          <text x="4" y="14" text-anchor="start">04:00</text>
+          <text x="120" y="14">05:00</text>
+          <text x="240" y="14">06:00</text>
+          <text x="360" y="14">07:00</text>
+          <text x="480" y="14">08:00</text>
+          <text x="600" y="14">09:00</text>
+          <text x="720" y="14">10:00</text>
+          <text x="840" y="14">11:00</text>
+          <text x="960" y="14">12:00</text>
+          <text x="1080" y="14">13:00</text>
+          <text x="1200" y="14">14:00</text>
+          <text x="1320" y="14">15:00</text>
+          <text x="1440" y="14">16:00</text>
+          <text x="1560" y="14">17:00</text>
+          <text x="1680" y="14">18:00</text>
+          <text x="1800" y="14">19:00</text>
+          <text x="1920" y="14">20:00</text>
+          <text x="2040" y="14">21:00</text>
+          <text x="2160" y="14">22:00</text>
+          <text x="2280" y="14">23:00</text>
+          <text x="2400" y="14">00:00</text>
+          <text x="2520" y="14">01:00</text>
+          <text x="2640" y="14">02:00</text>
+          <text x="2760" y="14">03:00</text>
+          <text x="2854" y="14" text-anchor="end">04:00</text>
+        </g>
+      </svg>
+    </template>
+
     <script type="module" src="src/main.js"></script>
   </body>
 </html>

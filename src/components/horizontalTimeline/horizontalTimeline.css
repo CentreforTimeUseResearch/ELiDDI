@@ -1,0 +1,8 @@
+/**
+ * .event-label is already defined globally by timeline.css (shared with the
+ * vertical timeline's entry labels) - this file only needs what's specific
+ * to the row host element itself.
+ */
+el-horizontal-timeline {
+  display: block;
+}

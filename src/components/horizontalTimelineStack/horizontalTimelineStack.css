@@ -17,18 +17,40 @@ el-horizontal-timeline-stack {
     margin-top: 10px;
   }
 
-  /* Phase 10.6 placeholder only - DetailsPanel's own CSS is
-     position: sticky; bottom: 0, explicitly commented "mobile only for
-     now": nested inside this horizontally-scrolling stack, a sticky
-     panel would scroll away with the timeline content instead of staying
-     put. Overridden to position: fixed so it's at least reachable/usable
-     while Phase 10.6 is purely about interaction mechanics working
-     end-to-end - Phase 10.7 replaces this with the real docked design. */
+  /* Phase 10.7: the real docked design, replacing Phase 10.6's
+     position:fixed;bottom:0 full-width placeholder. Right-docked, full
+     height below <nav> (top: 4.9rem matches navbar.css's
+     .off-screen-menu fixed-fallback value - <nav>'s rendered height is
+     the same at every breakpoint). Off-screen by default
+     (right: -416px, width + a margin) rather than leaving a persistent
+     "peek" sliver like detailsPanel.css's mobile 8rem collapsed state -
+     on desktop the only way to open this panel is clicking an
+     entry/gridline, which already dispatches SHOW_PANEL itself, so
+     there's no case where a user needs a visible resting strip to tap.
+     No reflow of the row stack's width on open/close (this stays a
+     position:fixed overlay, not a grid column) - deliberately, so
+     opening the panel can never retrigger
+     HorizontalTimelineAxis's computeMinZoom()'s container-width read.
+
+     detailsPanel.css's own `el-details-panel.active { height: 36rem }`
+     has higher specificity than a bare two-type selector (one class
+     beats two types), so the active-state override below must also
+     carry .active to win - same trick as horizontalTimeline.css's
+     .resize-handle-hit-area / navbar.css's .left-pane .ham-menu. */
   el-details-panel {
     position: fixed;
+    top: 4.9rem;
+    right: -416px;
     bottom: 0;
-    left: 0;
-    right: 0;
+    width: 380px;
+    height: auto;
+    transition: right 0.3s ease;
     z-index: 2;
+
+    &.active {
+      right: 0;
+      height: auto;
+      overflow-y: auto;
+    }
   }
 }

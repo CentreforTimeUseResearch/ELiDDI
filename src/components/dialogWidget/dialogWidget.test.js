@@ -90,4 +90,33 @@ describe('DialogWidget', () => {
 
     expect(el.querySelector('dialog').hasAttribute('open')).toBe(false);
   });
+
+  // Escape closes a modal <dialog> natively via its 'cancel' event, bypassing
+  // our own [data-close] button entirely - without a listener for it,
+  // onRequestClose (e.g. DISMISS_ONBOARDING) never fires, leaving store
+  // state stuck as if the dialog were still open even though it's visibly
+  // closed (see Onboarding.render()'s reactive HIDE_PANEL re-dispatch)
+  it('calls onRequestClose when the dialog is dismissed via the native cancel event (Escape)', () => {
+    const onRequestClose = vi.fn();
+    let dialogActions;
+    const el = createDialog({
+      onRequestClose,
+      registerDialogActions: (actions) => (dialogActions = actions),
+    });
+    dialogActions.open();
+
+    el.querySelector('dialog').dispatchEvent(new Event('cancel', { cancelable: true }));
+
+    expect(onRequestClose).toHaveBeenCalledOnce();
+  });
+
+  it('falls back to closing itself on the native cancel event when no onRequestClose is supplied', () => {
+    let dialogActions;
+    const el = createDialog({ registerDialogActions: (actions) => (dialogActions = actions) });
+    dialogActions.open();
+
+    el.querySelector('dialog').dispatchEvent(new Event('cancel', { cancelable: true }));
+
+    expect(el.querySelector('dialog').hasAttribute('open')).toBe(false);
+  });
 });

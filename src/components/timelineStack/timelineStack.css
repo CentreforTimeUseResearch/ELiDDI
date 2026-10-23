@@ -7,14 +7,12 @@ el-timeline-stack {
   scroll-behavior: smooth !important;
   scroll-snap-type: x mandatory !important;
   max-width: 375px;
-  /* horizontal centering only - NOT the `margin: auto` shorthand: that
-       also sets margin-top/bottom to auto, which per the CSS Box Alignment
-       spec disables a grid item's default `align-items: stretch`. At the
-       >=630px breakpoint below, that silently broke this element's height:
-       instead of being constrained to its grid row it grew to fit its full
-       (multi-thousand-pixel) content, with the rest invisibly clipped by
-       el-dynamic-timeline's `overflow: hidden` - no internal scrollbar, and
-       most of the timeline unreachable for clicks. */
+  /* horizontal centering only - NOT the `margin: auto` shorthand, which
+     also sets margin-top/bottom to auto and would fight this element's own
+     flex-grow: 1 (its parent, #stack-container, is itself a flex column -
+     see dynamicTimelineUI.css, which is also where the full story lives
+     for why this element needs to actually fill the remaining vertical
+     space rather than sizing to its own multi-thousand-pixel content). */
   margin: 0 auto;
 
   /* background-image: url(../../assets/images/timeline.png);

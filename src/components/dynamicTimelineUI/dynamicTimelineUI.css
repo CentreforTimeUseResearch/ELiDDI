@@ -6,6 +6,28 @@ el-dynamic-timeline {
   overflow: hidden;
   margin: 0 auto;
 
+  /* whichever stack component DynamicTimelineUI.renderStack() has mounted
+     inside here needs to actively claim the remaining vertical space after
+     <nav> (flex-grow: 1) rather than sizing to its own content - and
+     min-height: 0 overrides the default content-based floor a flex/grid
+     item gets, which otherwise lets several-thousand-px of entries grow
+     this element straight past the viewport, invisibly clipped by this
+     host's own overflow: hidden with no scrollbar ever offered to reach
+     it (the details panel included - it just lands wherever the
+     unbounded content happens to end). Same class of bug the min-width: 0
+     fix below solves on the width axis for the horizontal view; this one
+     applies unconditionally (not just >=630px) since the unbounded-growth
+     bug reproduces in the <630px flex layout too. display: flex here lets
+     the mounted stack fill this space via its own flex-grow: 1
+     (TimelineStack already had one, inert until now; HorizontalTimelineStack
+     needs its own, see horizontalTimelineStack.css). */
+  #stack-container {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    min-height: 0;
+  }
+
   /* keep in sync with --medium-width in style.css's :root - media queries
      can't read custom properties, so this is a hand-kept literal */
   @media (min-width: 630px) {

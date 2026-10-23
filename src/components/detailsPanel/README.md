@@ -6,7 +6,7 @@
 
 ## What it does
 
-The panel used to create or edit one Entry on the currently-active Dimension's Timeline. One instance is mounted per Dimension (by [Timeline](../timeline/README.md), one per Dimension's `<el-timeline>`), and the app store's `uipanel`/`currentDimensionIndex` decide which single instance is actually visible at a time.
+The panel used to create or edit one Entry on the currently-active Dimension's Timeline. On the mobile/tablet vertical timeline, one instance is mounted per Dimension (by [Timeline](../timeline/README.md), one per Dimension's `<el-timeline>`), and the app store's `uipanel`/`currentDimensionIndex` decide which single instance is actually visible at a time. On the desktop horizontal timeline (`≥1024px`), [HorizontalTimelineStack](../horizontalTimelineStack/README.md) mounts a **single shared instance** instead (all six rows are visible simultaneously, so the per-row visibility gate above doesn't apply the same way) and owns the desktop-specific right-docked CSS treatment in its own stylesheet — see that component's README for the full story; this component's own CSS (below) stays written for the mobile case only.
 
 It composes:
 

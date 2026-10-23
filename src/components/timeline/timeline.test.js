@@ -37,7 +37,7 @@ describe('Timeline.renderEntriesInto', () => {
       entries,
       dimensionIndex: 0,
       blockWidth: '220',
-      labelX: 110,
+      labelX: 60,
       labelWidth: 200,
     });
 
@@ -52,7 +52,7 @@ describe('Timeline.renderEntriesInto', () => {
     expect(rect.getAttribute('data-id')).toBe('1');
 
     const foreignObject = group.querySelector('foreignObject');
-    expect(foreignObject.getAttribute('x')).toBe('110');
+    expect(foreignObject.getAttribute('x')).toBe('60');
     expect(foreignObject.getAttribute('width')).toBe('200');
     expect(foreignObject.querySelector('.event-label').textContent).toBe('Sleep');
   });
@@ -87,7 +87,7 @@ describe('Timeline.renderEntriesInto', () => {
       entries: [],
       dimensionIndex: 0,
       blockWidth: '220',
-      labelX: 110,
+      labelX: 60,
       labelWidth: 200,
     });
 
@@ -105,7 +105,7 @@ describe('Timeline.renderEntriesInto', () => {
       entries,
       dimensionIndex: 0,
       blockWidth: '220',
-      labelX: 110,
+      labelX: 60,
       labelWidth: 200,
     });
 

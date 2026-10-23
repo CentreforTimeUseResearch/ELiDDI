@@ -40,13 +40,13 @@ describe('HorizontalTimeline.renderEntriesInto', () => {
     expect(rect.getAttribute('x')).toBe('120'); // 60min * 2px/min
     expect(rect.getAttribute('y')).toBe('0');
     expect(rect.getAttribute('width')).toBe('60'); // (90-60)min * 2px/min
-    expect(rect.getAttribute('height')).toBe('110'); // fixed row height
+    expect(rect.getAttribute('height')).toBe('60'); // fixed row height
     expect(rect.getAttribute('data-id')).toBe('1');
 
     const foreignObject = group.querySelector('foreignObject');
     expect(foreignObject.getAttribute('x')).toBe('120');
     expect(foreignObject.getAttribute('width')).toBe('60');
-    expect(foreignObject.getAttribute('height')).toBe('110');
+    expect(foreignObject.getAttribute('height')).toBe('60');
     expect(foreignObject.querySelector('.event-label').textContent).toBe('Sleep');
   });
 

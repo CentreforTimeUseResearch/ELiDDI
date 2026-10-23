@@ -23,7 +23,7 @@ const INDEX = 'index';
 // matches #svg-horizontal-timeline-row's viewBox height in index.html - a
 // row's bars always fill the full row height; the gap between stacked rows
 // is a Phase 10.4 (HorizontalTimelineStack) CSS concern, not baked in here
-const ROW_HEIGHT = 110;
+const ROW_HEIGHT = 60;
 const LABEL_FONT_SIZE = 14; // DESIGN.md caption token - see the Phase 10.1 visual-spec decision
 const EMPTY_ENTRIES = [];
 

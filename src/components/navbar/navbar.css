@@ -73,6 +73,16 @@
   outline-offset: 2px;
 }
 
+/* style.css's `button.reset-to-div:focus { outline: none }` (button + class
+   + pseudo-class) outranks a bare `.dimension-item:focus-visible` (two
+   classes) in the specificity fight, so this needs the extra `.reset-to-div`
+   class to win - same trick as horizontalTimeline.css's
+   .resize-handle-hit-area / this file's own .left-pane .ham-menu */
+.reset-to-div.dimension-item:focus-visible {
+  outline: 2px solid var(--color-primary-focus);
+  outline-offset: 2px;
+}
+
 nav {
   min-height: 44px;
   padding: 0.6rem var(--space-md);

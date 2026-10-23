@@ -105,7 +105,7 @@ export class Navbar extends TinyBase {
     return this.dimensionNames
       .map(
         (name, index) =>
-          `<li class="menu-item dimension-item" data-dimension-index="${index}">${name}</li>`
+          `<li class="menu-item"><button class="reset-to-div dimension-item" type="button" data-dimension-index="${index}">${name}</button></li>`
       )
       .join('');
   }

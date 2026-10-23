@@ -103,4 +103,16 @@ describe('Navbar', () => {
 
     expect(el.store.getState().currentDimensionIndex).toBe(2);
   });
+
+  // regression test for a keyboard-accessibility gap found during Phase
+  // 10.8's audit: these previously rendered as plain <li> with only a click
+  // listener, so a keyboard-only user had no way to reach or activate them
+  it('renders each Dimension list item as a real, keyboard-focusable button', () => {
+    const el = document.createElement('el-nav-bar');
+    document.body.appendChild(el);
+
+    const items = [...el.querySelectorAll('.dimension-item')];
+    expect(items.length).toBe(DIMENSION_NAMES.length);
+    items.forEach((item) => expect(item.tagName).toBe('BUTTON'));
+  });
 });

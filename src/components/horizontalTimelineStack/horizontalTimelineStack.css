@@ -2,6 +2,15 @@ el-horizontal-timeline-stack {
   display: block;
   overflow-x: auto;
   background-color: var(--color-canvas);
+  /* fills the remaining vertical space #stack-container's own flex-grow: 1
+     now claims (dynamicTimelineUI.css) - without this the host still sizes
+     to its own content, same bug that fix solves for #stack-container
+     itself. overflow-y here is already computed to auto (not visible)
+     purely from setting overflow-x: auto with overflow-y unset - per spec,
+     a non-visible overflow-x forces a visible overflow-y to auto too - so
+     no extra overflow-y declaration is needed for the vertical scrollbar
+     this now enables when six rows exceed the viewport. */
+  flex-grow: 1;
 
   /* the single shared horizontal scrollbar driving the axis and all six
      rows together, so they stay time-aligned while panning - each child

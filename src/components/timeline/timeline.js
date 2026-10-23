@@ -14,7 +14,7 @@ import {
   DELETE_ENTRY,
   HIDE_PANEL,
 } from '../../store/actionTypes';
-import { EntryResizeController } from './entryResizeController';
+import { EntryResizeController, Y_AXIS } from './entryResizeController';
 import { SVGNS, XHTMLNS, PX_PER_MINUTE, MINUTES_PER_DAY } from './timelineConstants';
 import './timeline.css';
 
@@ -94,8 +94,11 @@ export class Timeline extends TinyBase {
       isSingleChoiceDimension: () => this.isSingleChoiceDimension,
       getCurrentDate: () => this.currentDate,
       isPanelOpen: () => this.store.getState().uipanel === 'details',
-      clientYToSvgY: (clientX, clientY) => this.clientYToSvgY(clientX, clientY),
+      clientToSvgCoord: (clientX, clientY) => this.clientYToSvgY(clientX, clientY),
       calculateTheTimeSlotClicked: (y) => this.calculateTheTimeSlotClicked(y),
+      axis: Y_AXIS,
+      getPxPerMinute: () => PX_PER_MINUTE,
+      crossAxisCenter: 100 + 220 / 2, // matches the entriesLayer block's x="100" width="220"
       onCommitResize: (entryId, { startOffsetMins, endOffsetMins }) => {
         const entry = this.entries.find((entry) => entry.id === entryId);
         if (!entry) {

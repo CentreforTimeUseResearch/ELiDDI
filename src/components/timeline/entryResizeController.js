@@ -3,7 +3,27 @@ import {
   getCurrentOffsetMins,
   getCurrentDiaryDateKey,
 } from '../../utils/time';
-import { SVGNS, PX_PER_MINUTE, MINUTES_PER_DAY } from './timelineConstants';
+import { SVGNS, MINUTES_PER_DAY } from './timelineConstants';
+
+// Phase 10.6: which SVG attributes carry "position along the timeline axis"
+// vs "fixed cross-axis center" - everything else in this controller already
+// operates in minutes, not pixels, so this is the only axis-specific
+// knowledge it needs. Timeline (vertical) injects Y_AXIS, HorizontalTimeline
+// injects X_AXIS.
+export const Y_AXIS = {
+  positionAttr: 'y', // rect/foreignObject
+  crossAttr: 'x', // rect/foreignObject readout
+  sizeAttr: 'height',
+  positionCoordAttr: 'cy', // handle circles
+  crossCoordAttr: 'cx',
+};
+export const X_AXIS = {
+  positionAttr: 'x',
+  crossAttr: 'y',
+  sizeAttr: 'width',
+  positionCoordAttr: 'cx',
+  crossCoordAttr: 'cy',
+};
 
 const LONG_PRESS_MS = 500;
 const LONG_PRESS_CANCEL_DISTANCE_PX = 10; // pointer movement past this before the timer fires reads as a scroll/mis-tap, not a long-press
@@ -34,9 +54,12 @@ export class EntryResizeController {
     isSingleChoiceDimension,
     getCurrentDate,
     isPanelOpen,
-    clientYToSvgY,
+    clientToSvgCoord,
     calculateTheTimeSlotClicked,
     onCommitResize,
+    axis,
+    getPxPerMinute,
+    crossAxisCenter,
   }) {
     this.svg = svg;
     this.entriesLayer = entriesLayer;
@@ -45,9 +68,12 @@ export class EntryResizeController {
     this.isSingleChoiceDimension = isSingleChoiceDimension;
     this.getCurrentDate = getCurrentDate;
     this.isPanelOpen = isPanelOpen;
-    this.clientYToSvgY = clientYToSvgY;
+    this.clientToSvgCoord = clientToSvgCoord;
     this.calculateTheTimeSlotClicked = calculateTheTimeSlotClicked;
     this.onCommitResize = onCommitResize;
+    this.axis = axis;
+    this.getPxPerMinute = getPxPerMinute;
+    this.crossAxisCenter = crossAxisCenter;
   }
 
   // long-press detection - a press held on an entry (never on the read-only
@@ -91,7 +117,7 @@ export class EntryResizeController {
       // history of unreliable touch-action support on their own - this is
       // the reliable fallback, independent of that CSS support level
       e.preventDefault?.();
-      this.updateDragToSvgY(this.clientYToSvgY(e.clientX, e.clientY));
+      this.updateDragToSvgPosition(this.clientToSvgCoord(e.clientX, e.clientY));
       return;
     }
     if (!this.longPressCandidate || e.pointerId !== this.longPressCandidate.pointerId) {
@@ -256,11 +282,11 @@ export class EntryResizeController {
     return { previousEnd, nextStart };
   }
 
-  updateDragToSvgY(svgY) {
+  updateDragToSvgPosition(svgCoord) {
     if (!this.activeDrag) {
       return;
     }
-    const rawOffsetMins = this.calculateTheTimeSlotClicked(svgY >= 0 ? svgY : 0);
+    const rawOffsetMins = this.calculateTheTimeSlotClicked(svgCoord >= 0 ? svgCoord : 0);
     const clampedOffsetMins = this.clampDragOffset(rawOffsetMins);
     const hitLimit = clampedOffsetMins !== rawOffsetMins;
     if (this.activeDrag.edge === 'start') {
@@ -340,22 +366,26 @@ export class EntryResizeController {
     if (!group) {
       return;
     }
-    const cy = offsetMins * PX_PER_MINUTE;
-    group.querySelectorAll('circle').forEach((circle) => circle.setAttributeNS(null, 'cy', cy));
+    const position = offsetMins * this.getPxPerMinute();
+    group
+      .querySelectorAll('circle')
+      .forEach((circle) => circle.setAttributeNS(null, this.axis.positionCoordAttr, position));
     let readout = group.querySelector('.resize-handle-readout');
     if (!showReadout) {
       readout?.remove();
       return;
     }
     if (!readout) {
-      const cx = group.querySelector('.resize-handle-hit-area')?.getAttribute('cx');
+      const crossValue = group
+        .querySelector('.resize-handle-hit-area')
+        ?.getAttribute(this.axis.crossCoordAttr);
       readout = document.createElementNS(SVGNS, 'text');
       readout.setAttribute('class', 'resize-handle-readout');
-      readout.setAttributeNS(null, 'x', Number(cx) + HANDLE_HIT_RADIUS + 6);
+      readout.setAttributeNS(null, this.axis.crossAttr, Number(crossValue) + HANDLE_HIT_RADIUS + 6);
       readout.setAttribute('dominant-baseline', 'middle');
       group.appendChild(readout);
     }
-    readout.setAttributeNS(null, 'y', cy);
+    readout.setAttributeNS(null, this.axis.positionAttr, position);
     readout.textContent = formatOffsetAsClockTime(offsetMins);
   }
 
@@ -364,15 +394,16 @@ export class EntryResizeController {
     if (!rect) {
       return;
     }
-    const startOffsetPx = currentStart * PX_PER_MINUTE;
-    const endOffsetPx = currentEnd * PX_PER_MINUTE;
-    const height = endOffsetPx - startOffsetPx;
-    rect.setAttributeNS(null, 'y', startOffsetPx);
-    rect.setAttributeNS(null, 'height', height > 0 ? height : 20);
+    const pxPerMinute = this.getPxPerMinute();
+    const startOffsetPx = currentStart * pxPerMinute;
+    const endOffsetPx = currentEnd * pxPerMinute;
+    const size = endOffsetPx - startOffsetPx;
+    rect.setAttributeNS(null, this.axis.positionAttr, startOffsetPx);
+    rect.setAttributeNS(null, this.axis.sizeAttr, size > 0 ? size : 20);
     const foreignObject = rect.parentElement?.querySelector('foreignObject');
     if (foreignObject) {
-      foreignObject.setAttributeNS(null, 'y', startOffsetPx);
-      foreignObject.setAttributeNS(null, 'height', height > 0 ? height : 20);
+      foreignObject.setAttributeNS(null, this.axis.positionAttr, startOffsetPx);
+      foreignObject.setAttributeNS(null, this.axis.sizeAttr, size > 0 ? size : 20);
     }
   }
 
@@ -453,14 +484,13 @@ export class EntryResizeController {
 
   renderHandles(entry, { activeEdge } = {}) {
     this.handlesLayer.innerHTML = '';
-    const startOffsetPx = (entry.startOffsetMins || 0) * PX_PER_MINUTE;
-    const endOffsetPx = (entry.endOffsetMins || 0) * PX_PER_MINUTE;
-    const centerX = 100 + 220 / 2; // matches the entriesLayer block's x="100" width="220"
+    const pxPerMinute = this.getPxPerMinute();
+    const startOffsetPx = (entry.startOffsetMins || 0) * pxPerMinute;
+    const endOffsetPx = (entry.endOffsetMins || 0) * pxPerMinute;
     this.handlesLayer.appendChild(
       this.createHandle({
         edge: 'start',
-        cx: centerX,
-        cy: startOffsetPx,
+        position: startOffsetPx,
         entryId: entry.id,
         showReadout: activeEdge === 'start',
         offsetMins: entry.startOffsetMins,
@@ -469,8 +499,7 @@ export class EntryResizeController {
     this.handlesLayer.appendChild(
       this.createHandle({
         edge: 'end',
-        cx: centerX,
-        cy: endOffsetPx,
+        position: endOffsetPx,
         entryId: entry.id,
         showReadout: activeEdge === 'end',
         offsetMins: entry.endOffsetMins,
@@ -478,22 +507,22 @@ export class EntryResizeController {
     );
   }
 
-  createHandle({ edge, cx, cy, entryId, showReadout, offsetMins }) {
+  createHandle({ edge, position, entryId, showReadout, offsetMins }) {
     const group = document.createElementNS(SVGNS, 'g');
     group.setAttribute('class', 'resize-handle');
     group.setAttribute('data-handle-edge', edge);
     group.setAttribute('data-handle-entry-id', entryId);
 
     const hitArea = document.createElementNS(SVGNS, 'circle');
-    hitArea.setAttributeNS(null, 'cx', cx);
-    hitArea.setAttributeNS(null, 'cy', cy);
+    hitArea.setAttributeNS(null, this.axis.positionCoordAttr, position);
+    hitArea.setAttributeNS(null, this.axis.crossCoordAttr, this.crossAxisCenter);
     hitArea.setAttributeNS(null, 'r', HANDLE_HIT_RADIUS);
     hitArea.setAttribute('class', 'resize-handle-hit-area');
     group.appendChild(hitArea);
 
     const grip = document.createElementNS(SVGNS, 'circle');
-    grip.setAttributeNS(null, 'cx', cx);
-    grip.setAttributeNS(null, 'cy', cy);
+    grip.setAttributeNS(null, this.axis.positionCoordAttr, position);
+    grip.setAttributeNS(null, this.axis.crossCoordAttr, this.crossAxisCenter);
     grip.setAttributeNS(null, 'r', HANDLE_GRIP_RADIUS);
     grip.setAttribute('class', 'resize-handle-grip');
     group.appendChild(grip);
@@ -501,8 +530,12 @@ export class EntryResizeController {
     if (showReadout) {
       const readout = document.createElementNS(SVGNS, 'text');
       readout.setAttribute('class', 'resize-handle-readout');
-      readout.setAttributeNS(null, 'x', cx + HANDLE_HIT_RADIUS + 6);
-      readout.setAttributeNS(null, 'y', cy);
+      readout.setAttributeNS(
+        null,
+        this.axis.crossAttr,
+        this.crossAxisCenter + HANDLE_HIT_RADIUS + 6
+      );
+      readout.setAttributeNS(null, this.axis.positionAttr, position);
       readout.setAttribute('dominant-baseline', 'middle');
       readout.textContent = formatOffsetAsClockTime(offsetMins);
       group.appendChild(readout);

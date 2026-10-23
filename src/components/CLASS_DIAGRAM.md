@@ -102,9 +102,15 @@ classDiagram
 
     class HorizontalTimeline {
         <<el-horizontal-timeline>>
+        -resizeController : EntryResizeController
         +renderEntries()
         +renderEntriesInto(args)
         +updateDimensions()
+        +onTimelineClick(e)
+        +saveEntry(entry)
+        +createEntry(entry)
+        +updateEntry(entry)
+        +deleteEntry(id)
     }
 
     class HorizontalTimelineAxis {
@@ -118,6 +124,13 @@ classDiagram
 
     class HorizontalTimelineStack {
         <<el-horizontal-timeline-stack>>
+        -activeRow : HorizontalTimeline
+        +activateRow(dimensionIndex)
+        +openEntryForRow(dimensionIndex, entry)
+        +openNewEntryForRow(dimensionIndex, startOffsetMins)
+        +saveEntry(entry)
+        +deleteEntry(id)
+        +findNextEntryAfter(offsetMins)
     }
 
     class TimelinePicker {
@@ -184,7 +197,8 @@ classDiagram
 
     %% composition: constructs and owns a real object instance
     ActivityPicker *-- KeyboardGridNavigation : constructs in constructor()
-    Timeline *-- EntryResizeController : constructs in connectedCallback()
+    Timeline *-- EntryResizeController : constructs in connectedCallback(), axis = Y_AXIS
+    HorizontalTimeline *-- EntryResizeController : constructs in connectedCallback(), axis = X_AXIS
     TimelineStack "1" *-- "many" Timeline : new Timeline() per Dimension
 
     %% dependency: renders as a child custom element + props-registry handshake
@@ -196,7 +210,8 @@ classDiagram
     DynamicTimelineUI ..> Onboarding : renders (inside a dialog)
     DynamicTimelineUI ..> DatePicker : renders (inside a dialog)
     HorizontalTimelineStack ..> HorizontalTimelineAxis : renders
-    HorizontalTimelineStack ..> HorizontalTimeline : renders x6
+    HorizontalTimelineStack ..> HorizontalTimeline : renders x6, injects panelActions props
+    HorizontalTimelineStack ..> DetailsPanel : renders, panelActions contract (one shared instance, not one per row)
     Navbar ..> TimelinePicker : renders
     Navbar ..> ContextualHelp : renders
     Timeline ..> DetailsPanel : renders, panelActions contract

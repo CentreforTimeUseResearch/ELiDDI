@@ -34,7 +34,7 @@ Terminology (Dimension, Timeline, Entry, Primary activity mirror) follows [CONTE
 
 ## Interaction pipeline (`entryResizeController.js`)
 
-`EntryResizeController` is constructed by `Timeline.connectedCallback` with a small set of injected dependencies (the SVG element, the entries/handles layers, and callbacks for reading entries, checking single- vs multiple-choice Mode, checking whether the details panel is open, coordinate conversion, and committing a resize back to the store) rather than reaching into `Timeline` directly. It owns:
+`EntryResizeController` is constructed by `Timeline.connectedCallback` with a small set of injected dependencies (the SVG element, the entries/handles layers, and callbacks for reading entries, checking single- vs multiple-choice Mode, checking whether the details panel is open, coordinate conversion, and committing a resize back to the store) rather than reaching into `Timeline` directly. Since Phase 10.6, it's also used by [HorizontalTimeline](../horizontalTimeline/README.md), generalized via an injected `axis` config (`Y_AXIS`/`X_AXIS`, exported from this file — which SVG attributes carry "position along the timeline" vs "fixed cross-axis center": `y`/`height`/`cy` for vertical, `x`/`width`/`cx` for horizontal) and an injected `getPxPerMinute()` callback rather than a hardcoded constant (`Timeline`'s is just `() => PX_PER_MINUTE`; `HorizontalTimeline`'s reads the current zoom level on every call, since only the horizontal view zooms). Everything else in the controller already operated purely in minutes, not pixels, so needed no changes at all for this. It owns:
 
 - Long-press detection (hold ~500ms without moving far → reveal resize handles).
 - Drag tracking and live visual feedback as a handle is dragged.

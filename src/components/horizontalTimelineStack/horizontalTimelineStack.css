@@ -16,4 +16,19 @@ el-horizontal-timeline-stack {
     /* matches the designer's row rhythm (deferred from Phase 10.3) */
     margin-top: 10px;
   }
+
+  /* Phase 10.6 placeholder only - DetailsPanel's own CSS is
+     position: sticky; bottom: 0, explicitly commented "mobile only for
+     now": nested inside this horizontally-scrolling stack, a sticky
+     panel would scroll away with the timeline content instead of staying
+     put. Overridden to position: fixed so it's at least reachable/usable
+     while Phase 10.6 is purely about interaction mechanics working
+     end-to-end - Phase 10.7 replaces this with the real docked design. */
+  el-details-panel {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 2;
+  }
 }

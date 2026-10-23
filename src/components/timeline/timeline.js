@@ -227,7 +227,7 @@ export class Timeline extends TinyBase {
       entries: this.entries,
       dimensionIndex: this.dimensionIndex,
       blockWidth: '220',
-      labelX: 60,
+      labelX: 110,
       labelWidth: 200,
     });
   }

@@ -1,10 +1,10 @@
-import { DetailsPanel } from '../detailsPanel/detailsPanel';
-import { Navbar } from '../navbar/navbar';
-import { DialogWidget } from '../dialogWidget/dialogWidget';
-import { TimelineStack } from '../timelineStack/timelineStack';
-import { HorizontalTimelineStack } from '../horizontalTimelineStack/horizontalTimelineStack';
-import { Onboarding } from '../onboarding/onboarding';
-import { DatePicker } from '../datePicker/datePicker';
+import '../detailsPanel/detailsPanel';
+import '../navbar/navbar';
+import '../dialogWidget/dialogWidget';
+import '../timelineStack/timelineStack';
+import '../horizontalTimelineStack/horizontalTimelineStack';
+import '../onboarding/onboarding';
+import '../datePicker/datePicker';
 
 import { TinyBase } from '../base';
 import { DISMISS_ONBOARDING, HIDE_PANEL, SET_DESKTOP_LAYOUT } from '../../store/actionTypes';

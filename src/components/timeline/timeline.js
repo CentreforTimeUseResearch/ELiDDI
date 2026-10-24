@@ -442,7 +442,7 @@ export class Timeline extends TinyBase {
     const id = this.getNextEntryId();
     const dimensionIndex = this.dimensionIndex;
     if (typeof dimensionIndex !== 'number') {
-      console.error('Problem with identifying dimension index', e.target);
+      console.error('Problem with identifying dimension index', dimensionIndex);
       return;
     }
     // create entry
@@ -461,7 +461,7 @@ export class Timeline extends TinyBase {
   updateEntry(entry) {
     const dimensionIndex = this.dimensionIndex;
     if (typeof dimensionIndex !== 'number') {
-      console.error('Problem with identifying dimension index', e.target);
+      console.error('Problem with identifying dimension index', dimensionIndex);
       return;
     }
     const index = this.entries.findIndex((entry) => entry.id === this.selectedID);

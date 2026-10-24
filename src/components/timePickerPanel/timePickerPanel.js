@@ -1,5 +1,5 @@
-import { TimePicker } from '../timePicker/timePicker';
-import { DurationInput } from '../durationInput/durationInput';
+import '../timePicker/timePicker';
+import '../durationInput/durationInput';
 import { TinyBase } from '../base';
 import { getMaxEditableTimeInMinutes } from '../../utils/time';
 import './timePickerPanel.css';

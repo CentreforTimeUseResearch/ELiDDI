@@ -6,10 +6,6 @@ import { TinyBase } from '../base';
 import './contextualHelp.css';
 
 const ID = 'id';
-const TEXT = 'text';
-const POSITION = 'position';
-const POINTER = 'pointer';
-const BACKDROP = 'backdrop';
 
 export class ContextualHelp extends TinyBase {
   static observedAttributes = [ID];

@@ -82,7 +82,6 @@ describe('HorizontalTimelineAxis', () => {
       appStore.dispatch({ type: SET_HORIZONTAL_ZOOM, payload: 2 });
 
       const lines = [...el.querySelectorAll('#grid-lines line')];
-      const secondTick = lines.find((l) => l.getAttribute('x1') !== '0');
       // offset 10min * (PX_PER_MINUTE(2) * zoom(2)) = 40, vs 20 at native zoom
       expect(lines.length).toBe(145);
       expect(el.querySelectorAll('#grid-lines line')[1].getAttribute('x1')).toBe('40');

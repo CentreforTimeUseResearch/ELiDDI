@@ -34,7 +34,6 @@ This folder contains two files:
 | `onSetActivityOnSelectedEntry(activity)`     | function | Fired on single-choice selection.                                                 |
 | `onSetActivitiesOnSelectedEntry(activities)` | function | Fired on every toggle in multiple-choice mode (popover stays open).               |
 | `onFocusCallback()`                          | function | Fired when the input gains focus (DetailsPanel uses this to keep the panel open). |
-| `onPopOverShowing(isPopoverShowing)`         | function | Currently a no-op hook, left in place for future styling needs.                   |
 
 ## Behaviour notes
 

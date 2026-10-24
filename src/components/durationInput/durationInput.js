@@ -106,7 +106,10 @@ export class DurationInput extends TinyBase {
   }
 
   render() {
-    const totalMinutes = this[VALUE] !== undefined ? Number(this[VALUE]) : undefined;
+    // absent (undefined, or null once removed) or non-numeric means "no
+    // duration yet" - but 0 is a real duration, shown as 0h 0m
+    const parsed = this[VALUE] === undefined || this[VALUE] === null ? NaN : Number(this[VALUE]);
+    const totalMinutes = Number.isFinite(parsed) ? parsed : undefined;
     const hours = totalMinutes !== undefined ? Math.floor(totalMinutes / MINUTES_PER_HOUR) : '';
     const minutes = totalMinutes !== undefined ? totalMinutes % MINUTES_PER_HOUR : '';
     const id = this[ID];

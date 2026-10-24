@@ -15,9 +15,13 @@ const VALUE = VALUE_ATTR;
 const CONSTRAINED = 'constrained';
 const READ_ONLY = 'read-only';
 const REQUIRED = 'required';
+// a message set by the parent (e.g. TimePickerPanel's end-of-day check),
+// shown whenever this field's own validation passes; removing the
+// attribute clears it
+const ERROR = 'error';
 
 export class TimePicker extends TinyBase {
-  static observedAttributes = [ID, LABEL, VALUE, CONSTRAINED, READ_ONLY, REQUIRED];
+  static observedAttributes = [ID, LABEL, VALUE, CONSTRAINED, READ_ONLY, REQUIRED, ERROR];
 
   store = super.getStore();
   timeInput;
@@ -109,8 +113,12 @@ export class TimePicker extends TinyBase {
         `Time cannot be in the future. Please select a time at or before ${this.maxTimeValue}.`
       );
     } else {
-      this.clearError();
       this.value = value;
+      if (this[ERROR]) {
+        this.showError(this[ERROR]);
+      } else {
+        this.clearError();
+      }
     }
   }
 
@@ -124,6 +132,9 @@ export class TimePicker extends TinyBase {
 
   attributeChangedCallback(name, oldValue, newValue) {
     handleValidatedFieldAttributeChange(this, name, newValue);
+    if (name === ERROR && this.timeInput) {
+      this.validate();
+    }
   }
 
   render() {

@@ -151,6 +151,19 @@ describe('Timeline panelActions contract', () => {
     return el;
   }
 
+  // regression coverage (#145): heading/instruction were interpolated
+  // straight from the Dimension config, so a Dimension with no instruction
+  // (Location, Who, Device, Enjoyment in the real config) passed down the
+  // literal text "undefined", shown under the activity input on mobile
+  it('passes an empty instruction, not "undefined", for a Dimension with none configured', () => {
+    expect(GLOBALS.DATA.timeline[2].instruction).toBeUndefined();
+    const el = createTimeline(2); // Location
+
+    const panel = el.querySelector('el-details-panel');
+    expect(panel.getAttribute('instruction')).toBe('');
+    expect(panel.querySelector('el-activity-picker').textContent).not.toContain('undefined');
+  });
+
   it('does not hold a direct reference to the details panel instance', () => {
     const el = createTimeline(2); // Location
     expect(el.detailsPanel).toBeUndefined();

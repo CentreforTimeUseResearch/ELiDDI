@@ -1,4 +1,5 @@
 import { combineReducers } from './store';
+import { DIARY_STATUS } from './diaryStatus';
 import { getCurrentDiaryDateKey } from '../utils/time';
 import {
   RESET_ONBOARDING,
@@ -16,7 +17,6 @@ import {
   ADD_ENTRY,
   UPDATE_ENTRY,
   DELETE_ENTRY,
-  SET_STATUS,
   RESET_STATUS,
   SET_COMPLETE,
 } from './actionTypes';
@@ -93,28 +93,31 @@ const horizontalZoomLevel = (state = 1, action) => {
   }
 };
 
-// per-Dimension Entry[] reducer, one Timeline's worth of Entries
+// the stored Entry shape - picks only these fields off a payload, which
+// also carries routing fields (date, dimensionIndex)
+const toEntry = ({ startOffsetMins, endOffsetMins, id, activity }) => ({
+  startOffsetMins,
+  endOffsetMins,
+  id,
+  activity,
+});
+
+// per-Dimension Entry[] reducer, one Timeline's worth of Entries. Entries
+// are addressed by id, never by array position - a position computed by a
+// caller can be stale by the time it gets here
 const timeline = (state = [], action) => {
-  const { startOffsetMins, endOffsetMins, id, activity, index } = action.payload;
-  switch (action?.type) {
+  const payload = action?.payload;
+  if (!payload) return state;
+  switch (action.type) {
     case ADD_ENTRY:
-      return [
-        ...state,
-        {
-          startOffsetMins,
-          endOffsetMins,
-          id,
-          activity,
-        },
-      ];
+      return [...state, toEntry(payload)];
     case UPDATE_ENTRY:
-      return [
-        ...state.slice(0, index),
-        { startOffsetMins, endOffsetMins, id, activity },
-        ...state.slice(index + 1),
-      ];
+      if (!state.some((entry) => entry.id === payload.id)) {
+        return state; // nothing to update - e.g. deleted since it was selected
+      }
+      return state.map((entry) => (entry.id === payload.id ? toEntry(payload) : entry));
     case DELETE_ENTRY:
-      return state.filter((entry) => entry.id !== id);
+      return state.filter((entry) => entry.id !== payload.id);
     default:
       return state;
   }
@@ -142,22 +145,20 @@ const dimensionTimelines = (state = [], action) => {
   }
 };
 
-// one Diary's status
-const diaryStatus = (state = 0, action) => {
+// one Diary's status - see diaryStatus.js
+const diaryStatus = (state = DIARY_STATUS.IN_PROGRESS, action) => {
   switch (action?.type) {
-    case SET_STATUS:
-      return state;
     case RESET_STATUS:
-      return 0;
+      return DIARY_STATUS.IN_PROGRESS;
     case SET_COMPLETE:
-      return '100';
+      return DIARY_STATUS.COMPLETE;
     default:
       return state;
   }
 };
 
 // one Diary = its Timelines + its Diary status (see CONTEXT.md)
-const diary = (state = { timelines: [], status: 0 }, action) => ({
+const diary = (state = { timelines: [], status: DIARY_STATUS.IN_PROGRESS }, action) => ({
   timelines: dimensionTimelines(state.timelines, action),
   status: diaryStatus(state.status, action),
 });
@@ -171,7 +172,6 @@ const diaries = (state = {}, action) => {
     case ADD_ENTRY:
     case UPDATE_ENTRY:
     case DELETE_ENTRY:
-    case SET_STATUS:
     case RESET_STATUS:
     case SET_COMPLETE:
       return { ...state, [dateKey]: diary(state[dateKey], action) };

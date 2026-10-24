@@ -18,6 +18,7 @@ The shape mirrors the diary domain described in [CONTEXT.md](../../CONTEXT.md) �
 | `appStore.js`      | The single app-wide store _instance_ (a singleton via module import), seeded from `localStorage` and re-persisted on every dispatch.                     |
 | `eliddiReducer.js` | The actual domain reducer tree: onboarding state, current Dimension/date, and the nested Diaries → Timelines → Entries structure.                        |
 | `actionTypes.js`   | Every action type string, as exported constants.                                                                                                         |
+| `diaryStatus.js`   | `DIARY_STATUS` — the two Diary status values (`IN_PROGRESS: 0`, `COMPLETE: 100`).                                                                        |
 | `localStorage.js`  | Thin `localStorage` read/write helpers with error handling (quota exceeded, corrupt JSON).                                                               |
 
 ## `store.js`
@@ -56,13 +57,15 @@ Combines these top-level reducers:
 | `currentDate`           | `string` (`YYYY-MM-DD`) | `SWITCH_DATE` — defaults to `getCurrentDiaryDateKey()`, which only matters before anything has ever been persisted                   |
 | `diaries`               | `{ [date]: Diary }`     | see below                                                                                                                            |
 
-A `Diary` is `{ timelines: Timeline[], status }`, where `Timeline` is one Dimension's array of `{ startOffsetMins, endOffsetMins, id, activity }` Entry objects.
+A `Diary` is `{ timelines: Timeline[], status }`, where `Timeline` is one Dimension's array of `{ startOffsetMins, endOffsetMins, id, activity }` Entry objects, and `status` is a `DIARY_STATUS` value (`diaryStatus.js`) — always a number.
+
+Entry `id`s are unique only within one date's Timeline (every date has an entry `0`), so anything holding an id must not carry it across a date switch — see `Timeline.dropSelectionFromPreviousDate`.
 
 Nested reducers, innermost first:
 
-- **`timeline`** — one Dimension's `Entry[]`: `ADD_ENTRY` appends, `UPDATE_ENTRY` replaces by array `index` (passed in the action payload, not looked up here), `DELETE_ENTRY` filters by `id`.
+- **`timeline`** — one Dimension's `Entry[]`, always addressed by `id`: `ADD_ENTRY` appends, `UPDATE_ENTRY` replaces the entry with the payload's `id` in place (and is a no-op if no entry has it), `DELETE_ENTRY` filters it out.
 - **`dimensionTimelines`** — one Diary's array of six Timelines, indexed by `dimensionIndex`. Uses direct index assignment on a copied array rather than slice/splice, so results are correct regardless of which Dimension index is touched first.
-- **`diary`** — combines `dimensionTimelines` with `diaryStatus` (`SET_STATUS`/`RESET_STATUS`/`SET_COMPLETE`).
+- **`diary`** — combines `dimensionTimelines` with `diaryStatus` (`SET_COMPLETE` → `COMPLETE`, `RESET_STATUS` → `IN_PROGRESS`).
 - **`diaries`** — the full `{ [date]: Diary }` map, keyed by the `date` in the action payload.
 
 `startOffsetMins`/`endOffsetMins` are always relative to the config's Day boundary, not midnight — see [ADR-0001](../../docs/adr/0001-day-boundary-not-midnight.md) and [CONTEXT.md](../../CONTEXT.md)'s "Day boundary" entry.

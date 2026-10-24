@@ -181,6 +181,7 @@ export class HorizontalTimeline extends TinyBase {
 
   updateState() {
     const state = this.store.getState();
+    const dateChanged = state.currentDate !== this.currentDate;
     this.currentDate = state.currentDate;
     this.zoomLevel = state.horizontalZoomLevel;
     this.entries = state.diaries[this.currentDate]?.timelines[this.dimensionIndex] ?? EMPTY_ENTRIES;
@@ -189,6 +190,18 @@ export class HorizontalTimeline extends TinyBase {
     // vertical timeline on a smaller breakpoint)
     this.updateDimensions();
     this.renderEntries();
+    if (dateChanged) {
+      this.dropSelectionFromPreviousDate();
+    }
+  }
+
+  // see Timeline.dropSelectionFromPreviousDate
+  dropSelectionFromPreviousDate() {
+    if (this.selectedID === undefined) {
+      return;
+    }
+    this.selectedID = undefined;
+    this.panelActions?.close();
   }
 
   // entry element looks like this:
@@ -419,14 +432,12 @@ export class HorizontalTimeline extends TinyBase {
       console.error('Problem with identifying dimension index', dimensionIndex);
       return;
     }
-    const index = this.entries.findIndex((entry) => entry.id === this.selectedID);
     this.store.dispatch({
       type: UPDATE_ENTRY,
       payload: {
         id: this.selectedID,
         dimensionIndex,
         date: this.currentDate,
-        index,
         ...entry,
       },
     });

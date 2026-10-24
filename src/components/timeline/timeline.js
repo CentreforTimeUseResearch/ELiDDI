@@ -1,5 +1,6 @@
 import { getCurrentOffsetMins, getCurrentDiaryDateKey } from '../../utils/time';
 import { SHOW_PANEL } from '../../store/actionTypes';
+import { escapeHtml } from '../../utils/html';
 import { BaseTimeline, EMPTY_ENTRIES } from './baseTimeline';
 import { renderEntryBlocks, visibleLength } from './entryBlocks';
 import { Y_AXIS } from './entryResizeController';
@@ -146,8 +147,8 @@ export class Timeline extends BaseTimeline {
         },
       })}
       dimensionindex=${this[INDEX]}
-      heading="${GLOBALS.DATA.timeline[this[INDEX]]?.description ?? ''}"
-      instruction="${GLOBALS.DATA.timeline[this[INDEX]]?.instruction ?? ''}"
+      heading="${escapeHtml(GLOBALS.DATA.timeline[this[INDEX]]?.description)}"
+      instruction="${escapeHtml(GLOBALS.DATA.timeline[this[INDEX]]?.instruction)}"
     ></el-details-panel>`;
   }
 }

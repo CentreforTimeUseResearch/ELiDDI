@@ -9,6 +9,7 @@ import {
 } from '../../store/actionTypes';
 import { formatDateKeyAsDDMMYYYY } from '../../utils/time';
 import './navbar.css';
+import { escapeHtml } from '../../utils/html';
 
 // the sidebar's generic menu options - rendered twice (sidebar drawer below
 // 1024px, nav bar at/above it, see renderMenuItems) rather than switched via
@@ -105,7 +106,7 @@ export class Navbar extends TinyBase {
     return this.dimensionNames
       .map(
         (name, index) =>
-          `<li class="menu-item"><button class="reset-to-div dimension-item" type="button" data-dimension-index="${index}">${name}</button></li>`
+          `<li class="menu-item"><button class="reset-to-div dimension-item" type="button" data-dimension-index="${index}">${escapeHtml(name)}</button></li>`
       )
       .join('');
   }

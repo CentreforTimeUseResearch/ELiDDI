@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import './accordion.js';
 import { setProps } from '../propsRegistry';
+import { SPECIAL_DIMENSION, SPECIAL_NAMES } from '../../testing/specialCharacters';
 
 const CONTENT = [
   {
@@ -25,14 +26,62 @@ describe('Accordion', () => {
 
   // setProps binds each function to the owner, so assertions go against the
   // original vi.fn() references - the bound wrappers still call through
-  function createAccordion({ multi = false } = {}) {
+  function createAccordion({ multi = false, content = CONTENT } = {}) {
     const el = document.createElement('el-accordion');
     el.setAttribute('dimensionindex', '0');
-    const key = setProps({}, { content: CONTENT, activitySelect, activityToggle, multi }, true);
+    const key = setProps({}, { content, activitySelect, activityToggle, multi }, true);
     el.setAttribute('key', key);
     document.body.appendChild(el);
     return el;
   }
+
+  // regression coverage (#146): names went into attributes and text
+  // unescaped, so a quote ended data-activity early and the wrong (or an
+  // empty) activity was what got saved
+  describe('activity names containing HTML special characters', () => {
+    const buttons = (el) => [...el.querySelectorAll('[data-activity]')];
+
+    it('displays, labels and stores each name exactly', () => {
+      const el = createAccordion({ content: SPECIAL_DIMENSION.categories });
+
+      expect(buttons(el).map((button) => button.textContent.trim())).toEqual(SPECIAL_NAMES);
+      expect(buttons(el).map((button) => button.dataset.activity)).toEqual(SPECIAL_NAMES);
+      expect(buttons(el).map((button) => button.getAttribute('aria-label'))).toEqual(SPECIAL_NAMES);
+      expect(el.querySelector('.accordion-title').textContent.trim()).toBe(
+        SPECIAL_DIMENSION.categories[0].name
+      );
+    });
+
+    it('selects the exact name that was clicked', () => {
+      const el = createAccordion({ content: SPECIAL_DIMENSION.categories });
+
+      buttons(el).forEach((button) => button.click());
+
+      expect(activitySelect.mock.calls.map(([name]) => name)).toEqual(SPECIAL_NAMES);
+    });
+
+    it('gives each button only the attributes it is meant to have', () => {
+      const el = createAccordion({ content: SPECIAL_DIMENSION.categories });
+
+      buttons(el).forEach((button) => {
+        expect(button.getAttributeNames().sort()).toEqual(
+          ['aria-label', 'class', 'data-activity', 'style', 'type'].sort()
+        );
+      });
+    });
+  });
+
+  // regression coverage (#146): a `;` outside the template expression
+  // rendered as stray text after the sections
+  it('renders no stray text between its sections', () => {
+    const el = createAccordion();
+    const strayText = [...el.querySelector('.accordion').childNodes]
+      .filter((node) => node.nodeType === Node.TEXT_NODE)
+      .map((node) => node.textContent.trim())
+      .filter(Boolean);
+
+    expect(strayText).toEqual([]);
+  });
 
   function sectionFor(el, trigger) {
     return el.querySelector(`[id="${trigger.getAttribute('aria-controls')}"]`);

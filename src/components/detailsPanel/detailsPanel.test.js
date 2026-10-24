@@ -85,6 +85,22 @@ describe('DetailsPanel', () => {
     vi.restoreAllMocks();
   });
 
+  // regression coverage (#146): heading/instruction attribute values were
+  // re-interpolated into the picker's markup unescaped
+  it('passes a heading and instruction containing quotes and brackets to its picker intact', () => {
+    const heading = `Who's "with" you <now>`;
+    const instruction = `Pick <one> & move on`;
+    const el = createPanel();
+    el.setAttribute('heading', heading);
+    el.setAttribute('instruction', instruction);
+
+    el.reset();
+
+    const picker = el.querySelector('el-activity-picker');
+    expect(picker.getAttribute('heading')).toBe(heading);
+    expect(picker.getAttribute('instruction')).toBe(instruction);
+  });
+
   it('renders its activity picker and time picker panel', () => {
     const el = createPanel();
     expect(el.querySelector('el-activity-picker')).not.toBeNull();

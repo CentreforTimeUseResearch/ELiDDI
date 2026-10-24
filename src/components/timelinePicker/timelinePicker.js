@@ -1,6 +1,7 @@
 import { TinyBase } from '../base';
 import { HIDE_PANEL, SWITCH_DIMENSION } from '../../store/actionTypes';
 import './timelinePicker.css';
+import { escapeHtml } from '../../utils/html';
 
 export class TimelinePicker extends TinyBase {
   dimensionNames;
@@ -67,7 +68,7 @@ export class TimelinePicker extends TinyBase {
     return this.dimensionNames
       .map(
         (dimensionName, index) =>
-          `<option value=${index} ${index === this.currentDimensionIndex ? 'selected' : ''}>${dimensionName}</option>`
+          `<option value="${index}" ${index === this.currentDimensionIndex ? 'selected' : ''}>${escapeHtml(dimensionName)}</option>`
       )
       .join('');
   }

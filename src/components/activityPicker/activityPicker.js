@@ -1,6 +1,7 @@
 import '../accordion/accordion';
 import { TinyBase } from '../base';
-import { escapeHtml, searchActivities, hasKnownActivity } from '../../utils/activitySearch';
+import { searchActivities, hasKnownActivity } from '../../utils/activitySearch';
+import { escapeHtml } from '../../utils/html';
 import { KeyboardGridNavigation } from './keyboardGridNavigation';
 import './activityPicker.css';
 
@@ -179,7 +180,7 @@ export class ActivityPicker extends TinyBase {
   render() {
     this.innerHTML = `
         <label class="el-label el-label--l" for="activity-input_${this[DIMENSION_INDEX]}">
-          ${this[HEADING] ?? ''}
+          ${escapeHtml(this[HEADING])}
         </label>
         <div class="combobox-wrapper">
             <div class="combobox-input-wrapper">
@@ -193,7 +194,7 @@ export class ActivityPicker extends TinyBase {
                     id="activity-input_${this[DIMENSION_INDEX]}"
                     value=""
                 >
-                 <span class="instruction"> ${this[INSTRUCTION] ?? ''} </span>
+                 <span class="instruction"> ${escapeHtml(this[INSTRUCTION])} </span>
                 <div id="activity-picker-popover" popover="manual" class="activity-picker-popover">
                   <el-accordion dimensionindex=${this[DIMENSION_INDEX]} ${this.setProps({ content: this.content, activitySelect: this.onActivitySelect, activityToggle: (activity, isSelected) => this.onActivityToggle(activity, isSelected), ...this.accordionProps() })}></el-accordion>
                   ${this.doneButtonHtml()}

@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { escapeHtml } from '../src/utils/html.js';
 
 const environment = process.env.ACTIONS_ENV;
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
@@ -107,8 +108,8 @@ function generateCardNav(chunk, cardNum, timeSlot) {
 function generateTextFieldInput(chunk, cardNum, uniqueRef, questionText) {
   return `
   <div class="gridCell">
-      <label for="${chunk}_${cardNum}-${uniqueRef}" class="header">${questionText}</label>
-      <span><input type="text" id="${chunk}_${cardNum}-${uniqueRef}" name="${chunk}_${cardNum}-${uniqueRef}" list="${uniqueRef}"></span>
+      <label for="${chunk}_${cardNum}-${escapeHtml(uniqueRef)}" class="header">${escapeHtml(questionText)}</label>
+      <span><input type="text" id="${chunk}_${cardNum}-${escapeHtml(uniqueRef)}" name="${chunk}_${cardNum}-${escapeHtml(uniqueRef)}" list="${escapeHtml(uniqueRef)}"></span>
   </div>
   `;
 }
@@ -116,8 +117,8 @@ function generateTextFieldInput(chunk, cardNum, uniqueRef, questionText) {
 function generateSingleCheckboxInput(chunk, cardNum, uniqueRef, questionText) {
   return `
   <div class="gridCell">
-    <label for="${chunk}_${cardNum}-${uniqueRef}" class="header">${questionText}</label>
-    <span><input type="checkbox" id="${chunk}_${cardNum}-${uniqueRef}" name="${chunk}_${cardNum}-${uniqueRef}" list=${uniqueRef}/></span>
+    <label for="${chunk}_${cardNum}-${escapeHtml(uniqueRef)}" class="header">${escapeHtml(questionText)}</label>
+    <span><input type="checkbox" id="${chunk}_${cardNum}-${escapeHtml(uniqueRef)}" name="${chunk}_${cardNum}-${escapeHtml(uniqueRef)}" list="${escapeHtml(uniqueRef)}"/></span>
   </div>
   `;
 }
@@ -126,13 +127,13 @@ function generateMultiCheckboxInput(chunk, cardNum, uniqueRef, options, question
   return `
               <div class="gridCell">
                 <fieldset>
-                    <legend>${questionText} <small>Mark all relevant boxes</small></legend>
-                    <label><input type="checkbox" id="${chunk}_${cardNum}-alone" name="${chunk}_${cardNum}-${uniqueRef}"/>Alone</label><br />
+                    <legend>${escapeHtml(questionText)} <small>Mark all relevant boxes</small></legend>
+                    <label><input type="checkbox" id="${chunk}_${cardNum}-alone" name="${chunk}_${cardNum}-${escapeHtml(uniqueRef)}"/>Alone</label><br />
   ${options
     .map((option) => {
       const safeId = option.replace(/ |\//g, '_');
 
-      return `<label><input type="checkbox" id="${chunk}_${cardNum}-${safeId}" name="${chunk}_${cardNum}-${uniqueRef}"/>${option}</label><br />`;
+      return `<label><input type="checkbox" id="${chunk}_${cardNum}-${escapeHtml(safeId)}" name="${chunk}_${cardNum}-${escapeHtml(uniqueRef)}"/>${escapeHtml(option)}</label><br />`;
     })
     .join('')}
                </fieldset>
@@ -143,9 +144,9 @@ function generateMultiCheckboxInput(chunk, cardNum, uniqueRef, options, question
 function generateSelectDropDown(chunk, cardNum, uniqueRef, options, questionText) {
   return `
             <div class="gridCell">
-                <label for="${chunk}_${cardNum}-enjoyed" class="header">${questionText}</label>
+                <label for="${chunk}_${cardNum}-enjoyed" class="header">${escapeHtml(questionText)}</label>
                 <span><select id="${chunk}_${cardNum}-enjoyed" name="${chunk}_${cardNum}-enjoyed">
-                    ${options.map((option) => `<option>${option}</option>`).join('')}
+                    ${options.map((option) => `<option>${escapeHtml(option)}</option>`).join('')}
                 </select></span>
             </div>`;
 }
@@ -286,17 +287,19 @@ function generateDataLists(dimensionsWithFlattenedActivities) {
 }
 
 function generateDataList(dimensionName, options) {
-  return `<datalist id="${dimensionName.replace(' ', '-').toLowerCase()}">${options
+  return `<datalist id="${escapeHtml(dimensionName.replace(' ', '-').toLowerCase())}">${options
     .map((option) => {
-      return `<option value="${option}"></option>`;
+      return `<option value="${escapeHtml(option)}"></option>`;
     })
     .join('')}</datalist>`;
 }
 
 // this function makes the values in the environment variable available to
-// the runtime browser javascript
+// the runtime browser javascript. "<" can only occur inside a JSON string,
+// where \u003c means the same character - so a config string containing
+// "</script>" or "<!--" can't end or break this script block early
 function generateScriptBlockForEnvironmentVariables(jsonData) {
-  return `<script>GLOBALS = {DATA: ${jsonData} }; </script>`;
+  return `<script>GLOBALS = {DATA: ${jsonData.replace(/</g, '\\u003c')} }; </script>`;
 }
 
 function processJsonToHTML(jsonData) {

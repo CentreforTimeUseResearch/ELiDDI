@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { escapeHtml, searchActivities, hasKnownActivity } from './activitySearch';
+import { searchActivities, hasKnownActivity } from './activitySearch';
 
 const content = [
   {
@@ -12,14 +12,6 @@ const content = [
   },
 ];
 
-describe('escapeHtml', () => {
-  it('escapes HTML special characters', () => {
-    expect(escapeHtml(`<b>"Tom & Jerry"</b>`)).toBe(
-      '&lt;b&gt;&quot;Tom &amp; Jerry&quot;&lt;/b&gt;'
-    );
-  });
-});
-
 describe('searchActivities', () => {
   it('filters each category down to activities matching the search string (case-insensitive)', () => {
     const results = searchActivities(content, 'sleep');
@@ -27,6 +19,18 @@ describe('searchActivities', () => {
       { name: 'Sleep and personal care', activities: [{ name: 'Sleep' }] },
       { name: 'Work', activities: [] },
     ]);
+  });
+
+  // regression coverage (#146): search matched the raw name while the
+  // picker shows - and hasKnownActivity compares - the label, so typing the
+  // text a coded activity displays filtered that activity out
+  it('matches a coded activity by the label it displays, like hasKnownActivity', () => {
+    const coded = [
+      { name: 'Personal', activities: [{ code: 110, name: 'Sleep (main)', label: 'Sleeping' }] },
+    ];
+
+    expect(searchActivities(coded, 'sleeping')[0].activities).toHaveLength(1);
+    expect(hasKnownActivity(coded, 'sleeping')).toBe(true);
   });
 
   it('keeps every activity when the search string is empty', () => {

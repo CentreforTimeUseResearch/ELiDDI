@@ -38,6 +38,7 @@ export class TinyBase extends HTMLElement {
   cleanupFns = [];
 
   registerCleanup(cleanupFn) { … }   // teardown for timers, subscriptions, listeners
+  listen(target, type, handler, options) { … } // addEventListener, removed on disconnect
   connectedCallback() { … }           // resolveProps(), then render()
   resolveProps() { … }                // reads `key`, resolves this.props (kept across a DOM move)
   getProps(key) { … }                 // looks up props stashed by a parent (see propsRegistry.js)
@@ -52,7 +53,12 @@ export class TinyBase extends HTMLElement {
 It provides three things every component would otherwise reimplement:
 
 1. **A `props` pattern for passing non-primitive data through HTML.** A parent building a template string can't embed an object, array, or function as an attribute value — only a string. `setProps(obj)` stashes the object in a module-level registry (`propsRegistry.js`) and returns a `key="…"` attribute string to embed in the template; the child looks itself up via `getProps(key)` once connected. See any component's `render()` method for the pattern in practice, e.g. [DetailsPanel](detailsPanel/README.md) passing callbacks to [ActivityPicker](activityPicker/README.md).
-2. **Cleanup registration.** `registerCleanup(fn)` collects teardown functions (store unsubscribes, `clearInterval`, manually-added `document` listeners) that `disconnectedCallback` runs automatically, instead of every component hand-rolling its own `disconnectedCallback` override.
+2. **Cleanup registration.** Anything that outlives a single render is set up in `connectedCallback` and torn down through `registerCleanup(fn)`, which `disconnectedCallback` runs automatically:
+   - a listener on `this`, `document` or `window` → `listen(target, type, handler, options)`, which adds it and registers its removal in one step
+   - a timer, store subscription, or helper object that owns timers (e.g. `EntryResizeController.destroy()`) → `registerCleanup(fn)`
+
+   Listeners on elements a component's own `render()` creates may be bound directly in `render()`: they're discarded with that markup. Binding a `document` listener in `render()` is the trap — `render()` can run many times per connect (e.g. `DetailsPanel.reset()`), adding one more listener each time.
+
 3. **Store access.** `getStore()` returns the single app-wide store singleton — see the [store README](../store/README.md).
 
 `connectedCallback()`'s default implementation calls `resolveProps()` (read the `key` attribute, look `this.props` up in the registry) and then `render()`. A component with its own `connectedCallback` override should still call `super.connectedCallback()`, or at least `resolveProps()` (as `DialogWidget` does) — see almost any component in this folder for the pattern.

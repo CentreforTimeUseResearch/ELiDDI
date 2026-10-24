@@ -155,3 +155,34 @@ describe('TinyBase props ownership', () => {
     expect(countProps()).toBe(before);
   });
 });
+
+describe('TinyBase.listen', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  it('adds the listener, and removes it on disconnect', () => {
+    const el = document.createElement('register-cleanup-harness');
+    document.body.appendChild(el);
+    const handler = vi.fn();
+
+    el.listen(document, 'custom-ping', handler);
+    document.dispatchEvent(new Event('custom-ping'));
+    el.remove();
+    document.dispatchEvent(new Event('custom-ping'));
+
+    expect(handler).toHaveBeenCalledOnce();
+  });
+
+  it('passes options through to addEventListener', () => {
+    const el = document.createElement('register-cleanup-harness');
+    document.body.appendChild(el);
+    const handler = vi.fn();
+
+    el.listen(el, 'custom-ping', handler, { once: true });
+    el.dispatchEvent(new Event('custom-ping'));
+    el.dispatchEvent(new Event('custom-ping'));
+
+    expect(handler).toHaveBeenCalledOnce();
+  });
+});

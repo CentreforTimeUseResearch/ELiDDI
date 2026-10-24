@@ -35,6 +35,56 @@ describe('DetailsPanel', () => {
     return el;
   }
 
+  // the listeners currently attached to document for `type` - counted
+  // through add/removeEventListener, since the DOM can't list them
+  function trackDocumentListeners(type) {
+    const live = new Set();
+    const add = EventTarget.prototype.addEventListener;
+    const remove = EventTarget.prototype.removeEventListener;
+    vi.spyOn(document, 'addEventListener').mockImplementation(function (t, listener, options) {
+      if (t === type) live.add(listener);
+      return add.call(this, t, listener, options);
+    });
+    vi.spyOn(document, 'removeEventListener').mockImplementation(function (t, listener, options) {
+      if (t === type) live.delete(listener);
+      return remove.call(this, t, listener, options);
+    });
+    return live;
+  }
+
+  // regression coverage (#141): every open/close rebuilt the ActivityPicker,
+  // and each discarded picker left its document click listener behind
+  it('does not grow the document click listeners as entries are opened and closed', () => {
+    const live = trackDocumentListeners('click');
+    let actions;
+    const harness = document.createElement('test-harness-detailspanel');
+    const key = harness.setProps(
+      {
+        findNextEntryAfter: () => undefined,
+        saveEntry: vi.fn(),
+        deleteEntry: vi.fn(),
+        registerPanelActions: (registered) => {
+          actions = registered;
+        },
+      },
+      true
+    );
+    const el = document.createElement('el-details-panel');
+    el.setAttribute('key', key);
+    el.setAttribute('dimensionindex', '0');
+    document.body.appendChild(el);
+    const mounted = live.size;
+
+    for (let i = 0; i < 10; i++) {
+      actions.openNewEntry(i * 10);
+      actions.close();
+    }
+
+    expect(mounted).toBe(1);
+    expect(live.size).toBe(mounted);
+    vi.restoreAllMocks();
+  });
+
   it('renders its activity picker and time picker panel', () => {
     const el = createPanel();
     expect(el.querySelector('el-activity-picker')).not.toBeNull();

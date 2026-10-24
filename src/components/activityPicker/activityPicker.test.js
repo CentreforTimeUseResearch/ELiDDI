@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ActivityPicker } from './activityPicker';
 import { KEY_CODE } from './keyboardGridNavigation';
 
@@ -29,6 +29,58 @@ describe('ActivityPicker', () => {
     const clickListenerCalls = addEventListenerSpy.mock.calls.filter(([type]) => type === 'click');
     expect(clickListenerCalls).toHaveLength(1);
     addEventListenerSpy.mockRestore();
+  });
+
+  describe('click outside', () => {
+    // jsdom has no Popover API, so the popover is reported open by stubbing
+    // only that check - the click itself is a real event dispatched on the
+    // document, reaching the picker's real listener
+    function openPicker() {
+      const el = createPicker();
+      vi.spyOn(el.popoverElement, 'matches').mockImplementation(
+        (selector) => selector === ':popover-open'
+      );
+      el.hidePopover = vi.fn();
+      return el;
+    }
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    // regression coverage (#141): the handler read the legacy global
+    // window.event instead of taking the event, which Firefox doesn't set
+    // for a listener invoked this way - so click-outside never dismissed
+    it('hides the popover on a click outside it, using the event it is given', () => {
+      const el = openPicker();
+      const outside = document.createElement('button');
+      document.body.appendChild(outside);
+      vi.spyOn(window, 'event', 'get').mockReturnValue(undefined);
+
+      outside.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+      expect(el.hidePopover).toHaveBeenCalledOnce();
+    });
+
+    it('keeps the popover open on a click in the input or inside the popover', () => {
+      const el = openPicker();
+
+      el.input.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      el.popoverElement.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+      expect(el.hidePopover).not.toHaveBeenCalled();
+    });
+
+    // regression coverage (#141): the document listener was never removed,
+    // so a discarded picker kept reacting to every click on the page
+    it('stops listening once the picker is removed', () => {
+      const el = openPicker();
+      el.remove();
+
+      document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+      expect(el.hidePopover).not.toHaveBeenCalled();
+    });
   });
 
   // regression test: the arrow-key branch used to set aria-activedescendant

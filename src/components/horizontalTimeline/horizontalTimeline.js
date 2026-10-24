@@ -110,6 +110,7 @@ export class HorizontalTimeline extends TinyBase {
     this.updateDimensions();
     this.renderEntries();
 
+    this.listen(document, 'keydown', (e) => this.onGlobalKeyDown(e));
     this.resizeController = new EntryResizeController({
       svg: this.timeLineElement,
       entriesLayer: this.entriesLayer,
@@ -134,6 +135,7 @@ export class HorizontalTimeline extends TinyBase {
         return this.entries.find((entry) => entry.id === entryId);
       },
     });
+    this.registerCleanup(() => this.resizeController.destroy());
 
     this.assignEventHandlers();
   }
@@ -297,9 +299,6 @@ export class HorizontalTimeline extends TinyBase {
         },
         { passive: false }
       );
-      const onKeyDown = (e) => this.onGlobalKeyDown(e);
-      document.addEventListener('keydown', onKeyDown);
-      this.registerCleanup(() => document.removeEventListener('keydown', onKeyDown));
       this.ready = true;
     }
   }

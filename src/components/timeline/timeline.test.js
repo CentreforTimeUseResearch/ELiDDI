@@ -391,6 +391,36 @@ describe('Timeline long-press resize handles', () => {
     expect([...handles].map((h) => h.dataset.handleEdge).sort()).toEqual(['end', 'start']);
   });
 
+  // regression coverage (#141): EntryResizeController's timers had no
+  // teardown, so removing a Timeline mid-press still fired the long-press
+  // against its detached SVG
+  it('cancels a pending long-press, and leaves no timers running, when the Timeline is removed', () => {
+    const entry = { id: 1, startOffsetMins: 60, endOffsetMins: 90, activity: 'Reading' };
+    const el = createTimeline(2, [entry]);
+    const controller = el.resizeController;
+    const showHandles = vi.spyOn(controller, 'showHandles');
+
+    el.onEntryPointerDown(pointerDownOn(el.querySelector('#events rect[data-id="1"]')));
+    el.remove();
+
+    expect(vi.getTimerCount()).toBe(0);
+    vi.advanceTimersByTime(500);
+    expect(showHandles).not.toHaveBeenCalled();
+  });
+
+  it('removes its document keydown listener on disconnect', () => {
+    const entry = { id: 1, startOffsetMins: 60, endOffsetMins: 90, activity: 'Reading' };
+    const el = createTimeline(2, [entry]);
+    el.onEntryPointerDown(pointerDownOn(el.querySelector('#events rect[data-id="1"]')));
+    vi.advanceTimersByTime(500);
+    const hideHandles = vi.spyOn(el.resizeController, 'hideHandles');
+
+    el.remove();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+
+    expect(hideHandles).not.toHaveBeenCalled();
+  });
+
   it('sizes each handle a generous hit target independent of its visible grip', () => {
     const entry = { id: 1, startOffsetMins: 0, endOffsetMins: 30, activity: 'Reading' };
     const el = createTimeline(2, [entry]);
@@ -891,6 +921,28 @@ describe('Timeline drag hard limits', () => {
     expect(el.activeDrag.currentStart).toBe(20); // clamped to end(30) - 10min minimum
     const rect = el.querySelector('#events rect[data-id="1"]');
     expect(rect.classList.contains('resize-limit-flash')).toBe(true);
+  });
+
+  it('abandons a drag, and leaves no timers running, when the Timeline is removed mid-drag', () => {
+    const entry = { id: 1, startOffsetMins: 0, endOffsetMins: 30, activity: 'Reading' };
+    const el = createTimeline(2, [entry]);
+    const hitArea = revealHandle(el, 1, 'start');
+    el.onEntryPointerDown({
+      target: hitArea,
+      pointerId: 2,
+      pointerType: 'touch',
+      clientX: 0,
+      clientY: 0,
+    });
+    el.onEntryPointerMove({ target: hitArea, pointerId: 2, clientX: 0, clientY: 65 }); // hits the limit: flash timer pending
+    const controller = el.resizeController;
+    const commit = vi.spyOn(controller, 'onCommitResize');
+
+    el.remove();
+
+    expect(vi.getTimerCount()).toBe(0);
+    expect(controller.activeDrag).toBeUndefined();
+    expect(commit).not.toHaveBeenCalled();
   });
 
   it('flashes the limit cue once per approach, not on every tick still pressed against the same wall', () => {

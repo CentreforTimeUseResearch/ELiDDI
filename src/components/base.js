@@ -18,11 +18,22 @@ export class TinyBase extends HTMLElement {
     };
   }
 
-  // components register teardown for anything that outlives a single
-  // render (timers, store subscriptions, manually-added listeners) here,
-  // instead of hand-rolling their own disconnectedCallback override
+  // Lifecycle rule - anything that outlives a single render is set up in
+  // connectedCallback and torn down through registerCleanup, which
+  // disconnectedCallback runs:
+  //   - listeners on `this`, `document` or `window`: use listen()
+  //   - timers, store subscriptions, helper objects that own timers
+  //     (e.g. EntryResizeController.destroy): registerCleanup()
+  // Listeners on elements this component's own render() creates may be
+  // bound directly in render(): they are discarded with that markup.
   registerCleanup(cleanupFn) {
     this.cleanupFns.push(cleanupFn);
+  }
+
+  // addEventListener, removed again when this component disconnects
+  listen(target, type, handler, options) {
+    target.addEventListener(type, handler, options);
+    this.registerCleanup(() => target.removeEventListener(type, handler, options));
   }
 
   connectedCallback() {

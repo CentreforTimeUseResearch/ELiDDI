@@ -45,6 +45,7 @@ export class EntryResizeController {
   longPressCandidate; // { entryId, pointerId, startX, startY } while a press is pending
   suppressNextClick = false; // set when a long-press fires, so the click it also triggers doesn't open the panel
   limitFlashTimer;
+  suppressClickResetTimer;
 
   constructor({
     svg,
@@ -143,7 +144,8 @@ export class EntryResizeController {
       // right after this - fallback in case that click never arrives
       // (e.g. the element moves before it does), so a stuck flag can't
       // swallow an unrelated later click
-      setTimeout(() => {
+      clearTimeout(this.suppressClickResetTimer);
+      this.suppressClickResetTimer = setTimeout(() => {
         this.suppressNextClick = false;
       }, 0);
     }
@@ -201,6 +203,17 @@ export class EntryResizeController {
     }
     this.suppressNextClick = false;
     return true;
+  }
+
+  // called from the host's cleanup when it disconnects: clears every pending
+  // timer, so none fires against the detached SVG, and abandons any
+  // in-progress drag without committing it
+  destroy() {
+    this.cancelPendingLongPress();
+    clearTimeout(this.limitFlashTimer);
+    clearTimeout(this.suppressClickResetTimer);
+    this.activeDrag = undefined;
+    this.suppressNextClick = false;
   }
 
   cancelPendingLongPress() {

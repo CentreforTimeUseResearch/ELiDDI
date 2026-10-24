@@ -13,17 +13,13 @@ export class Accordion extends TinyBase {
 
   connectedCallback() {
     super.connectedCallback();
-    this.assignEventHandlers();
+    this.listen(this, 'click', (e) => this.handleClick(e));
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
     if (this[name] !== newValue) {
       this[name] = newValue;
     }
-  }
-
-  assignEventHandlers() {
-    this.addEventListener('click', (e) => this.handleClick(e));
   }
 
   handleClick(e) {

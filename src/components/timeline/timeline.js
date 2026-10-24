@@ -86,6 +86,7 @@ export class Timeline extends TinyBase {
     this.registerCleanup(this.store.subscribe(() => this.updateState()));
     this.getChildElementReferences();
 
+    this.listen(document, 'keydown', (e) => this.onGlobalKeyDown(e));
     this.resizeController = new EntryResizeController({
       svg: this.timeLineElement,
       entriesLayer: this.entriesLayer,
@@ -110,6 +111,7 @@ export class Timeline extends TinyBase {
         return this.entries.find((entry) => entry.id === entryId);
       },
     });
+    this.registerCleanup(() => this.resizeController.destroy());
 
     this.updateFutureOverlay();
     const futureOverlayIntervalId = setInterval(this.updateFutureOverlay.bind(this), 30000);
@@ -319,9 +321,6 @@ export class Timeline extends TinyBase {
         },
         { passive: false }
       );
-      const onKeyDown = (e) => this.onGlobalKeyDown(e);
-      document.addEventListener('keydown', onKeyDown);
-      this.registerCleanup(() => document.removeEventListener('keydown', onKeyDown));
       this.ready = true;
     }
   }

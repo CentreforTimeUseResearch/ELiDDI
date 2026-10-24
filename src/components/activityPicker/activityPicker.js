@@ -48,6 +48,9 @@ export class ActivityPicker extends TinyBase {
 
   connectedCallback() {
     super.connectedCallback();
+    // once per connect, not in render() - render() runs again on every
+    // panel reset, and a document listener outlives the markup
+    this.listen(document, 'click', (e) => this.handleClickOutside(e));
   }
 
   setInputValue(activity) {
@@ -59,17 +62,15 @@ export class ActivityPicker extends TinyBase {
     this.grid = this.querySelector('#ex1-grid');
     this.popoverElement = this.querySelector('#activity-picker-popover');
 
-    document.addEventListener('click', () => this.handleClickOutside());
-
     this.input.addEventListener('keyup', (evt) => this.gridNavigation.handleKeyUp(evt));
     this.input.addEventListener('keydown', (evt) => this.gridNavigation.handleKeyDown(evt));
     this.input.addEventListener('focus', () => this.handleInputFocus());
   }
 
-  handleClickOutside() {
+  handleClickOutside(e) {
     if (!this.popoverElement.matches(':popover-open')) return;
-    const clickedInput = this.input.parentNode.contains(event.target);
-    const clickedPopover = this.popoverElement.contains(event.target);
+    const clickedInput = this.input.parentNode.contains(e.target);
+    const clickedPopover = this.popoverElement.contains(e.target);
     if (!clickedInput && !clickedPopover) {
       this.hidePopover();
     }

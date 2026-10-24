@@ -5,7 +5,6 @@ import { SWITCH_DIMENSION } from '../../store/actionTypes';
 import './timelineStack.css';
 
 export class TimelineStack extends TinyBase {
-  ready = false;
   store = super.getStore();
   timelinesData = GLOBALS.DATA.timeline;
   numTimelines = GLOBALS.DATA.timeline.length;
@@ -44,22 +43,18 @@ export class TimelineStack extends TinyBase {
   }
 
   assignEventHandlers() {
-    if (!this.ready) {
-      this.addEventListener('scrollsnapchange', (event) => {
-        // the attribute, not snapTargetInline.index - that property only
-        // exists because Timeline's attributeChangedCallback mirrors the
-        // attribute onto the instance. parseInt so a missing attribute
-        // (null) is NaN, not Number(null) === 0
-        const index = Number.parseInt(event.snapTargetInline?.getAttribute?.('index'), 10);
-        if (!Number.isInteger(index)) {
-          console.error('problem getting dimension index from scroll');
-          return;
-        }
-        this.switchDimension(index);
-      });
-
-      this.ready = true;
-    }
+    this.listen(this, 'scrollsnapchange', (event) => {
+      // the attribute, not snapTargetInline.index - that property only
+      // exists because Timeline's attributeChangedCallback mirrors the
+      // attribute onto the instance. parseInt so a missing attribute
+      // (null) is NaN, not Number(null) === 0
+      const index = Number.parseInt(event.snapTargetInline?.getAttribute?.('index'), 10);
+      if (!Number.isInteger(index)) {
+        console.error('problem getting dimension index from scroll');
+        return;
+      }
+      this.switchDimension(index);
+    });
   }
 
   render() {

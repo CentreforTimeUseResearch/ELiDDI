@@ -121,15 +121,19 @@ export class Timeline extends TinyBase {
     this.assignEventHandlers();
   }
 
+  // attribute selectors ('[id="x"]'), not '#x' - TimelineStack mounts one
+  // Timeline per Dimension, each cloning the same template, so these ids
+  // are duplicated across the document and jsdom's scoped #id lookup misses
+  // every copy past the first. See HorizontalTimeline.getChildElementReferences
   getChildElementReferences() {
     this.timeLineElement = this.querySelector('svg');
-    this.entriesLayer = this.timeLineElement.querySelector('#events');
-    this.shadowEntriesLayer = this.timeLineElement.querySelector('#timeline-shadow');
-    this.futureOverlayElement = this.timeLineElement.querySelector('#future-overlay');
+    this.entriesLayer = this.timeLineElement.querySelector('[id="events"]');
+    this.shadowEntriesLayer = this.timeLineElement.querySelector('[id="timeline-shadow"]');
+    this.futureOverlayElement = this.timeLineElement.querySelector('[id="future-overlay"]');
     // real markup (index.html) always has this above #events; test fixtures
     // that build a minimal <svg> don't, so fall back to creating it -
     // appended last so it renders above entries either way
-    this.handlesLayer = this.timeLineElement.querySelector('#drag-handles');
+    this.handlesLayer = this.timeLineElement.querySelector('[id="drag-handles"]');
     if (!this.handlesLayer) {
       this.handlesLayer = document.createElementNS(SVGNS, 'g');
       this.handlesLayer.setAttribute('id', 'drag-handles');
@@ -380,18 +384,17 @@ export class Timeline extends TinyBase {
     }
     const element_id = e.target?.dataset?.id;
     if (element_id !== undefined) {
-      // set selected
-      const entry_id = Number(e.target?.dataset?.id);
-      if (typeof entry_id !== 'number') {
+      const entry_id = Number(element_id);
+      // a miss covers both a malformed id (NaN never matches) and a stale
+      // one - this.entries can change (another surface, a date switch)
+      // between rendering a block and it being clicked
+      const entry = this.entries.find((entry) => entry.id === entry_id);
+      if (!entry) {
         console.error('Problem with identifying entry from click', e.target);
         return;
       }
       this.selectedID = entry_id;
-      // fetch the
-      const entry = this.entries.find((entry) => entry.id === entry_id);
-      // set up the panel
       this.panelActions.openEntry(entry);
-      // we need to do soemthing different on save
     } else {
       // is click in the timeline target zone in the gridlines
       if (e.target.id !== 'gridline_zone') {
@@ -441,7 +444,7 @@ export class Timeline extends TinyBase {
   createEntry(entry) {
     const id = this.getNextEntryId();
     const dimensionIndex = this.dimensionIndex;
-    if (typeof dimensionIndex !== 'number') {
+    if (!Number.isInteger(dimensionIndex)) {
       console.error('Problem with identifying dimension index', dimensionIndex);
       return;
     }
@@ -460,7 +463,7 @@ export class Timeline extends TinyBase {
 
   updateEntry(entry) {
     const dimensionIndex = this.dimensionIndex;
-    if (typeof dimensionIndex !== 'number') {
+    if (!Number.isInteger(dimensionIndex)) {
       console.error('Problem with identifying dimension index', dimensionIndex);
       return;
     }

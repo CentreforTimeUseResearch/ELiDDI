@@ -120,6 +120,10 @@ describe('Timeline.renderEntriesInto', () => {
 // Timeline. It now only knows about the four functions DetailsPanel hands
 // back via the registerPanelActions callback prop.
 describe('Timeline panelActions contract', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   beforeEach(() => {
     if (!customElements.get('el-timeline')) {
       customElements.define('el-timeline', Timeline);
@@ -224,6 +228,46 @@ describe('Timeline panelActions contract', () => {
 
     expect(openEntry).toHaveBeenCalledWith(entry);
   });
+
+  // regression coverage (#144): Number() never returns a non-number, so the
+  // old `typeof entry_id !== 'number'` guard could never fire - a stale
+  // data-id (entries changed since the last render) or a malformed one fell
+  // straight through to openEntry(undefined), which throws inside
+  // DetailsPanel.openEntry, and still opened the panel
+  it.each([
+    ['no longer present in entries', '7'],
+    ['not numeric', 'abc'],
+  ])('does not open the panel when the clicked data-id is %s', (_, dataId) => {
+    const el = createTimeline(1); // Secondary activity
+    el.entries = [];
+    const openEntry = vi.fn();
+    el.panelActions.openEntry = openEntry;
+    const dispatch = vi.spyOn(appStore, 'dispatch');
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    el.onTimelineClick({ target: { dataset: { id: dataId } } });
+
+    expect(openEntry).not.toHaveBeenCalled();
+    expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: SHOW_PANEL }));
+    expect(el.selectedID).toBeUndefined();
+  });
+
+  // regression coverage (#144): a missing/invalid index attribute makes
+  // dimensionIndex NaN, which passed the old typeof guard and was
+  // dispatched into the store
+  it.each(['createEntry', 'updateEntry'])(
+    '%s dispatches nothing when the dimension index is not a valid integer',
+    (method) => {
+      const el = createTimeline(1);
+      el.dimensionIndex = NaN;
+      const dispatch = vi.spyOn(appStore, 'dispatch');
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      el[method]({ startOffsetMins: 0, endOffsetMins: 30, activity: 'Reading' });
+
+      expect(dispatch).not.toHaveBeenCalled();
+    }
+  );
 
   it('calls panelActions.close after saving successfully', () => {
     const el = createTimeline(5); // Enjoyment (single-choice)

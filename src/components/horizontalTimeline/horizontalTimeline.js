@@ -356,13 +356,14 @@ export class HorizontalTimeline extends TinyBase {
     }
     const element_id = e.target?.dataset?.id;
     if (element_id !== undefined) {
-      const entry_id = Number(e.target?.dataset?.id);
-      if (typeof entry_id !== 'number') {
+      const entry_id = Number(element_id);
+      // see Timeline.onTimelineClick - a miss covers malformed and stale ids
+      const entry = this.entries.find((entry) => entry.id === entry_id);
+      if (!entry) {
         console.error('Problem with identifying entry from click', e.target);
         return;
       }
       this.selectedID = entry_id;
-      const entry = this.entries.find((entry) => entry.id === entry_id);
       this.panelActions.openEntry(entry);
     } else {
       if (e.target.id !== 'gridline_zone') {
@@ -396,7 +397,7 @@ export class HorizontalTimeline extends TinyBase {
   createEntry(entry) {
     const id = this.getNextEntryId();
     const dimensionIndex = this.dimensionIndex;
-    if (typeof dimensionIndex !== 'number') {
+    if (!Number.isInteger(dimensionIndex)) {
       console.error('Problem with identifying dimension index', dimensionIndex);
       return;
     }
@@ -414,7 +415,7 @@ export class HorizontalTimeline extends TinyBase {
 
   updateEntry(entry) {
     const dimensionIndex = this.dimensionIndex;
-    if (typeof dimensionIndex !== 'number') {
+    if (!Number.isInteger(dimensionIndex)) {
       console.error('Problem with identifying dimension index', dimensionIndex);
       return;
     }

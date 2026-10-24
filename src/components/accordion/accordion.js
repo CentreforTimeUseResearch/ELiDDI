@@ -1,5 +1,6 @@
 import { TinyBase } from '../base';
 import { getActivityDisplayName } from '../../utils/activities';
+import { escapeHtml } from '../../utils/html';
 import './accordion.css';
 
 const ID = 'dimensionindex';
@@ -77,7 +78,7 @@ export class Accordion extends TinyBase {
   <h3>
     <button type="button" aria-expanded="true" class="accordion-trigger" aria-controls="sect${section}_${this[ID]}" id="accordion${section}id_${this[ID]}">
       <span class="accordion-title">
-        ${name}
+        ${escapeHtml(name)}
         <span class="accordion-icon"></span>
       </span>
     </button>
@@ -90,17 +91,20 @@ export class Accordion extends TinyBase {
       .map((activity) => {
         const displayName = getActivityDisplayName(activity);
         const isSelected = multi && selected.includes(displayName);
+        // data-activity is read back as the value saved on the Entry, so it
+        // must round-trip exactly - see escapeHtml
+        const safeName = escapeHtml(displayName);
         return `
       <span>
         <button
           type="button"
           class="btn activity-button${isSelected ? ' selected' : ''}"
-          style="border-left: 10px solid ${activity.color};"
-          aria-label="${displayName}"
-          data-activity="${displayName}"
+          style="border-left: 10px solid ${escapeHtml(activity.color)};"
+          aria-label="${safeName}"
+          data-activity="${safeName}"
           ${multi ? `aria-pressed="${isSelected}"` : ''}
         >
-          ${displayName}
+          ${safeName}
         </button>
       </span>`;
       })
@@ -120,7 +124,7 @@ export class Accordion extends TinyBase {
       .map((entry, index) => {
         return this.createAccordionEntry(entry, index);
       })
-      .join('')};
+      .join('')}
         <!-- -->
       </div>
     `;

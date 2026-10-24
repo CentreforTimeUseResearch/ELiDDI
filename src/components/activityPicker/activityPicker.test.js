@@ -1,6 +1,17 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ActivityPicker } from './activityPicker';
 import { KEY_CODE } from './keyboardGridNavigation';
+import { TinyBase } from '../base';
+import {
+  addSpecialDimension,
+  SPECIAL_DIMENSION,
+  SPECIAL_NAMES,
+} from '../../testing/specialCharacters';
+
+class PickerHarness extends TinyBase {}
+if (!customElements.get('test-harness-activitypicker')) {
+  customElements.define('test-harness-activitypicker', PickerHarness);
+}
 
 describe('ActivityPicker', () => {
   beforeEach(() => {
@@ -29,6 +40,61 @@ describe('ActivityPicker', () => {
     const clickListenerCalls = addEventListenerSpy.mock.calls.filter(([type]) => type === 'click');
     expect(clickListenerCalls).toHaveLength(1);
     addEventListenerSpy.mockRestore();
+  });
+
+  // regression coverage (#146): a config with HTML special characters in
+  // its headings and activity names
+  describe('with config text containing HTML special characters', () => {
+    let special;
+    let onSetActivityOnSelectedEntry;
+    beforeEach(() => {
+      special = addSpecialDimension();
+      onSetActivityOnSelectedEntry = vi.fn();
+    });
+    afterEach(() => special.remove());
+
+    function createSpecialPicker() {
+      const harness = document.createElement('test-harness-activitypicker');
+      const key = harness.setProps({ onSetActivityOnSelectedEntry }, true);
+      // from markup, as DetailsPanel creates it: the picker reads its
+      // Dimension from dimensionindex in its constructor, before any
+      // setAttribute call could run
+      const template = document.createElement('template');
+      template.innerHTML = `<el-activity-picker dimensionindex="${special.index}" key="${key}"></el-activity-picker>`;
+      const el = template.content.firstElementChild;
+      el.setAttribute('heading', SPECIAL_DIMENSION.description);
+      el.setAttribute('instruction', SPECIAL_DIMENSION.instruction);
+      document.body.appendChild(el);
+      el.hidePopover = vi.fn();
+      return el;
+    }
+
+    it('shows the heading and instruction as text', () => {
+      const el = createSpecialPicker();
+
+      expect(el.querySelector('label').textContent.trim()).toBe(SPECIAL_DIMENSION.description);
+      expect(el.querySelector('.instruction').textContent.trim()).toBe(
+        SPECIAL_DIMENSION.instruction
+      );
+    });
+
+    it('stores the exact name of the activity selected', () => {
+      const el = createSpecialPicker();
+
+      el.querySelector('[data-activity]').click();
+
+      expect(onSetActivityOnSelectedEntry).toHaveBeenCalledWith(SPECIAL_NAMES[0]);
+    });
+
+    it('finds an activity by searching for its special characters', () => {
+      const el = createSpecialPicker();
+
+      el.input.value = 'R&R <';
+      el.updateResults();
+
+      const results = [...el.popoverElement.querySelectorAll('[data-activity]')];
+      expect(results.map((button) => button.dataset.activity)).toEqual(['R&R <rest>']);
+    });
   });
 
   // regression coverage (#145)

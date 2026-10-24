@@ -7,6 +7,7 @@ import {
   HIDE_PANEL,
 } from '../../store/actionTypes';
 import './onboarding.css';
+import { escapeHtml } from '../../utils/html';
 
 export class Onboarding extends TinyBase {
   store = super.getStore();
@@ -87,9 +88,12 @@ export class Onboarding extends TinyBase {
     }
     this.props.moveModalTop(modalTop || 0);
 
+    // title is plain text; text is deliberately HTML (e.g. <strong>), written
+    // by whoever authors the study config - trusted, like DialogWidget's
+    // content (#117)
     this.innerHTML = `
             <div class="content spotlight">
-              <h4>${title}</h4>            
+              <h4>${escapeHtml(title)}</h4>            
               <!--<img class="onboarding-card-image" src="/src/assets/images/dummy_timeline.png" />-->
               <div>${text}</div> 
             </div>

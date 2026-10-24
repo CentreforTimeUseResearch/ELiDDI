@@ -3,6 +3,7 @@ import '../timePickerPanel/timePickerPanel';
 import { TinyBase } from '../base';
 import { HIDE_PANEL, SHOW_PANEL } from '../../store/actionTypes';
 import './detailsPanel.css';
+import { escapeHtml } from '../../utils/html';
 
 const DIMENSION_INDEX = 'dimensionindex';
 const HEADING = 'heading';
@@ -342,8 +343,8 @@ export class DetailsPanel extends TinyBase {
             <div class="details-panel-content">
               <el-activity-picker
                 dimensionindex="${this[DIMENSION_INDEX]}"
-                instruction="${this[INSTRUCTION] ?? ''}"
-                heading="${this[HEADING] ?? ''}"
+                instruction="${escapeHtml(this[INSTRUCTION])}"
+                heading="${escapeHtml(this[HEADING])}"
                 ${this.setProps({ onFocusCallback: () => this.onFocusCallback(), onSetActivityOnSelectedEntry: (activity) => this.onSetActivityOnSelectedEntry(activity), onSetActivitiesOnSelectedEntry: (activities) => this.onSetActivitiesOnSelectedEntry(activities) })}
               ></el-activity-picker>
               <el-time-picker-panel ${this.setProps({ onTimeSet: (setTimeProps) => this.onSetOffsetMins(setTimeProps), getContinueToTarget: (startTimeInMinutes) => this.getContinueToTarget(startTimeInMinutes) })} day-boundary="${this.dayBoundaryInMinutes}"></el-time-picker-panel>

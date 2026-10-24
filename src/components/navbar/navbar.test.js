@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { Navbar } from './navbar';
 import { appStore } from '../../store/appStore';
 import { SWITCH_DATE, DISMISS_ONBOARDING } from '../../store/actionTypes';
+import { addSpecialDimension, SPECIAL_DIMENSION } from '../../testing/specialCharacters';
 
 const DIMENSION_NAMES = GLOBALS.DATA.timeline.map((dimension) => dimension.name);
 
@@ -11,6 +12,20 @@ describe('Navbar', () => {
       customElements.define('el-nav-bar', Navbar);
     }
     document.body.innerHTML = '';
+  });
+
+  // regression coverage (#146)
+  it('shows a Dimension name containing HTML special characters as text', () => {
+    const special = addSpecialDimension();
+    try {
+      const el = document.createElement('el-nav-bar');
+      document.body.appendChild(el);
+
+      const item = el.querySelector(`[data-dimension-index="${special.index}"]`);
+      expect(item.textContent).toBe(SPECIAL_DIMENSION.name);
+    } finally {
+      special.remove();
+    }
   });
 
   it('renders sidebar html', () => {

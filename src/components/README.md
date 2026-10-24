@@ -38,32 +38,44 @@ export class TinyBase extends HTMLElement {
   cleanupFns = [];
 
   registerCleanup(cleanupFn) { … }   // teardown for timers, subscriptions, listeners
-  connectedCallback() { … }           // reads `key`, resolves props, calls render()
+  connectedCallback() { … }           // resolveProps(), then render()
+  resolveProps() { … }                // reads `key`, resolves this.props (kept across a DOM move)
   getProps(key) { … }                 // looks up props stashed by a parent (see propsRegistry.js)
   getStore() { … }                    // returns the single app-wide store
-  setProps(newProps, returnKey) { … } // stashes props for a not-yet-rendered child
-  disconnectedCallback() { … }        // cleans up props + registered cleanup fns
-  render() { … }                      // overridden by every subclass
+  setProps(newProps, returnKey) { … } // stashes props for a not-yet-rendered child; this component owns the key
+  releaseOwnedProps() { … }           // frees every key this component allocated
+  disconnectedCallback() { … }        // releases owned props + runs registered cleanup fns
+  render() { … }                      // overridden by every subclass; releases owned props first
 }
 ```
 
 It provides three things every component would otherwise reimplement:
 
-1. **A `props` pattern for passing non-primitive data through HTML.** A parent building a template string can't embed an object, array, or function as an attribute value — only a string. `setProps(obj)` stashes the object in a module-level registry (`propsRegistry.js`) and returns a `key = "…"` attribute string to embed in the template; the child looks itself up via `getProps(key)` once connected. See any component's `render()` method for the pattern in practice, e.g. [DetailsPanel](detailsPanel/README.md) passing callbacks to [ActivityPicker](activityPicker/README.md).
+1. **A `props` pattern for passing non-primitive data through HTML.** A parent building a template string can't embed an object, array, or function as an attribute value — only a string. `setProps(obj)` stashes the object in a module-level registry (`propsRegistry.js`) and returns a `key="…"` attribute string to embed in the template; the child looks itself up via `getProps(key)` once connected. See any component's `render()` method for the pattern in practice, e.g. [DetailsPanel](detailsPanel/README.md) passing callbacks to [ActivityPicker](activityPicker/README.md).
 2. **Cleanup registration.** `registerCleanup(fn)` collects teardown functions (store unsubscribes, `clearInterval`, manually-added `document` listeners) that `disconnectedCallback` runs automatically, instead of every component hand-rolling its own `disconnectedCallback` override.
 3. **Store access.** `getStore()` returns the single app-wide store singleton — see the [store README](../store/README.md).
 
-`connectedCallback()`'s default implementation reads the element's `key` attribute, resolves `this.props` from the registry, and calls `render()`. A component with its own `connectedCallback` override should still call `super.connectedCallback()` (or replicate this sequence) to get props resolution — see almost any component in this folder for the pattern.
+`connectedCallback()`'s default implementation calls `resolveProps()` (read the `key` attribute, look `this.props` up in the registry) and then `render()`. A component with its own `connectedCallback` override should still call `super.connectedCallback()`, or at least `resolveProps()` (as `DialogWidget` does) — see almost any component in this folder for the pattern.
 
 ## `propsRegistry.js`
 
-The module-level store `setProps`/`getProps`/`deleteProps` operate on. Each call to `setProps(owner, newProps, returnKey)`:
+The module-level `Map` that `setProps`/`getProps`/`releaseAllOwnedBy` operate on. Each call to `setProps(owner, newProps, returnKey)`:
 
-- Validates `newProps` is a plain object (not an array).
-- Auto-binds any function values in it to `owner`, so a callback still has the right `this` no matter which component instance ends up invoking it (relevant since callbacks often get handed down through two or three more levels of component before they're called).
-- Generates a UUID-ish key (`Date.now()` plus random base-36 characters), stores `newProps` under it, and returns either the bare key (`returnKey: true`, for a parent that wants to track the key itself) or a ready-to-embed `` `key = "…"` `` HTML attribute string (the default).
+- Throws a `TypeError` unless `newProps` is a plain object (not an array or `null`).
+- Stores a **copy** of `newProps` with every function value bound to `owner`, so a callback still has the right `this` no matter which component instance ends up invoking it (callbacks often get handed down two or three levels before they're called). The caller's object is never modified.
+- Generates a key with `crypto.randomUUID()` and returns either the bare key (`returnKey: true`) or a ready-to-embed `key="…"` HTML attribute string (the default).
 
-`TinyBase.disconnectedCallback()` calls `deleteProps(this.key)` automatically, so registry entries don't accumulate for elements that have been removed.
+**Ownership.** The component that allocates a key owns it, and only the owner frees it:
+
+| When                                          | What happens                                                                                |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| the owner calls `render()` again              | everything it allocated is released first — the markup holding those keys is being replaced |
+| the owner replaces markup outside `render()`  | it calls `this.releaseOwnedProps()` first (e.g. `ActivityPicker.renderAccordion()`)         |
+| the owner disconnects                         | everything it allocated is released                                                         |
+| a child disconnects                           | nothing — a child never deletes the key it was given                                        |
+| a child is moved (disconnect, then reconnect) | it keeps the props it resolved on first connect                                             |
+
+So markup built but never mounted is still freed, and a connected child keeps working after its key is released, because it holds its own reference to its props. `countProps()` reports the registry's size, for leak tests.
 
 ---
 

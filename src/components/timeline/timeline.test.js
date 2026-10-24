@@ -7,6 +7,7 @@ import { Timeline } from './timeline';
 import '../detailsPanel/detailsPanel';
 import { appStore } from '../../store/appStore';
 import {
+  ADD_TIMELINE,
   ADD_ENTRY,
   UPDATE_ENTRY,
   SWITCH_DATE,
@@ -348,12 +349,20 @@ describe('Timeline long-press resize handles', () => {
     appStore.dispatch({ type: HIDE_PANEL });
   });
 
+  // entries go into the store - the source a real Timeline reads them
+  // from - rather than straight onto el.entries, which made the component's
+  // copy disagree with the store the moment anything was dispatched.
+  // ADD_TIMELINE first resets this date/Dimension, so tests sharing a date
+  // don't accumulate each other's entries
   function createTimeline(dimensionIndex, entries) {
+    const { currentDate: date } = appStore.getState();
+    appStore.dispatch({ type: ADD_TIMELINE, payload: { dimensionIndex, date } });
+    entries.forEach((entry) =>
+      appStore.dispatch({ type: ADD_ENTRY, payload: { dimensionIndex, date, ...entry } })
+    );
     const el = document.createElement('el-timeline');
     el.setAttribute('index', String(dimensionIndex));
     document.body.appendChild(el);
-    el.entries = entries;
-    el.renderEntries();
     return el;
   }
 
@@ -552,12 +561,20 @@ describe('Timeline drag-to-resize handles', () => {
     appStore.dispatch({ type: HIDE_PANEL });
   });
 
+  // entries go into the store - the source a real Timeline reads them
+  // from - rather than straight onto el.entries, which made the component's
+  // copy disagree with the store the moment anything was dispatched.
+  // ADD_TIMELINE first resets this date/Dimension, so tests sharing a date
+  // don't accumulate each other's entries
   function createTimeline(dimensionIndex, entries) {
+    const { currentDate: date } = appStore.getState();
+    appStore.dispatch({ type: ADD_TIMELINE, payload: { dimensionIndex, date } });
+    entries.forEach((entry) =>
+      appStore.dispatch({ type: ADD_ENTRY, payload: { dimensionIndex, date, ...entry } })
+    );
     const el = document.createElement('el-timeline');
     el.setAttribute('index', String(dimensionIndex));
     document.body.appendChild(el);
-    el.entries = entries;
-    el.renderEntries();
     return el;
   }
 
@@ -825,12 +842,20 @@ describe('Timeline drag hard limits', () => {
     appStore.dispatch({ type: HIDE_PANEL });
   });
 
+  // entries go into the store - the source a real Timeline reads them
+  // from - rather than straight onto el.entries, which made the component's
+  // copy disagree with the store the moment anything was dispatched.
+  // ADD_TIMELINE first resets this date/Dimension, so tests sharing a date
+  // don't accumulate each other's entries
   function createTimeline(dimensionIndex, entries) {
+    const { currentDate: date } = appStore.getState();
+    appStore.dispatch({ type: ADD_TIMELINE, payload: { dimensionIndex, date } });
+    entries.forEach((entry) =>
+      appStore.dispatch({ type: ADD_ENTRY, payload: { dimensionIndex, date, ...entry } })
+    );
     const el = document.createElement('el-timeline');
     el.setAttribute('index', String(dimensionIndex));
     document.body.appendChild(el);
-    el.entries = entries;
-    el.renderEntries();
     return el;
   }
 
@@ -1284,6 +1309,38 @@ describe('Timeline multi-day scoping', () => {
     appStore.dispatch({ type: SWITCH_DATE, payload: dateD });
 
     expect(el.querySelector('#events rect[data-id="1"]')).toBeNull();
+  });
+
+  // regression coverage (#143): an entry selected on one date stayed
+  // selected - and the details panel kept showing it, Save/Delete live -
+  // after switching date. Entry ids are per-date (every date has an entry
+  // 0), so Save then overwrote the *other* date's entry with the same id,
+  // or, if it had none, hit UPDATE_ENTRY's index -1 path and duplicated that
+  // date's whole timeline; Delete removed an entry the Respondent never saw
+  it('drops the selected entry and resets the details panel when the date changes', () => {
+    const dateA = '2026-09-11';
+    const dateB = '2026-09-12';
+    const entryOn = (date, activity) => ({
+      type: ADD_ENTRY,
+      payload: { dimensionIndex: 3, date, startOffsetMins: 0, endOffsetMins: 30, activity, id: 0 },
+    });
+    appStore.dispatch(entryOn(dateA, 'Family'));
+    appStore.dispatch(entryOn(dateB, 'Friends'));
+    appStore.dispatch({ type: SWITCH_DATE, payload: dateA });
+    const el = createTimeline(3); // Who
+    const panel = el.querySelector('el-details-panel');
+
+    el.onTimelineClick({ target: { dataset: { id: '0' } } });
+    expect(el.selectedID).toBe(0);
+    expect(panel.state.activity).toBe('Family');
+
+    appStore.dispatch({ type: SWITCH_DATE, payload: dateB });
+
+    expect(el.selectedID).toBeUndefined();
+    expect(panel.state).toEqual({});
+    expect(appStore.getState().diaries[dateB].timelines[3]).toEqual([
+      { id: 0, startOffsetMins: 0, endOffsetMins: 30, activity: 'Friends' },
+    ]);
   });
 });
 

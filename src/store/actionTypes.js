@@ -24,6 +24,5 @@ export const ADD_ENTRY = 'ADD_ENTRY';
 export const UPDATE_ENTRY = 'UPDATE_ENTRY';
 export const DELETE_ENTRY = 'DELETE_ENTRY';
 
-export const SET_STATUS = 'SET_STATUS';
 export const RESET_STATUS = 'RESET_STATUS';
 export const SET_COMPLETE = 'SET_COMPLETE';

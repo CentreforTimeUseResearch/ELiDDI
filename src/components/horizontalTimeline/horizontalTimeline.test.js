@@ -160,6 +160,32 @@ describe('HorizontalTimeline mounted', () => {
     expect(el.querySelector('#events rect[data-id="1"]')).toBeNull();
   });
 
+  // regression coverage (#143): see Timeline's equivalent test. Unlike
+  // Timeline, updateState runs its re-render on *every* store update, so
+  // this also pins that only an actual date change drops the selection
+  it('drops the selected entry and closes the shared panel only when the date changes', () => {
+    const dateA = '2026-09-11';
+    const dateB = '2026-09-12';
+    const entryOn = (date, activity) => ({
+      type: ADD_ENTRY,
+      payload: { dimensionIndex: 3, date, startOffsetMins: 0, endOffsetMins: 30, activity, id: 0 },
+    });
+    appStore.dispatch(entryOn(dateA, ['Family']));
+    appStore.dispatch(entryOn(dateB, ['Friends']));
+    appStore.dispatch({ type: SWITCH_DATE, payload: dateA });
+    const { el, panelActions } = createHorizontalTimeline(3); // Who
+
+    el.onTimelineClick({ target: { dataset: { id: '0' } } });
+    appStore.dispatch({ type: SET_HORIZONTAL_ZOOM, payload: 2 }); // unrelated update
+    expect(el.selectedID).toBe(0);
+    expect(panelActions.close).not.toHaveBeenCalled();
+
+    appStore.dispatch({ type: SWITCH_DATE, payload: dateB });
+
+    expect(el.selectedID).toBeUndefined();
+    expect(panelActions.close).toHaveBeenCalledOnce();
+  });
+
   it('re-renders when an entry is added to the store after mount', () => {
     const date = '2026-09-10';
     appStore.dispatch({ type: SWITCH_DATE, payload: date });

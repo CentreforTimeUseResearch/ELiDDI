@@ -170,11 +170,23 @@ export class Timeline extends TinyBase {
       this.renderEntries();
       this.updateFutureOverlay();
       this.resizeController.hideHandles(); // the entry any showing handles belonged to may no longer exist on the new date
+      this.dropSelectionFromPreviousDate();
     }
     if (this.dimensionIndex !== this.shadowIndex && currentDimensionIndex === this.dimensionIndex) {
       // this is not primary activity timeline and we're currently viewing this timeline
       this.renderShadowDimension(); // render primary activity entries as shadow timeline
     }
+  }
+
+  // Entry ids are only unique within one date's Timeline - every date has
+  // an entry 0 - so a selection carried across a date switch would point
+  // Save/Delete at a different date's entry that happens to share its id
+  dropSelectionFromPreviousDate() {
+    if (this.selectedID === undefined) {
+      return;
+    }
+    this.selectedID = undefined;
+    this.panelActions?.close();
   }
 
   // Shared renderer for both the primary entries layer and the shadow
@@ -467,14 +479,12 @@ export class Timeline extends TinyBase {
       console.error('Problem with identifying dimension index', dimensionIndex);
       return;
     }
-    const index = this.entries.findIndex((entry) => entry.id === this.selectedID);
     this.store.dispatch({
       type: UPDATE_ENTRY,
       payload: {
         id: this.selectedID,
         dimensionIndex,
         date: this.currentDate,
-        index,
         ...entry,
       },
     });

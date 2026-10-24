@@ -16,8 +16,7 @@ export class DialogWidget extends TinyBase {
   }
 
   connectedCallback() {
-    this.key = this.getAttribute('key');
-    this.props = this.getProps(this.key);
+    this.resolveProps();
 
     // register our actions before rendering: content (e.g. Onboarding) can
     // call moveSpotlight/moveModalTop synchronously during its own first

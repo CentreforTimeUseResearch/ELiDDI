@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { HorizontalTimeline } from './horizontalTimeline';
 import { TinyBase } from '../base';
 import { appStore } from '../../store/appStore';
@@ -274,6 +274,41 @@ describe('HorizontalTimeline mounted', () => {
       el.onTimelineClick({ target: { dataset: { id: '5' } } });
 
       expect(panelActions.openEntry).toHaveBeenCalledWith(entry);
+    });
+
+    describe('invalid input (#144)', () => {
+      afterEach(() => {
+        vi.restoreAllMocks();
+      });
+
+      // see Timeline's equivalent regression tests for the full reasoning
+      it.each([
+        ['no longer present in entries', '5'],
+        ['not numeric', 'abc'],
+      ])('does not open the panel when the clicked data-id is %s', (_, dataId) => {
+        const { el, panelActions } = createHorizontalTimeline(0);
+        el.entries = [];
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+
+        el.onTimelineClick({ target: { dataset: { id: dataId } } });
+
+        expect(panelActions.openEntry).not.toHaveBeenCalled();
+        expect(el.selectedID).toBeUndefined();
+      });
+
+      it.each(['createEntry', 'updateEntry'])(
+        '%s dispatches nothing when the dimension index is not a valid integer',
+        (method) => {
+          const { el } = createHorizontalTimeline(0);
+          el.dimensionIndex = NaN;
+          const dispatch = vi.spyOn(appStore, 'dispatch');
+          vi.spyOn(console, 'error').mockImplementation(() => {});
+
+          el[method]({ startOffsetMins: 0, endOffsetMins: 30, activity: 'Sleep' });
+
+          expect(dispatch).not.toHaveBeenCalled();
+        }
+      );
     });
 
     it('does not open a new entry for a click outside the gridline_zone', () => {

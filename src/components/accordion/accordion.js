@@ -28,20 +28,29 @@ export class Accordion extends TinyBase {
 
   handleClick(e) {
     e.stopPropagation();
-    const element = e.target;
-    const activity = element.dataset?.activity;
-    if (activity) {
+    const activityButton = e.target.closest?.('[data-activity]');
+    if (activityButton) {
+      const activity = activityButton.dataset.activity;
       if (this.props.multi) {
-        this.toggleActivityButton(element, activity);
+        this.toggleActivityButton(activityButton, activity);
       } else {
         this.props.activitySelect(activity);
       }
       return;
     }
-    // something else was clicked!
-    const section = element.ariaControlsElements[0];
+    const trigger = e.target.closest?.('[aria-controls]');
+    if (!trigger || !this.contains(trigger)) {
+      // the panel background, a wrapper <span>, a heading's margin - nothing
+      // to toggle
+      return;
+    }
+    // read from the attribute rather than ariaControlsElements - that ARIA
+    // reflection API is null on elements without aria-controls and isn't
+    // implemented in every environment (jsdom, for one). Attribute selector,
+    // not #id - see HorizontalTimeline.getChildElementReferences
+    const section = this.querySelector(`[id="${trigger.getAttribute('aria-controls')}"]`);
     if (section) {
-      this.toggleAccordionSectionOpenState(element, section);
+      this.toggleAccordionSectionOpenState(trigger, section);
     }
   }
 

@@ -31,6 +31,12 @@ describe('ActivityPicker', () => {
     addEventListenerSpy.mockRestore();
   });
 
+  // regression coverage (#145)
+  it('renders nothing, not the word "undefined", when it has no heading or instruction', () => {
+    const el = createPicker();
+    expect(el.textContent).not.toContain('undefined');
+  });
+
   describe('click outside', () => {
     // jsdom has no Popover API, so the popover is reported open by stubbing
     // only that check - the click itself is a real event dispatched on the

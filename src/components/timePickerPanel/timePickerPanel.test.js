@@ -18,7 +18,7 @@ describe('TimePickerPanel', () => {
     document.body.innerHTML = '';
   });
 
-  function createPanel(props = {}) {
+  function createPanel(props = {}, dayBoundaryInMinutes = '240') {
     const harness = document.createElement('test-harness-timepickerpanel');
     const key = harness.setProps(
       {
@@ -33,7 +33,7 @@ describe('TimePickerPanel', () => {
     );
     const el = document.createElement('el-time-picker-panel');
     el.setAttribute('key', key);
-    el.setAttribute('day-boundary', '240');
+    el.setAttribute('day-boundary', dayBoundaryInMinutes);
     document.body.appendChild(el);
     return el;
   }
@@ -105,5 +105,139 @@ describe('TimePickerPanel', () => {
   it('formats exactly midnight (1440) as "00:00", not "24:00"', () => {
     const el = createPanel();
     expect(el.convertMinutesToTimePickerFormat(1440)).toBe('00:00');
+  });
+
+  // every attribute in the panel's subtree whose value contains "undefined"
+  function undefinedAttributes(el) {
+    return [el, ...el.querySelectorAll('*')].flatMap((node) =>
+      [...node.attributes]
+        .filter((attr) => attr.value.includes('undefined'))
+        .map((attr) => `${node.tagName.toLowerCase()}[${attr.name}="${attr.value}"]`)
+    );
+  }
+
+  const valueOf = (el, inputId) =>
+    el.querySelector(`[input-id="${inputId}"]`).getAttribute('value');
+
+  // regression coverage (#145): times were tested for truthiness, so a
+  // legitimate 0 - 00:00, the first minute of a study whose day boundary is
+  // midnight - counted as "not set"
+  describe('a time of 0 (00:00 under a midnight day boundary)', () => {
+    it('shows a 00:00 start time, and computes the duration from it', () => {
+      const el = createPanel({}, '0');
+
+      el.onTimeInputChange('startTime', 0);
+      el.onTimeInputChange('endTime', 60);
+
+      expect(valueOf(el, 'startTime')).toBe('00:00');
+      expect(el.durationInputMinutes).toBe(60);
+      expect(valueOf(el, 'duration')).toBe('60');
+    });
+
+    it('computes the end time from a duration after a 00:00 start', () => {
+      const onTimeSet = vi.fn();
+      const el = createPanel({ onTimeSet }, '0');
+
+      el.onTimeInputChange('startTime', 0);
+      el.onTimeInputChange('duration', 30);
+
+      expect(el.endInputMinutes).toBe(30);
+      expect(onTimeSet).toHaveBeenCalledWith({ timeField: 'endTime', timeInMinutes: 30 });
+    });
+
+    it('labels "continue to…" from a 00:00 start', () => {
+      const getContinueToTarget = vi.fn(() => ({
+        endTimeInMinutes: 60,
+        label: 'Continue to 01:00',
+      }));
+      const el = createPanel({ getContinueToTarget }, '0');
+
+      el.onTimeInputChange('startTime', 0);
+
+      expect(getContinueToTarget).toHaveBeenCalledWith(0);
+      expect(el.querySelector('label[for="timepicker-rest-of-day"]').textContent).toBe(
+        'Continue to 01:00'
+      );
+    });
+
+    it('computes the duration when the end time is midnight (0) and was set first', () => {
+      const el = createPanel(); // 04:00 day boundary
+
+      el.onTimeInputChange('endTime', 0); // 00:00
+      el.onTimeInputChange('startTime', 1380); // 23:00
+
+      expect(el.durationInputMinutes).toBe(60);
+    });
+  });
+
+  // regression coverage (#145): a zero duration was blanked as if unset
+  it('shows a duration of 0 as 0 hours and 0 minutes, not as blank', () => {
+    const el = createPanel();
+
+    el.onTimeInputChange('startTime', 480);
+    el.onTimeInputChange('endTime', 480);
+
+    expect(el.durationInputMinutes).toBe(0);
+    expect(valueOf(el, 'duration')).toBe('0');
+    expect(el.querySelector('#duration-hours').value).toBe('0');
+    expect(el.querySelector('#duration-minutes').value).toBe('0');
+  });
+
+  // regression coverage (#145): an unset time was written as the literal
+  // attribute value "undefined", both by the template and by setAttribute
+  describe('never renders an attribute containing "undefined"', () => {
+    it('on first render, with no times set', () => {
+      expect(undefinedAttributes(createPanel())).toEqual([]);
+    });
+
+    it('after only a start time is set, and after re-rendering', () => {
+      const el = createPanel();
+      el.onTimeInputChange('startTime', 480);
+      expect(undefinedAttributes(el)).toEqual([]);
+
+      el.render();
+      expect(undefinedAttributes(el)).toEqual([]);
+    });
+
+    it('leaves an unset time empty in its input', () => {
+      const el = createPanel();
+      el.onTimeInputChange('startTime', 480);
+
+      expect(el.querySelector('[data-id="endTime"]').value).toBe('');
+      expect(el.querySelector('#duration-hours').value).toBe('');
+    });
+  });
+
+  // regression coverage (#145): the end-time message was rendered into an
+  // attribute TimePicker never read, was only refreshed on a full
+  // re-render, and was never cleared once set
+  describe('the end-time error', () => {
+    const endError = (el) => el.querySelector('[data-id="endTime-time-error"]');
+
+    it('shows when the end time falls past the end of the diary day, and clears once it is valid', () => {
+      const el = createPanel();
+      el.onTimeInputChange('startTime', 600); // 10:00
+      el.onTimeInputChange('endTime', 300); // 05:00 next day - past the 04:00 boundary
+
+      expect(endError(el).textContent).toMatch(/^End time can't be between 04:00 and 10:00$/);
+      expect(endError(el).hidden).toBe(false);
+
+      el.onTimeInputChange('endTime', 660); // 11:00
+
+      expect(endError(el).textContent).toBe('');
+      expect(endError(el).hidden).toBe(true);
+    });
+
+    it('keeps the whole message as one attribute value through a re-render', () => {
+      const el = createPanel();
+      el.onTimeInputChange('startTime', 600);
+      el.onTimeInputChange('endTime', 300);
+
+      el.render();
+
+      const endPicker = el.querySelector('[input-id="endTime"]');
+      expect(endPicker.getAttribute('error')).toBe("End time can't be between 04:00 and 10:00");
+      expect(endPicker.hasAttribute('between')).toBe(false);
+    });
   });
 });

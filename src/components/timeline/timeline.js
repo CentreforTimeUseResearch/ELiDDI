@@ -146,8 +146,8 @@ export class Timeline extends BaseTimeline {
         },
       })}
       dimensionindex=${this[INDEX]}
-      heading="${GLOBALS.DATA.timeline[this[INDEX]]?.description}"
-      instruction="${GLOBALS.DATA.timeline[this[INDEX]]?.instruction}"
+      heading="${GLOBALS.DATA.timeline[this[INDEX]]?.description ?? ''}"
+      instruction="${GLOBALS.DATA.timeline[this[INDEX]]?.instruction ?? ''}"
     ></el-details-panel>`;
   }
 }

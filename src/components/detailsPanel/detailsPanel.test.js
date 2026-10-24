@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { DetailsPanel } from './detailsPanel';
 import { TinyBase } from '../base';
 
@@ -113,6 +113,31 @@ describe('DetailsPanel', () => {
   // regression coverage for defaulting a new entry to a 10-minute span, so
   // it has an immediately-visible, drag-resizable block on the timeline
   // instead of a zero-length one the respondent has to fix by hand first
+  // regression coverage (#145): offset 0 under a midnight day boundary is
+  // clock time 0, which the time panel treated as "no start time" - so the
+  // start showed blank and no duration was ever computed
+  describe('under a 00:00 day boundary', () => {
+    let originalDayBoundary;
+    beforeEach(() => {
+      originalDayBoundary = GLOBALS.DATA.day_boundary;
+      GLOBALS.DATA.day_boundary = '00:00';
+    });
+    afterEach(() => {
+      GLOBALS.DATA.day_boundary = originalDayBoundary;
+    });
+
+    it('shows a new entry at the first minute of the day as 00:00, lasting 10 minutes', () => {
+      const el = createPanel();
+
+      el.openNewEntry(0);
+
+      const timePanel = el.querySelector('el-time-picker-panel');
+      expect(timePanel.querySelector('[input-id="startTime"]').getAttribute('value')).toBe('00:00');
+      expect(timePanel.querySelector('[input-id="endTime"]').getAttribute('value')).toBe('00:10');
+      expect(timePanel.durationInputMinutes).toBe(10);
+    });
+  });
+
   it("defaults a new entry's end time to ten minutes after its start time", () => {
     const el = createPanel();
 

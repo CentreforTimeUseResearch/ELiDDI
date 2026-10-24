@@ -285,7 +285,7 @@ describe('HorizontalTimeline mounted', () => {
     it('calls panelActions.openNewEntry with the clicked time slot on a gridline_zone click', () => {
       const { el, panelActions } = createHorizontalTimeline(0);
 
-      // clientXToSvgX falls back to raw clientX in this test environment
+      // clientToSvgCoord falls back to raw clientX in this test environment
       // (no SVG geometry APIs), same as Timeline's own equivalent test
       el.onTimelineClick({ target: { id: 'gridline_zone', dataset: {} }, clientX: 40, clientY: 0 });
 
@@ -393,7 +393,7 @@ describe('HorizontalTimeline mounted', () => {
         clientX: 0,
         clientY: 0,
       });
-      // clientXToSvgX falls back to raw clientX in this test environment;
+      // clientToSvgCoord falls back to raw clientX in this test environment;
       // 100px -> calculateTheTimeSlotClicked(100) = 50min at native zoom
       el.onEntryPointerMove({ target: endHandleHitArea, pointerId: 2, clientX: 100, clientY: 0 });
       el.resizeController.handlePointerUp({ pointerId: 2 });

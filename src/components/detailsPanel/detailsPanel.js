@@ -1,5 +1,5 @@
-import { ActivityPicker } from '../activityPicker/activityPicker'; // as el-autocomplete
-import { TimePickerPanel } from '../timePickerPanel/timePickerPanel';
+import '../activityPicker/activityPicker';
+import '../timePickerPanel/timePickerPanel';
 import { TinyBase } from '../base';
 import { HIDE_PANEL, SHOW_PANEL } from '../../store/actionTypes';
 import './detailsPanel.css';
@@ -278,15 +278,6 @@ export class DetailsPanel extends TinyBase {
     this.showPanel();
   }
 
-  onPopOverShowing(isPopoverShowing) {
-    // leave for now
-    // if (isPopoverShowing) {
-    //   this.classList.add('higher')
-    // } else {
-    //   this.classList.remove('higher')
-    // }
-  }
-
   // triggered by activity select
   onSetActivityOnSelectedEntry(activity) {
     this.updateState({
@@ -353,7 +344,7 @@ export class DetailsPanel extends TinyBase {
                 dimensionindex="${this[DIMENSION_INDEX]}"
                 instruction="${this[INSTRUCTION]}"
                 heading="${this[HEADING]}"
-                ${this.setProps({ onPopOverShowing: (isPopoverShowing) => this.onPopOverShowing(isPopoverShowing), onFocusCallback: () => this.onFocusCallback(), onSetActivityOnSelectedEntry: (activity) => this.onSetActivityOnSelectedEntry(activity), onSetActivitiesOnSelectedEntry: (activities) => this.onSetActivitiesOnSelectedEntry(activities) })}
+                ${this.setProps({ onFocusCallback: () => this.onFocusCallback(), onSetActivityOnSelectedEntry: (activity) => this.onSetActivityOnSelectedEntry(activity), onSetActivitiesOnSelectedEntry: (activities) => this.onSetActivitiesOnSelectedEntry(activities) })}
               ></el-activity-picker>
               <el-time-picker-panel ${this.setProps({ onTimeSet: (setTimeProps) => this.onSetOffsetMins(setTimeProps), getContinueToTarget: (startTimeInMinutes) => this.getContinueToTarget(startTimeInMinutes) })} day-boundary="${this.dayBoundaryInMinutes}"></el-time-picker-panel>
               <div class="entry-error" aria-live="polite" hidden></div>

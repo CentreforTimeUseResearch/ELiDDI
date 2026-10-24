@@ -1,4 +1,4 @@
-import { Accordion } from '../accordion/accordion';
+import '../accordion/accordion';
 import { TinyBase } from '../base';
 import { escapeHtml, searchActivities, hasKnownActivity } from '../../utils/activitySearch';
 import { KeyboardGridNavigation } from './keyboardGridNavigation';

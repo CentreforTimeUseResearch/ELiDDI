@@ -11,9 +11,9 @@ export const createStore = (reducer, initialState = undefined) => {
 
   const subscribe = (listener) => {
     if (typeof listener !== 'function') {
-      console.error('cannot subscribe a non function')
+      console.error('cannot subscribe a non function');
       return;
-    };
+    }
     listeners.push(listener);
     return () => {
       listeners = listeners.filter((l) => l !== listener); // remove listener
@@ -38,5 +38,3 @@ export const combineReducers = (reducers) => {
     }, {});
   };
 };
-
-

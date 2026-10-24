@@ -1,11 +1,9 @@
-import { describe, it, expect, beforeEach, beforeAll } from 'vitest';
-import { Accordion } from './accordion.js';
+import { describe, it, expect } from 'vitest';
+import './accordion.js';
 
 describe('Accordion', () => {
-
-
   it('test', () => {
-    expect(true).toBe(true)
+    expect(true).toBe(true);
   });
 
   // more tests to come

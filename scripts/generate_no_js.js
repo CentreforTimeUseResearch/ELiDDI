@@ -131,7 +131,6 @@ function generateMultiCheckboxInput(chunk, cardNum, uniqueRef, options, question
   ${options
     .map((option) => {
       const safeId = option.replace(/ |\//g, '_');
-      const label = option.split('-').pop().trim(); // remove category info, if any
 
       return `<label><input type="checkbox" id="${chunk}_${cardNum}-${safeId}" name="${chunk}_${cardNum}-${uniqueRef}"/>${option}</label><br />`;
     })
@@ -165,7 +164,7 @@ function createCardHTML(data, timeSlot, cardNum, chunk) {
 
 
   ${data
-    .map((dimension, index) => {
+    .map((dimension) => {
       if (dimension.mode === 'single-choice') {
         if (dimension.allow_free_text) {
           return generateTextFieldInput(chunk, cardNum, dimension.uniqueRef, dimension.description);
@@ -212,8 +211,6 @@ function generateChunkNav(chunk) {
 
 function createCardsHTML(data, timeSlots, index) {
   const chunk = index + 1;
-
-  let x = 1;
 
   const cardsHTML = `
         <label>Diary progress: ${chunk} of ${numChunks} <progress value="${chunk}" max="${numChunks}" /></label>

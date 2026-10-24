@@ -1,5 +1,4 @@
 el-dialog {
-
   --border-color: var(--color-primary-focus);
 
   --spotlight1-x: 50%;
@@ -22,19 +21,20 @@ el-dialog {
     transition-duration: 0.5s;
 
     &:has(.spotlight) {
-
       /* backdrop with spotlight */
       &::backdrop {
-        background: radial-gradient(circle at var(--spotlight1-x) var(--spotlight1-y),
-            var(--spotlight1-spot-color) var(--spotlight-size),
-            color-mix(in srgb, var(--spotlight1-base-color) var(--spotlight1-opacity), transparent) var(--spotlight-size));
+        background: radial-gradient(
+          circle at var(--spotlight1-x) var(--spotlight1-y),
+          var(--spotlight1-spot-color) var(--spotlight-size),
+          color-mix(in srgb, var(--spotlight1-base-color) var(--spotlight1-opacity), transparent)
+            var(--spotlight-size)
+        );
         mix-blend-mode: darken;
         transition-property: background;
         transition-duration: 0.5s;
         transition-behavior: allow-discrete;
       }
     }
-
 
     .dialog-layout {
       height: 100%;

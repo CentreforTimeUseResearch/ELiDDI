@@ -23,27 +23,26 @@ export class Accordion extends TinyBase {
   }
 
   assignEventHandlers() {
-    this.addEventListener('click', (e) => this.handleClick(e))
+    this.addEventListener('click', (e) => this.handleClick(e));
   }
 
   handleClick(e) {
     e.stopPropagation();
     const element = e.target;
-    const activity = element.dataset?.activity
+    const activity = element.dataset?.activity;
     if (activity) {
       if (this.props.multi) {
         this.toggleActivityButton(element, activity);
       } else {
         this.props.activitySelect(activity);
       }
-      return
+      return;
     }
     // something else was clicked!
     const section = element.ariaControlsElements[0];
     if (section) {
-      this.toggleAccordionSectionOpenState(element, section)
+      this.toggleAccordionSectionOpenState(element, section);
     }
-
   }
 
   toggleActivityButton(element, activity) {
@@ -55,20 +54,18 @@ export class Accordion extends TinyBase {
 
   toggleAccordionSectionOpenState(element, section) {
     const openState = element.ariaExpanded === 'true';
-    element.setAttribute('aria-expanded', `${!openState}`)
+    element.setAttribute('aria-expanded', `${!openState}`);
     if (openState) {
       // its open so need to close it
       section.setAttribute('hidden', '');
     } else {
-      section.removeAttribute('hidden')
+      section.removeAttribute('hidden');
     }
-
   }
-
 
   createAccordionEntry({ name, activities }, section) {
     const { multi, selected = [] } = this.props;
-    if (activities.length === 0) return
+    if (activities.length === 0) return;
 
     return `
   <!-- accordion section header -->
@@ -84,10 +81,11 @@ export class Accordion extends TinyBase {
   <!-- accordion section body -->
   <div id="sect${section}_${this[ID]}" role="region" aria-labelledby="accordion${section}id_${this[ID]}" class="accordion-panel">
     <div style="display: flex; flex-direction: column">
-    ${activities.map(activity => {
-      const displayName = getActivityDisplayName(activity);
-      const isSelected = multi && selected.includes(displayName);
-      return `
+    ${activities
+      .map((activity) => {
+        const displayName = getActivityDisplayName(activity);
+        const isSelected = multi && selected.includes(displayName);
+        return `
       <span>
         <button
           type="button"
@@ -100,23 +98,24 @@ export class Accordion extends TinyBase {
           ${displayName}
         </button>
       </span>`;
-    }
-    ).join(" ")}
+      })
+      .join(' ')}
 
 
     </div>
   </div>`;
   }
 
-
   render() {
     const { content } = this.props;
     this.innerHTML = `
       <div id="accordionGroup" class="accordion">
         <!-- -->
-    ${content.map((entry, index) => {
-      return this.createAccordionEntry(entry, index)
-    }).join('')};
+    ${content
+      .map((entry, index) => {
+        return this.createAccordionEntry(entry, index);
+      })
+      .join('')};
         <!-- -->
       </div>
     `;

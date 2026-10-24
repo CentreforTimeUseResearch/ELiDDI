@@ -5,7 +5,7 @@ import { HorizontalTimelineStack } from './horizontalTimelineStack';
 // it in explicitly so the panelActions contract can actually wire up.
 import { DetailsPanel } from '../detailsPanel/detailsPanel';
 import { appStore } from '../../store/appStore';
-import { SWITCH_DIMENSION, SHOW_PANEL, HIDE_PANEL, SWITCH_DATE } from '../../store/actionTypes';
+import { HIDE_PANEL, SWITCH_DATE } from '../../store/actionTypes';
 
 const DIMENSION_COUNT = GLOBALS.DATA.timeline.length;
 

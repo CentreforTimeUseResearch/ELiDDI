@@ -1,0 +1,7 @@
+# One Timeline base class for both layouts
+
+The mobile (vertical) `Timeline` and desktop (horizontal) `HorizontalTimeline` are the same component drawn along a different axis. Both extend `BaseTimeline` (`src/components/timeline/baseTimeline.js`), which owns everything that doesn't depend on the layout: reading the Dimension's Entries from the store, click routing, coordinate conversion, long-press resizing through `EntryResizeController`, and saving or deleting Entries. Entry CRUD, id allocation and overlap validation sit one level further down in `EntryCommands`, a plain class with no DOM, so those rules are tested without mounting an element.
+
+A subclass contributes only what is genuinely its own: its axis (`Y_AXIS`/`X_AXIS`), time scale (`getPxPerMinute()`), how it places Entry blocks, and what a store update redraws. `Timeline` adds the Primary activity mirror, the future overlay and its own details panel. `HorizontalTimeline` adds zoom and receives the shared panel from its stack. A behaviour change that isn't one of those belongs in `BaseTimeline` or `EntryCommands`, so it's made once for both layouts. Before this, the two classes were roughly 250 lines of copy-paste that had already drifted apart.
+
+We chose inheritance over composing the element out of helpers because the shared part is most of the element: its lifecycle, listeners and public methods. `HorizontalTimelineStack` and the test suites call those public methods directly on either element.

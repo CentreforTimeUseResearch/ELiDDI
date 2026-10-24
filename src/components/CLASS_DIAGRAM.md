@@ -4,7 +4,7 @@
 
 ---
 
-Every class in `src/`. All Web Components extend [`TinyBase`](README.md#basejs) (itself extending the platform's `HTMLElement`); two plain helper classes — [`KeyboardGridNavigation`](activityPicker/README.md) and [`EntryResizeController`](timeline/README.md) — are not custom elements, just state machines constructed and owned by the component that needs them. `src/store/` and `src/utils/` are deliberately function/module-based, not classes (see the [store README](../store/README.md)) — the hand-rolled Redux clone in `store.js` and the props-passing registry in `propsRegistry.js` are the main reasons `TinyBase` can stay so small.
+Every class in `src/`. All Web Components extend [`TinyBase`](README.md#basejs) (itself extending the platform's `HTMLElement`); three plain helper classes — [`KeyboardGridNavigation`](activityPicker/README.md), [`EntryResizeController`](timeline/README.md) and [`EntryCommands`](timeline/README.md) — are not custom elements, just state machines constructed and owned by the component that needs them. `src/store/` and `src/utils/` are deliberately function/module-based, not classes (see the [store README](../store/README.md)) — the hand-rolled Redux clone in `store.js` and the props-passing registry in `propsRegistry.js` are the main reasons `TinyBase` can stay so small.
 
 ```mermaid
 classDiagram
@@ -19,6 +19,8 @@ classDiagram
         #key
         #cleanupFns
         +registerCleanup(fn)
+        +listen(target, type, handler, options)
+        +releaseOwnedProps()
         +connectedCallback()
         +disconnectedCallback()
         +getProps(key)
@@ -90,27 +92,43 @@ classDiagram
         +onBackClick()
     }
 
-    class Timeline {
-        <<el-timeline>>
+    class BaseTimeline {
+        <<abstract base>>
         -resizeController : EntryResizeController
+        -entryCommands : EntryCommands
         +saveEntry(entry)
         +createEntry(entry)
         +updateEntry(entry)
         +deleteEntry(id)
+        +findNextEntryAfter(offsetMins)
         +onTimelineClick(e)
+        +clientToSvgCoord(clientX, clientY)
+        #getPxPerMinute()*
+        #renderEntries()*
+        #updateState()*
+        #onPanelOpened()
+    }
+
+    class Timeline {
+        <<el-timeline>>
+        +renderEntriesInto(args)
+        +renderShadowDimension()
+        +updateFutureOverlay()
     }
 
     class HorizontalTimeline {
         <<el-horizontal-timeline>>
-        -resizeController : EntryResizeController
-        +renderEntries()
         +renderEntriesInto(args)
         +updateDimensions()
-        +onTimelineClick(e)
-        +saveEntry(entry)
-        +createEntry(entry)
-        +updateEntry(entry)
-        +deleteEntry(id)
+    }
+
+    class EntryCommands {
+        +isSingleChoiceDimension
+        +create(entry)
+        +update(id, entry)
+        +remove(id)
+        +findConflict(entry, ignoreId)
+        +findNextEntryAfter(offsetMins, ignoreId)
     }
 
     class HorizontalTimelineAxis {
@@ -186,8 +204,9 @@ classDiagram
     TinyBase <|-- DynamicTimelineUI
     TinyBase <|-- Navbar
     TinyBase <|-- Onboarding
-    TinyBase <|-- Timeline
-    TinyBase <|-- HorizontalTimeline
+    TinyBase <|-- BaseTimeline
+    BaseTimeline <|-- Timeline
+    BaseTimeline <|-- HorizontalTimeline
     TinyBase <|-- HorizontalTimelineAxis
     TinyBase <|-- HorizontalTimelineStack
     TinyBase <|-- TimelinePicker
@@ -197,8 +216,8 @@ classDiagram
 
     %% composition: constructs and owns a real object instance
     ActivityPicker *-- KeyboardGridNavigation : constructs in constructor()
-    Timeline *-- EntryResizeController : constructs in connectedCallback(), axis = Y_AXIS
-    HorizontalTimeline *-- EntryResizeController : constructs in connectedCallback(), axis = X_AXIS
+    BaseTimeline *-- EntryResizeController : constructs in connectedCallback(), axis from the subclass (Y_AXIS / X_AXIS)
+    BaseTimeline *-- EntryCommands : constructs in constructor()
     TimelineStack "1" *-- "many" Timeline : new Timeline() per Dimension
 
     %% dependency: renders as a child custom element + props-registry handshake
@@ -224,7 +243,7 @@ classDiagram
 
 ## Reading this diagram
 
-- **`<|--` (inheritance)** — every Web Component genuinely `extends TinyBase extends HTMLElement`. This is the only relationship type that's a real JS prototype chain.
+- **`<|--` (inheritance)** — every Web Component genuinely `extends TinyBase extends HTMLElement`; the two Timelines go through `BaseTimeline` in between. This is the only relationship type that's a real JS prototype chain.
 - **`*--` (composition)** — the owning class builds the other with `new X(...)` and holds a direct reference to it (`this.gridNavigation`, `this.resizeController`, or the N `Timeline` instances `TimelineStack.render()` creates in a loop). A real object relationship, not just markup.
 - **`..>` (dependency)** — one component's `render()` emits another's custom-element tag as a string (e.g. `<el-activity-picker>`), optionally handing it data/callbacks through the [props registry](README.md#propsregistryjs) (`setProps`/`key`/`getProps`). There's no direct class reference here — the two components are coupled only through the tag name and whatever contract they agree on through props (see [DetailsPanel's `panelActions` contract](detailsPanel/README.md#the-panelactions-contract) for the clearest example of this deliberately loose coupling).
 

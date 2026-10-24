@@ -162,7 +162,7 @@ describe('Timeline panelActions contract', () => {
     const openNewEntry = vi.fn();
     el.panelActions.openNewEntry = openNewEntry;
 
-    // clientYToSvgY falls back to raw clientY in this test environment
+    // clientToSvgCoord falls back to raw clientY in this test environment
     // (no SVG geometry APIs), same as the real getScreenCTM path would
     // resolve to for a click 40px into an unscaled SVG
     el.onTimelineClick({ target: { id: 'gridline_zone', dataset: {} }, clientX: 0, clientY: 40 });

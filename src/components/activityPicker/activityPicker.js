@@ -162,6 +162,8 @@ export class ActivityPicker extends TinyBase {
   }
 
   renderAccordion(results, searchString = '') {
+    // replaces the accordion render() built, and any earlier search results
+    this.releaseOwnedProps();
     this.popoverElement.innerHTML = `${this.freeTextOptionHtml(searchString)}<el-accordion ${this.setProps({ content: results, activitySelect: this.onActivitySelect, activityToggle: (activity, isSelected) => this.onActivityToggle(activity, isSelected), ...this.accordionProps() })}></el-accordion>${this.doneButtonHtml()}`;
     this.assignDoneButtonHandler();
     this.assignFreeTextHandler();

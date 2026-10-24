@@ -1,19 +1,15 @@
 import { eliddiReducer } from './eliddiReducer';
 import { createStore } from './store';
-import { localStoreSave, localStoreLoad } from './localStorage';
+import { getBrowserStorage, loadPersistedState, persistStore } from './persistence';
 
 // The single app-wide store instance (a singleton via module pattern),
-// seeded from localStorage and re-persisted on every dispatch, excluding
-// transient UI-only slices (uipanel, currentDimensionIndex).
-const persistedState = localStoreLoad();
-export const appStore = createStore(eliddiReducer, persistedState);
+// seeded from and saved back to localStorage. What is saved, and how a
+// saved diary is validated and migrated on load, lives in persistence.js.
+// Without usable storage the diary still works, it just doesn't survive a
+// reload.
+const storage = getBrowserStorage();
+export const appStore = createStore(eliddiReducer, storage && loadPersistedState(storage));
 
-appStore.subscribe(() => {
-  localStoreSave({
-    ...appStore.getState(),
-    uipanel: undefined,
-    currentDimensionIndex: undefined,
-    isDesktopLayout: undefined,
-    horizontalZoomLevel: undefined,
-  });
-});
+if (storage) {
+  persistStore(appStore, storage);
+}

@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { readFileSync, mkdtempSync, cpSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { readFileSync, mkdtempSync, mkdirSync, cpSync, rmSync } from 'node:fs';
 import path from 'node:path';
 import {
   buildDiaryHtml,
@@ -314,13 +313,19 @@ describe('the generate_no_js.js CLI', () => {
 
   // regression coverage (#147): an unreadable config file was logged and
   // the script exited 0 having printed nothing, so the build silently
-  // injected an empty diary. Run from a copy of the project with no config/
+  // injected an empty diary. Run from a copy of the scripts with no config/,
+  // placed under node_modules/ so it still resolves the ajv package
   it('exits non-zero, printing nothing to stdout, when the config file cannot be read', () => {
-    const root = mkdtempSync(path.join(tmpdir(), 'eliddi-no-config-'));
+    const cache = path.join(process.cwd(), 'node_modules', '.cache');
+    mkdirSync(cache, { recursive: true });
+    const root = mkdtempSync(path.join(cache, 'eliddi-no-config-'));
     try {
-      ['scripts/generate_no_js.js', 'scripts/lib/generateNoJs.js', 'src/utils/html.js'].forEach(
-        (file) => cpSync(file, path.join(root, file))
-      );
+      [
+        'scripts/generate_no_js.js',
+        'scripts/lib/generateNoJs.js',
+        'scripts/lib/validateConfig.js',
+        'src/utils/html.js',
+      ].forEach((file) => cpSync(file, path.join(root, file)));
       const result = spawnSync(process.execPath, [path.join(root, 'scripts/generate_no_js.js')], {
         env: { ...process.env, ACTIONS_ENV: '' },
         encoding: 'utf8',
@@ -340,5 +345,23 @@ describe('the generate_no_js.js CLI', () => {
     expect(result.status).not.toBe(0);
     expect(result.stdout).toBe('');
     expect(result.stderr).toMatch(/config/i);
+  });
+
+  // #161: a deploy's injected config was used as-is, so a typo only showed
+  // up at runtime, in front of respondents
+  it('exits non-zero, naming each problem, when the config breaks config.schema.json', () => {
+    const json = withConfig((config) => {
+      config.timeline[2].categories[0].activities[3].color = 'red';
+      delete config.timeline[1].categories;
+    });
+
+    const result = run({ ACTIONS_ENV: json });
+
+    expect(result.status).not.toBe(0);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toContain(
+      'timeline/2/categories/0/activities/3/color must match pattern "^#[0-9a-fA-F]{6}$"'
+    );
+    expect(result.stderr).toContain("timeline/1 must have required property 'categories'");
   });
 });

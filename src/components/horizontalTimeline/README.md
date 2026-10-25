@@ -8,7 +8,7 @@
 
 Renders one Dimension's Entries for the currently-viewed Diary day as a horizontal row of SVG blocks on the x-axis — the `≥1024px` desktop counterpart to [Timeline](../timeline/README.md)'s vertical column, axis-swapped (`x`/`width` instead of `y`/`height`). Zoom-aware (Phase 10.5) and interactive (Phase 10.6): click-to-add, click-to-select, long-press to reveal resize handles, drag-to-resize — ported from [Timeline](../timeline/README.md) via `EntryResizeController`'s axis-generalized config. No "Primary activity mirror" shadow strip (not in the original design handoff, and may not even be needed once all six Dimensions are visible as full rows simultaneously). One instance is mounted per Dimension by [HorizontalTimelineStack](../horizontalTimelineStack/README.md), below a single shared [HorizontalTimelineAxis](../horizontalTimelineAxis/README.md).
 
-Unlike `Timeline`, this component does not own/create its own `<el-details-panel>` — see [HorizontalTimelineStack](../horizontalTimelineStack/README.md) for why (a shared panel, not one per row) and how (`panelActions` arrives as injected props, not self-registered).
+Like `Timeline`, this component has no details panel of its own: its `panelActions` are injected by [HorizontalTimelineStack](../horizontalTimelineStack/README.md), which owns the app's one shared panel (ADR 0005).
 
 Terminology (Dimension, Timeline, Entry) follows [CONTEXT.md](../../../CONTEXT.md).
 

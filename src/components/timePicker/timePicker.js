@@ -138,22 +138,24 @@ export class TimePicker extends TinyBase {
   }
 
   render() {
-    this.innerHTML = `<div id="${this[ID]}-time-error"></div>
-      <label for="${this[ID]}" class="time-label">${this[LABEL]}</label><br />
+    // the label, hint and error are tied to the input by real ids - unique
+    // now that the app has one details panel (#151)
+    this.innerHTML = `<label for="${this[ID]}" class="time-label">${this[LABEL]}</label><br />
 
       <input 
         type="time" 
         ${this[VALUE] ? `value="${this[VALUE]}"` : ''}
-        data-id="${this[ID]}" 
+        id="${this[ID]}"
+        data-id="${this[ID]}"
         name="${this[ID]}"
         max="23:59"
         ${this[REQUIRED] ? 'required' : ''}
         ${this[READ_ONLY] ? 'readonly' : ''}
-        aria-describedby="${this[ID]}-time-hint time-error">
+        aria-describedby="${this[ID]}-time-hint ${this[ID]}-time-error">
         
       <!-- Accessible descriptions: Status hints and errors -->
-      <span data-id="${this[ID]}-time-hint" class="hint-text" hidden>Format: HH:MM (e.g., 14:30)</span>
-      <span data-id="${this[ID]}-time-error" class="error-text" aria-live="polite" hidden></span>
+      <span id="${this[ID]}-time-hint" data-id="${this[ID]}-time-hint" class="hint-text" hidden>Format: HH:MM (e.g., 14:30)</span>
+      <span id="${this[ID]}-time-error" data-id="${this[ID]}-time-error" class="error-text" aria-live="polite" hidden></span>
     `;
   }
 }

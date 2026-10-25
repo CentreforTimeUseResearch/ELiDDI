@@ -1,24 +1,42 @@
+/* the mobile layout: the scroll-snapping strip of Timelines, with the one
+   shared details panel (ADR 0005) below it, outside the horizontal scroll -
+   so it stays put on a swipe while its content follows the Dimension */
 el-timeline-stack {
   background-color: var(--color-canvas);
   flex-grow: 1;
-  overflow-y: auto;
+  /* a flex column of strip + panel. min-height: 0 lets the strip shrink to
+     the space left once the panel takes its height, instead of growing to
+     its multi-thousand-px content - see dynamicTimelineUI.css */
   display: flex;
-  overflow-x: scroll;
-  scroll-behavior: smooth !important;
-  scroll-snap-type: x mandatory !important;
+  flex-direction: column;
+  min-height: 0;
   max-width: 375px;
+  width: 100%;
   /* horizontal centering only - NOT the `margin: auto` shorthand, which
      also sets margin-top/bottom to auto and would fight this element's own
      flex-grow: 1 (its parent, #stack-container, is itself a flex column -
-     see dynamicTimelineUI.css, which is also where the full story lives
-     for why this element needs to actually fill the remaining vertical
-     space rather than sizing to its own multi-thousand-pixel content). */
+     see dynamicTimelineUI.css) */
   margin: 0 auto;
 
-  /* background-image: url(../../assets/images/timeline.png);
-    background-size: contain; */
-  & > * {
-    scroll-snap-align: start !important;
-    scroll-snap-stop: always !important;
+  .timeline-scroller {
+    flex-grow: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    overflow-x: scroll;
+    scroll-behavior: smooth !important;
+    scroll-snap-type: x mandatory !important;
+
+    & > * {
+      scroll-snap-align: start !important;
+      scroll-snap-stop: always !important;
+    }
+  }
+
+  /* in the column's flow below the strip, not sticky inside each Timeline
+     as it was when every Dimension had its own panel */
+  el-details-panel {
+    position: relative;
+    flex-shrink: 0;
   }
 }

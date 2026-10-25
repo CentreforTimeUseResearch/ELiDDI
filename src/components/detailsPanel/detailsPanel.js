@@ -19,7 +19,6 @@ export class DetailsPanel extends TinyBase {
   open = false;
   saveButton;
   dayBoundaryInMinutes;
-  currentDimensionIndex;
 
   timelinePickerPanel;
   popoverElement;
@@ -34,8 +33,6 @@ export class DetailsPanel extends TinyBase {
   }
 
   connectedCallback() {
-    const { currentDimensionIndex } = this.store.getState();
-    this.currentDimensionIndex = currentDimensionIndex;
     super.connectedCallback();
     // hand Timeline a small, named set of things it's allowed to do to
     // this panel, instead of it reaching in and calling our methods
@@ -212,22 +209,13 @@ export class DetailsPanel extends TinyBase {
     };
   }
 
+  // there's one panel, always for the current Dimension - its stack
+  // retargets it (DetailsPanelCoordinator), so it only follows open/closed
   onStoreUpdate() {
-    const { uipanel, currentDimensionIndex } = this.store.getState();
-    this.currentDimensionIndex = currentDimensionIndex;
-    const isMyDimension = Number(this[DIMENSION_INDEX]) === this.currentDimensionIndex;
-    const showActivityPanel = uipanel === 'details';
-
-    if (showActivityPanel) {
+    if (this.store.getState().uipanel === 'details') {
       this.showPanel();
     } else {
       this.hidePanel();
-    }
-
-    if (isMyDimension) {
-      this.classList.remove('hide');
-    } else {
-      this.classList.add('hide');
     }
   }
 
@@ -319,14 +307,6 @@ export class DetailsPanel extends TinyBase {
   }
 
   render() {
-    if (Number(this[DIMENSION_INDEX]) !== this.currentDimensionIndex) {
-      // hide
-      this.classList.add('hide');
-    } else {
-      this.classList.remove('hide');
-      //show
-    }
-
     this.innerHTML = `
             <div>
                 <button class="reset-to-div right" data-openCloseButton>

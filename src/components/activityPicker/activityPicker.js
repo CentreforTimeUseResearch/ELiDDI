@@ -18,7 +18,6 @@ export class ActivityPicker extends TinyBase {
   selectedActivities = [];
 
   input;
-  grid;
   popoverElement;
 
   constructor() {
@@ -60,7 +59,6 @@ export class ActivityPicker extends TinyBase {
 
   assignEventHandlers() {
     this.input = this.querySelector('input');
-    this.grid = this.querySelector('#ex1-grid');
     this.popoverElement = this.querySelector('#activity-picker-popover');
 
     this.input.addEventListener('keyup', (evt) => this.gridNavigation.handleKeyUp(evt));
@@ -190,7 +188,7 @@ export class ActivityPicker extends TinyBase {
                     aria-haspopup="grid"
                     aria-expanded="false"
                     aria-autocomplete="list"
-                    aria-controls="ex1-grid"
+                    aria-controls="activity-picker-popover"
                     id="activity-input_${this[DIMENSION_INDEX]}"
                     value=""
                 >

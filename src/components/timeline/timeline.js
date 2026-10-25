@@ -1,18 +1,15 @@
 import { getCurrentOffsetMins, getCurrentDiaryDateKey } from '../../utils/time';
-import { SHOW_PANEL } from '../../store/actionTypes';
 import { BaseTimeline, EMPTY_ENTRIES } from './baseTimeline';
 import { renderEntryBlocks, visibleLength } from './entryBlocks';
 import { Y_AXIS } from './entryResizeController';
 import { PX_PER_MINUTE, MINUTES_PER_DAY } from './timelineConstants';
 import './timeline.css';
 
-const INDEX = 'index';
-
 // One Dimension's Timeline in the mobile (vertical) layout. What's its own,
 // on top of BaseTimeline: the Primary activity mirror strip (the "shadow"
-// layer - Primary activity Entries drawn alongside every other Dimension),
-// the future overlay greying out the rest of today, and its own
-// <el-details-panel>, which registers this Timeline's panelActions.
+// layer - Primary activity Entries drawn alongside every other Dimension)
+// and the future overlay greying out the rest of today. Its details panel
+// is the stack's one shared panel (ADR 0005).
 export class Timeline extends BaseTimeline {
   static templateId = 'svg-timeline';
   static axis = Y_AXIS;
@@ -123,41 +120,6 @@ export class Timeline extends BaseTimeline {
       labelX: 100,
       labelWidth: 50,
     });
-  }
-
-  // this Timeline owns its details panel, so it opens it itself (unlike
-  // HorizontalTimeline, whose stack does)
-  onPanelOpened() {
-    this.store.dispatch({
-      type: SHOW_PANEL,
-      payload: 'details',
-    });
-  }
-
-  // appends the details panel as an element - not innerHTML +=, which
-  // would re-parse, and so replace, the SVG appended just before it
-  render() {
-    super.render();
-    const dimension = GLOBALS.DATA.timeline[this[INDEX]];
-    const panel = document.createElement('el-details-panel');
-    panel.setAttribute(
-      'key',
-      this.setProps(
-        {
-          saveEntry: (entry) => this.saveEntry(entry),
-          deleteEntry: (id) => this.deleteEntry(id),
-          findNextEntryAfter: (offsetMins) => this.findNextEntryAfter(offsetMins),
-          registerPanelActions: (actions) => {
-            this.panelActions = actions;
-          },
-        },
-        true
-      )
-    );
-    panel.setAttribute('dimensionindex', this[INDEX]);
-    panel.setAttribute('heading', dimension?.description ?? '');
-    panel.setAttribute('instruction', dimension?.instruction ?? '');
-    this.appendChild(panel);
   }
 }
 

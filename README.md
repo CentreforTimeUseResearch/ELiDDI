@@ -2,7 +2,7 @@
 
 ### Extended Light Digital Diary Instrument
 
-> **🌱 Early-stage, active development.** A working prototype exists — a full time-use diary that runs with or without JavaScript — but the feature set, accessibility conformance, and documentation are all still being built out. Watch or star the repo to follow along, and see [Contributing](#contributing) if you'd like to get involved. It is based on the work of [Andrei Foldes' O-timeusediary (OTUD)](https://github.com/andreifoldes/o-timeusediary)  
+> **🌱 Early-stage, active development.** A working prototype exists — a full time-use diary that runs with or without JavaScript — but the feature set, accessibility conformance, and documentation are all still being built out. Watch or star the repo to follow along, and see [Contributing](#contributing) if you'd like to get involved. It is based on the work of [Andrei Foldes' O-timeusediary (OTUD)](https://github.com/andreifoldes/o-timeusediary)
 
 ---
 
@@ -55,7 +55,7 @@ The diary's content (Dimensions, Activities, wording, onboarding) comes from `co
 
 ELiDDI is built as a **progressive enhancement** time-use diary: it must work as a plain HTML form with no JavaScript at all, then be enhanced by a set of Web Components when JavaScript is available.
 
-- **No-JS layer** — a build-time script (`scripts/generate_no_js.js`) reads `config/config.json` and generates the full diary as a real, submittable `<form>` of time-slot cards, injected into `index.html`. This can be turned off per-study via `general.accessibility.generateHtmlFallback: false` in the config (unchecked by default in the deployer tool) when progressive enhancement isn't a priority — the JS layer works either way.
+- **No-JS layer** — a build-time script (`scripts/generate_no_js.js`) reads `config/config.json` and generates the full diary as a real, submittable `<form>` of time-slot cards, injected into `index.html`. The generation is a pure function, `buildDiaryHtml()` in `scripts/lib/generateNoJs.js` (tested alongside it); the script around it only reads the config and fails the build if it can't. This can be turned off per-study via `general.accessibility.generateHtmlFallback: false` in the config (unchecked by default in the deployer tool) when progressive enhancement isn't a priority — the JS layer works either way.
 - **JS layer** — a hand-rolled set of Web Components (extending a small shared base class, `TinyBase`) takes over rendering once JavaScript loads, replacing the no-JS form with the interactive timeline UI.
 - **State management** — a single, hand-rolled Redux-style store holds all diary data, persisted to `localStorage`.
 

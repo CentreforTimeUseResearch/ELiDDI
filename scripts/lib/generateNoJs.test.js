@@ -1,0 +1,240 @@
+import { describe, it, expect } from 'vitest';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { readFileSync, mkdtempSync, cpSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import {
+  buildDiaryHtml,
+  generateCardNav,
+  createCardHTML,
+  createDimensionsWithFlattenedActivities,
+  generateDataLists,
+  SLOTS_PER_DAY,
+  SLOTS_PER_CHUNK,
+  NUM_CHUNKS,
+} from './generateNoJs';
+import { deepFreeze } from '../../src/utils/deepfreeze';
+
+// vitest runs from the project root (and under jsdom, URL is jsdom's, which fs rejects)
+const CONFIG_JSON = readFileSync(path.join(process.cwd(), 'config', 'config.json'), 'utf8');
+const CONFIG = JSON.parse(CONFIG_JSON);
+
+const BACKSLASH = String.fromCharCode(92);
+const parse = (html) => new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html');
+const withConfig = (change) => {
+  const config = structuredClone(CONFIG);
+  change(config);
+  return JSON.stringify(config);
+};
+
+// the slot (1-144) a card id "{chunk}_{cardNum}" stands for, and back
+const slotOf = (id) => {
+  const [chunk, cardNum] = id.split('_').map(Number);
+  return (chunk - 1) * SLOTS_PER_CHUNK + cardNum;
+};
+const idOf = (slot) => `${Math.ceil(slot / SLOTS_PER_CHUNK)}_${((slot - 1) % SLOTS_PER_CHUNK) + 1}`;
+
+describe('buildDiaryHtml', () => {
+  const doc = parse(buildDiaryHtml(CONFIG_JSON));
+  const cards = [...doc.querySelectorAll('li.card-tenMinutes')];
+
+  it('renders 144 ten-minute cards in 8 three-hour chunks of 18', () => {
+    expect(SLOTS_PER_DAY).toBe(144);
+    expect(cards).toHaveLength(144);
+    const chunks = [...doc.querySelectorAll('ol.card-threeHours')];
+    expect(chunks).toHaveLength(NUM_CHUNKS);
+    chunks.forEach((chunk) => expect(chunk.children).toHaveLength(SLOTS_PER_CHUNK));
+  });
+
+  it('ids each card {chunk}_{cardNum}, in day order', () => {
+    expect(cards.map((card) => card.id)).toEqual(
+      Array.from({ length: SLOTS_PER_DAY }, (_, i) => idOf(i + 1))
+    );
+  });
+
+  it('starts the day at 04:00 and ends it at 03:59', () => {
+    expect(cards[0].querySelector('h3').textContent).toBe('04:00 - 04:09');
+    expect(cards.at(-1).querySelector('h3').textContent).toBe('03:50 - 03:59');
+  });
+
+  // the boundary arithmetic is the riskiest logic here: every link must
+  // land exactly 1 or 6 slots away, across chunk boundaries, and exist only
+  // when that slot is inside the day
+  describe('slot navigation', () => {
+    const LINKS = {
+      'Skip backwards one hour': -6,
+      'Skip backwards ten minutes': -1,
+      'Skip forward ten minutes': 1,
+      'Skip forward one hour': 6,
+    };
+
+    it('links every card exactly 1 or 6 slots away, whenever that slot exists', () => {
+      cards.forEach((card) => {
+        const slot = slotOf(card.id);
+        const links = Object.fromEntries(
+          [...card.querySelectorAll('nav a')].map((a) => [a.textContent, a.getAttribute('href')])
+        );
+        Object.entries(LINKS).forEach(([label, delta]) => {
+          const target = slot + delta;
+          const expected = target >= 1 && target <= SLOTS_PER_DAY ? `#${idOf(target)}` : undefined;
+          expect(links[label], `${card.id}: ${label}`).toBe(expected);
+        });
+      });
+    });
+
+    it.each([
+      [
+        'the first card',
+        '1_1',
+        { 'Skip forward ten minutes': '#1_2', 'Skip forward one hour': '#1_7' },
+      ],
+      [
+        'the last card of a chunk',
+        '1_18',
+        { 'Skip forward ten minutes': '#2_1', 'Skip forward one hour': '#2_6' },
+      ],
+      [
+        'the first card of a chunk',
+        '2_1',
+        { 'Skip backwards ten minutes': '#1_18', 'Skip backwards one hour': '#1_13' },
+      ],
+      [
+        'the last card',
+        '8_18',
+        { 'Skip backwards ten minutes': '#8_17', 'Skip backwards one hour': '#8_12' },
+      ],
+    ])('links %s (%s) across the boundary', (_, id, expected) => {
+      const nav = parse(generateCardNav(...id.split('_').map(Number), 'slot'));
+      const links = Object.fromEntries(
+        [...nav.querySelectorAll('a')].map((a) => [a.textContent, a.getAttribute('href')])
+      );
+      expect(links).toMatchObject(expected);
+    });
+
+    it('links each chunk to the chunks either side', () => {
+      const chunkLinks = (n) =>
+        [...doc.getElementById(`chunk_${n}`).nextElementSibling.querySelectorAll('a')].map((a) =>
+          a.getAttribute('href')
+        );
+      expect(chunkLinks(1)).toEqual(['#chunk_2']);
+      expect(chunkLinks(4)).toEqual(['#chunk_3', '#chunk_5']);
+      expect(chunkLinks(8)).toEqual(['#chunk_7']);
+    });
+  });
+
+  it('emits only the GLOBALS block and an empty mount point when the HTML fallback is off', () => {
+    const json = withConfig((config) => {
+      config.general.accessibility.generateHtmlFallback = false;
+    });
+    const html = buildDiaryHtml(json);
+
+    expect(html).toBe(
+      `<script>GLOBALS = {DATA: ${json.replaceAll('<', BACKSLASH + 'u003c')} }; </script><el-dynamic-timeline></el-dynamic-timeline>`
+    );
+  });
+
+  // a config is researcher-authored and can be injected at deploy time
+  it('embeds the config so that a "</script>" in any label cannot end the block', () => {
+    const json = withConfig((config) => {
+      config.timeline[0].categories[0].activities[0].name = '</script><b>escaped</b><!--';
+    });
+    const parsed = parse(buildDiaryHtml(json));
+    const scripts = parsed.querySelectorAll('script');
+
+    expect(scripts).toHaveLength(1);
+    expect(parsed.querySelectorAll('b')).toHaveLength(0);
+    const embedded = scripts[0].textContent.match(/^GLOBALS = \{DATA: ([\s\S]*) \}; $/)[1];
+    expect(JSON.parse(embedded)).toEqual(JSON.parse(json));
+  });
+
+  it('gives each Dimension an id with no whitespace, shared by its input and datalist', () => {
+    const json = withConfig((config) => {
+      config.timeline[0].name = 'Time spent with others';
+      config.timeline[0].allow_free_text = true;
+    });
+    const parsed = parse(buildDiaryHtml(json));
+
+    const datalist = parsed.querySelector('datalist');
+    expect(datalist.id).toBe('time-spent-with-others');
+    expect(parsed.querySelector('li.card-tenMinutes input[type="text"]').getAttribute('list')).toBe(
+      'time-spent-with-others'
+    );
+  });
+
+  it('round-trips activity names containing HTML special characters', () => {
+    const names = [`Children's "quiet" time`, 'R&R <rest>', '5" screen'];
+    const json = withConfig((config) => {
+      config.timeline[5].categories[0].activities.push(
+        ...names.map((name) => ({ name, color: '#000000' }))
+      );
+    });
+    const parsed = parse(buildDiaryHtml(json));
+
+    const options = [
+      ...parsed.querySelector('li.card-tenMinutes').querySelectorAll('select option'),
+    ]
+      .map((option) => option.textContent)
+      .slice(-names.length);
+    expect(options.map((option) => option.split(' - ').at(-1))).toEqual(names);
+  });
+});
+
+// regression coverage (#147): createCardHTML assigned uniqueRef onto the
+// caller's dimension objects, once per card - 144 times over the same array
+describe('generation does not mutate its input', () => {
+  it('builds the dimensions, data lists and a card from frozen input', () => {
+    const timeline = deepFreeze(structuredClone(CONFIG.timeline));
+    const dimensions = deepFreeze(createDimensionsWithFlattenedActivities(timeline));
+
+    expect(() => generateDataLists(dimensions)).not.toThrow();
+    expect(() => createCardHTML(dimensions, '04:00 - 04:09', 1, 1)).not.toThrow();
+  });
+});
+
+describe('the generate_no_js.js CLI', () => {
+  const run = (env) =>
+    spawnSync(process.execPath, ['scripts/generate_no_js.js'], {
+      env: { ...process.env, ...env },
+      encoding: 'utf8',
+      maxBuffer: 1 << 26,
+    });
+
+  it('prints the diary for the committed config', () => {
+    const stdout = execFileSync(process.execPath, ['scripts/generate_no_js.js'], {
+      env: { ...process.env, ACTIONS_ENV: '' },
+      encoding: 'utf8',
+      maxBuffer: 1 << 26,
+    });
+    expect(stdout.trim()).toBe(buildDiaryHtml(CONFIG_JSON));
+  });
+
+  // regression coverage (#147): an unreadable config file was logged and
+  // the script exited 0 having printed nothing, so the build silently
+  // injected an empty diary. Run from a copy of the project with no config/
+  it('exits non-zero, printing nothing to stdout, when the config file cannot be read', () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'eliddi-no-config-'));
+    try {
+      ['scripts/generate_no_js.js', 'scripts/lib/generateNoJs.js', 'src/utils/html.js'].forEach(
+        (file) => cpSync(file, path.join(root, file))
+      );
+      const result = spawnSync(process.execPath, [path.join(root, 'scripts/generate_no_js.js')], {
+        env: { ...process.env, ACTIONS_ENV: '' },
+        encoding: 'utf8',
+      });
+
+      expect(result.status).not.toBe(0);
+      expect(result.stdout).toBe('');
+      expect(result.stderr).toMatch(/config/i);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('exits non-zero, printing nothing to stdout, when the config is not valid JSON', () => {
+    const result = run({ ACTIONS_ENV: '{ not json' });
+
+    expect(result.status).not.toBe(0);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toMatch(/config/i);
+  });
+});

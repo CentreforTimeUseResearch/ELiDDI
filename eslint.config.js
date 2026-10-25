@@ -43,5 +43,14 @@ export default [
       },
     },
   },
+  // their tests run in vitest's jsdom environment, so parse output with DOMParser
+  {
+    files: ['scripts/**/*.test.js'],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+      },
+    },
+  },
   prettierConfig,
 ];

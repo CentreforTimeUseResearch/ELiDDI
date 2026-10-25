@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Timeline } from './timeline';
+import { moveToNewParent, errorsDuring } from '../../testing/domMoves';
 // Timeline only references '<el-details-panel>' as a string in its render
 // template - it never imports the class, so DetailsPanel is only ever
 // registered as a customElements side effect of *something* importing it.
@@ -1463,5 +1464,68 @@ describe('Timeline future overlay', () => {
     appStore.dispatch({ type: SWITCH_DATE, payload: '2000-01-01' });
 
     expect(Number(el.querySelector('#future-overlay').getAttribute('height'))).toBe(0);
+  });
+});
+
+// regression coverage (#163): a Timeline only worked for its first
+// connection. Moving it re-ran render() on top of the existing markup -
+// innerHTML += rebuilt the SVG and added a second details panel (whose props
+// key had been released, so it threw) - and the `ready` flag stopped the
+// click listeners being re-bound to the new SVG
+describe('Timeline moved in the DOM', () => {
+  beforeEach(() => {
+    if (!customElements.get('el-timeline')) {
+      customElements.define('el-timeline', Timeline);
+    }
+    if (!document.getElementById('svg-timeline')) {
+      const template = document.createElement('template');
+      template.id = 'svg-timeline';
+      template.innerHTML = `
+        <svg>
+          <g id="timeline-shadow"></g>
+          <rect id="future-overlay"></rect>
+          <g id="events"></g>
+        </svg>
+      `;
+      document.head.appendChild(template);
+    }
+    document.body.innerHTML = '';
+  });
+
+  function createTimeline() {
+    const el = document.createElement('el-timeline');
+    el.setAttribute('index', '2');
+    document.body.appendChild(el);
+    // a click target, whichever test's <template> happened to be registered
+    const zone = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    zone.id = 'gridline_zone';
+    el.timeLineElement.appendChild(zone);
+    return el;
+  }
+
+  it('keeps one SVG and one details panel, without errors', () => {
+    const el = createTimeline();
+    const svg = el.timeLineElement;
+
+    const errors = errorsDuring(() => moveToNewParent(el));
+
+    expect(errors).toEqual([]);
+    expect(el.querySelectorAll(':scope > svg')).toHaveLength(1);
+    expect(el.querySelectorAll('el-details-panel')).toHaveLength(1);
+    expect(el.timeLineElement).toBe(svg);
+    expect(svg.isConnected).toBe(true);
+  });
+
+  it('still opens a new Entry from a gridline click - once', () => {
+    const el = createTimeline();
+    moveToNewParent(el);
+    const openNewEntry = vi.fn();
+    el.panelActions.openNewEntry = openNewEntry;
+
+    el.querySelector('[id="gridline_zone"]').dispatchEvent(
+      new MouseEvent('click', { bubbles: true })
+    );
+
+    expect(openNewEntry).toHaveBeenCalledOnce();
   });
 });

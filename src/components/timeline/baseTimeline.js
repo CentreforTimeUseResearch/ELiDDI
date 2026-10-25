@@ -28,8 +28,10 @@ export const EMPTY_ENTRIES = [];
 // stack's shared panel's.
 export class BaseTimeline extends TinyBase {
   static observedAttributes = [INDEX];
+  // the SVG and (for Timeline) the details panel are built once and kept
+  // across a DOM move - see TinyBase.connectedCallback
+  static renderOnce = true;
 
-  ready = false;
   store = super.getStore();
   fragment;
   timeLineElement;
@@ -183,23 +185,15 @@ export class BaseTimeline extends TinyBase {
     return point.matrixTransform(ctm.inverse())[coord];
   }
 
+  // once per connection: the SVG outlives a disconnect (renderOnce), so its
+  // listeners are removed on disconnect and added again on reconnect
   assignEventHandlers() {
-    if (this.ready) {
-      return;
-    }
-    this.timeLineElement?.addEventListener('click', (e) => this.onTimelineClick(e));
-    this.timeLineElement?.addEventListener('pointerdown', (e) =>
-      this.resizeController.onEntryPointerDown(e)
-    );
-    this.timeLineElement?.addEventListener('pointermove', (e) =>
-      this.resizeController.onEntryPointerMove(e)
-    );
-    this.timeLineElement?.addEventListener('pointerup', (e) =>
-      this.resizeController.handlePointerUp(e)
-    );
-    this.timeLineElement?.addEventListener('pointercancel', (e) =>
-      this.resizeController.handlePointerCancel(e)
-    );
+    const svg = this.timeLineElement;
+    this.listen(svg, 'click', (e) => this.onTimelineClick(e));
+    this.listen(svg, 'pointerdown', (e) => this.resizeController.onEntryPointerDown(e));
+    this.listen(svg, 'pointermove', (e) => this.resizeController.onEntryPointerMove(e));
+    this.listen(svg, 'pointerup', (e) => this.resizeController.handlePointerUp(e));
+    this.listen(svg, 'pointercancel', (e) => this.resizeController.handlePointerCancel(e));
     // belt-and-braces against the scrollable stack panning during a touch
     // drag. touch-action:none (on the handle, and for the drag's duration
     // the whole SVG - see startHandleDrag/timeline.css) is the primary
@@ -209,17 +203,12 @@ export class BaseTimeline extends TinyBase {
     // touchstart/touchmove preventDefault() forces main-thread arbitration
     // and is honoured regardless - Pointer Events alone weren't enough (a
     // pointercancel fired on the first drag after a fresh long-press)
-    this.timeLineElement?.addEventListener(
-      'touchstart',
-      (e) => this.resizeController.handleTouchStart(e),
-      { passive: false }
-    );
-    this.timeLineElement?.addEventListener(
-      'touchmove',
-      (e) => this.resizeController.handleTouchMove(e),
-      { passive: false }
-    );
-    this.ready = true;
+    this.listen(svg, 'touchstart', (e) => this.resizeController.handleTouchStart(e), {
+      passive: false,
+    });
+    this.listen(svg, 'touchmove', (e) => this.resizeController.handleTouchMove(e), {
+      passive: false,
+    });
   }
 
   // thin delegating wrappers onto EntryResizeController, kept so the

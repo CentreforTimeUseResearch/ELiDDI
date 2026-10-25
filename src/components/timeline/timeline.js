@@ -1,6 +1,5 @@
 import { getCurrentOffsetMins, getCurrentDiaryDateKey } from '../../utils/time';
 import { SHOW_PANEL } from '../../store/actionTypes';
-import { escapeHtml } from '../../utils/html';
 import { BaseTimeline, EMPTY_ENTRIES } from './baseTimeline';
 import { renderEntryBlocks, visibleLength } from './entryBlocks';
 import { Y_AXIS } from './entryResizeController';
@@ -135,21 +134,30 @@ export class Timeline extends BaseTimeline {
     });
   }
 
+  // appends the details panel as an element - not innerHTML +=, which
+  // would re-parse, and so replace, the SVG appended just before it
   render() {
     super.render();
-    this.innerHTML += `<el-details-panel
-      ${this.setProps({
-        saveEntry: (entry) => this.saveEntry(entry),
-        deleteEntry: (id) => this.deleteEntry(id),
-        findNextEntryAfter: (offsetMins) => this.findNextEntryAfter(offsetMins),
-        registerPanelActions: (actions) => {
-          this.panelActions = actions;
+    const dimension = GLOBALS.DATA.timeline[this[INDEX]];
+    const panel = document.createElement('el-details-panel');
+    panel.setAttribute(
+      'key',
+      this.setProps(
+        {
+          saveEntry: (entry) => this.saveEntry(entry),
+          deleteEntry: (id) => this.deleteEntry(id),
+          findNextEntryAfter: (offsetMins) => this.findNextEntryAfter(offsetMins),
+          registerPanelActions: (actions) => {
+            this.panelActions = actions;
+          },
         },
-      })}
-      dimensionindex=${this[INDEX]}
-      heading="${escapeHtml(GLOBALS.DATA.timeline[this[INDEX]]?.description)}"
-      instruction="${escapeHtml(GLOBALS.DATA.timeline[this[INDEX]]?.instruction)}"
-    ></el-details-panel>`;
+        true
+      )
+    );
+    panel.setAttribute('dimensionindex', this[INDEX]);
+    panel.setAttribute('heading', dimension?.description ?? '');
+    panel.setAttribute('instruction', dimension?.instruction ?? '');
+    this.appendChild(panel);
   }
 }
 

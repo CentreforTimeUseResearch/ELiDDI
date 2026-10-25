@@ -5,6 +5,9 @@ import { SWITCH_DIMENSION } from '../../store/actionTypes';
 import './timelineStack.css';
 
 export class TimelineStack extends TinyBase {
+  // its Timelines are built once and kept across a DOM move - see
+  // TinyBase.connectedCallback
+  static renderOnce = true;
   store = super.getStore();
   timelinesData = GLOBALS.DATA.timeline;
   numTimelines = GLOBALS.DATA.timeline.length;

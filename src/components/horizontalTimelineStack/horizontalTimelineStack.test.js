@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { HorizontalTimelineStack } from './horizontalTimelineStack';
+import { moveToNewParent, errorsDuring } from '../../testing/domMoves';
 // HorizontalTimelineStack only references '<el-details-panel>' as a string
 // in its render() (same reasoning as Timeline, see timeline.test.js) - pull
 // it in explicitly so the panelActions contract can actually wire up.
@@ -51,6 +52,24 @@ describe('HorizontalTimelineStack', () => {
     document.body.appendChild(el);
     return el;
   }
+
+  // regression coverage (#163): render() appended a new axis, rows and
+  // panel on every connection, so a moved stack doubled them
+  it('keeps one axis, its rows and one panel when moved, and its rows still open Entries', () => {
+    const el = createStack();
+    const children = [...el.children];
+
+    const errors = errorsDuring(() => moveToNewParent(el));
+    const openNewEntryForRow = vi.spyOn(el, 'openNewEntryForRow');
+    el.querySelectorAll('el-horizontal-timeline')[2]
+      .querySelector('[id="gridline_zone"]')
+      .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    expect(errors).toEqual([]);
+    expect([...el.children]).toEqual(children);
+    expect(openNewEntryForRow).toHaveBeenCalledOnce();
+    expect(openNewEntryForRow.mock.calls[0][0]).toBe(2);
+  });
 
   it('mounts one axis, one row per Dimension, and one shared details panel, in order', () => {
     const el = createStack();

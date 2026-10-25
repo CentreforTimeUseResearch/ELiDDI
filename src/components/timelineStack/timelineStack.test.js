@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import './timelineStack';
+import { moveToNewParent, errorsDuring } from '../../testing/domMoves';
 // deliberately NOT importing DetailsPanel (unlike timeline.test.js): this
 // suite is only about scroll-snap, and leaving <el-details-panel>
 // unregistered keeps it inert. Six registered panels would render six
@@ -35,6 +36,18 @@ describe('TimelineStack scroll-snap Dimension switching', () => {
     document.body.appendChild(stack);
     return stack;
   }
+
+  // regression coverage (#163): render() appended a full set of Timelines
+  // on every connection, so a moved stack had twelve
+  it('keeps one Timeline per Dimension when moved', () => {
+    const stack = createStack();
+    const timelines = [...stack.children];
+
+    const errors = errorsDuring(() => moveToNewParent(stack));
+
+    expect(errors).toEqual([]);
+    expect([...stack.children]).toEqual(timelines);
+  });
 
   // snapTargetInline can't be set through the Event constructor, so it's
   // attached to a plain Event the way a browser exposes it

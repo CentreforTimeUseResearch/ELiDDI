@@ -39,7 +39,7 @@ export class TinyBase extends HTMLElement {
 
   registerCleanup(cleanupFn) { … }   // teardown for timers, subscriptions, listeners
   listen(target, type, handler, options) { … } // addEventListener, removed on disconnect
-  connectedCallback() { … }           // resolveProps(), then render()
+  connectedCallback() { … }           // resolveProps(), then render() (first connect only if renderOnce)
   resolveProps() { … }                // reads `key`, resolves this.props (kept across a DOM move)
   getProps(key) { … }                 // looks up props stashed by a parent (see propsRegistry.js)
   getStore() { … }                    // returns the single app-wide store
@@ -62,6 +62,8 @@ It provides three things every component would otherwise reimplement:
 3. **Store access.** `getStore()` returns the single app-wide store singleton — see the [store README](../store/README.md).
 
 `connectedCallback()`'s default implementation calls `resolveProps()` (read the `key` attribute, look `this.props` up in the registry) and then `render()`. A component with its own `connectedCallback` override should still call `super.connectedCallback()`, or at least `resolveProps()` (as `DialogWidget` does) — see almost any component in this folder for the pattern.
+
+**Moving a component (disconnect, then reconnect)** re-runs `connectedCallback`, and so by default `render()`. A component whose markup must survive a move sets `static renderOnce = true`: it renders on first connect only, and a reconnect keeps that markup and its state. Everything set up per connection still is: listeners via `listen()`, subscriptions and timers via `registerCleanup()`, all torn down on disconnect. `BaseTimeline` (so both Timelines), `TimelineStack` and `HorizontalTimelineStack` use it, since re-rendering them would rebuild their SVGs or duplicate their children (#163).
 
 ## `propsRegistry.js`
 

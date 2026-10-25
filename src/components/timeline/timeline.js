@@ -32,8 +32,8 @@ export class Timeline extends BaseTimeline {
 
   getChildElementReferences() {
     super.getChildElementReferences();
-    this.shadowEntriesLayer = this.timeLineElement.querySelector('[id="timeline-shadow"]');
-    this.futureOverlayElement = this.timeLineElement.querySelector('[id="future-overlay"]');
+    this.shadowEntriesLayer = this.part('timeline-shadow');
+    this.futureOverlayElement = this.part('future-overlay');
   }
 
   getPxPerMinute() {

@@ -91,24 +91,26 @@ export class BaseTimeline extends TinyBase {
     this.appendChild(this.fragment);
   }
 
-  // Attribute selectors ('[id="x"]'), not '#x': one Timeline is mounted per
-  // Dimension, each cloning the same template, so ids like #events are
-  // duplicated across the document. Real browsers scope '#x' to the calling
-  // element's subtree regardless, but jsdom doesn't - querySelector('#events')
-  // on a second instance's own <svg> returned null while
-  // querySelector('[id="events"]') found it.
+  // The SVG's parts are named with data-part, not id: one Timeline is
+  // mounted per Dimension, each cloning the same template, so an id would be
+  // repeated in the document (#170)
   getChildElementReferences() {
     this.timeLineElement = this.querySelector('svg');
-    this.entriesLayer = this.timeLineElement.querySelector('[id="events"]');
+    this.entriesLayer = this.part('events');
     // real markup (index.html) always has this above #events; test fixtures
     // that build a minimal <svg> don't, so fall back to creating it -
     // appended last so it renders above entries either way
-    this.handlesLayer = this.timeLineElement.querySelector('[id="drag-handles"]');
+    this.handlesLayer = this.part('drag-handles');
     if (!this.handlesLayer) {
       this.handlesLayer = document.createElementNS(SVGNS, 'g');
-      this.handlesLayer.setAttribute('id', 'drag-handles');
+      this.handlesLayer.setAttribute('data-part', 'drag-handles');
       (this.entriesLayer?.parentNode ?? this.timeLineElement).appendChild(this.handlesLayer);
     }
+  }
+
+  // the element named data-part="<name>" in this Timeline's SVG
+  part(name) {
+    return this.timeLineElement.querySelector(`[data-part="${name}"]`);
   }
 
   createResizeController() {
@@ -165,7 +167,7 @@ export class BaseTimeline extends TinyBase {
 
   // converts a pointer's screen coordinates into this SVG's own user
   // coordinate along the time axis, accounting for the viewBox and any CSS
-  // transforms on ancestors (e.g. #wrapper's translateX), rather than
+  // transforms on ancestors (e.g. the wrapper part's translateX), rather than
   // assuming 1 CSS px === 1 viewBox unit - which breaks whenever the SVG
   // renders narrower than its viewBox (seen on a real device, Chrome, under
   // zoom/text-scaling)
@@ -270,7 +272,7 @@ export class BaseTimeline extends TinyBase {
       this.panelActions.openEntry(entry);
     } else {
       // only a click in the gridline zone starts a new Entry
-      if (e.target.id !== 'gridline_zone') {
+      if (e.target.dataset?.part !== 'gridline-zone') {
         return;
       }
       // clear anything left over from an edit opened but never saved/deleted

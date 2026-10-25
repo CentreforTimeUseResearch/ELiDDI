@@ -83,7 +83,7 @@ export class DialogWidget extends TinyBase {
 
   render() {
     this.innerHTML = `
-        <dialog id="dialog">
+        <dialog>
             <div class="dialog-layout">
                 <div class="dialog-content">
                     ${this.props?.content ?? ''}

@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { installSvgTemplates } from '../../testing/svgTemplates';
 import { HorizontalTimeline } from './horizontalTimeline';
 import { moveToNewParent, errorsDuring } from '../../testing/domMoves';
 import { TinyBase } from '../base';
@@ -78,18 +79,7 @@ describe('HorizontalTimeline mounted', () => {
     if (!customElements.get('el-horizontal-timeline')) {
       customElements.define('el-horizontal-timeline', HorizontalTimeline);
     }
-    if (!document.getElementById('svg-horizontal-timeline-row')) {
-      const template = document.createElement('template');
-      template.id = 'svg-horizontal-timeline-row';
-      template.innerHTML = `
-        <svg>
-          <rect id="gridline_zone"></rect>
-          <g id="events"></g>
-          <g id="drag-handles"></g>
-        </svg>
-      `;
-      document.head.appendChild(template);
-    }
+    installSvgTemplates();
     document.body.innerHTML = '';
   });
 
@@ -124,7 +114,7 @@ describe('HorizontalTimeline mounted', () => {
       const svg = el.timeLineElement;
 
       const errors = errorsDuring(() => moveToNewParent(el));
-      el.querySelector('[id="gridline_zone"]').dispatchEvent(
+      el.querySelector('[data-part="gridline-zone"]').dispatchEvent(
         new MouseEvent('click', { bubbles: true })
       );
 
@@ -152,7 +142,7 @@ describe('HorizontalTimeline mounted', () => {
 
     const { el } = createHorizontalTimeline(2); // Location
 
-    expect(el.querySelector('#events rect[data-id="1"]')).not.toBeNull();
+    expect(el.querySelector('[data-part="events"] rect[data-id="1"]')).not.toBeNull();
   });
 
   it('redraws the SVG entries layer when the date changes', () => {
@@ -172,11 +162,11 @@ describe('HorizontalTimeline mounted', () => {
     });
 
     const { el } = createHorizontalTimeline(3); // Who
-    expect(el.querySelector('#events rect[data-id="1"]')).not.toBeNull();
+    expect(el.querySelector('[data-part="events"] rect[data-id="1"]')).not.toBeNull();
 
     appStore.dispatch({ type: SWITCH_DATE, payload: dateB });
 
-    expect(el.querySelector('#events rect[data-id="1"]')).toBeNull();
+    expect(el.querySelector('[data-part="events"] rect[data-id="1"]')).toBeNull();
   });
 
   // regression coverage (#143): see Timeline's equivalent test. Unlike
@@ -209,7 +199,7 @@ describe('HorizontalTimeline mounted', () => {
     const date = '2026-09-10';
     appStore.dispatch({ type: SWITCH_DATE, payload: date });
     const { el } = createHorizontalTimeline(4); // Device
-    expect(el.querySelector('#events rect')).toBeNull();
+    expect(el.querySelector('[data-part="events"] rect')).toBeNull();
 
     appStore.dispatch({
       type: ADD_ENTRY,
@@ -223,7 +213,7 @@ describe('HorizontalTimeline mounted', () => {
       },
     });
 
-    expect(el.querySelector('#events rect[data-id="7"]')).not.toBeNull();
+    expect(el.querySelector('[data-part="events"] rect[data-id="7"]')).not.toBeNull();
   });
 
   // Phase 10.5: geometry and the svg's own width/viewBox are both
@@ -301,12 +291,16 @@ describe('HorizontalTimeline mounted', () => {
       appStore.dispatch({ type: SET_HORIZONTAL_ZOOM, payload: 1 });
     });
 
-    it('calls panelActions.openNewEntry with the clicked time slot on a gridline_zone click', () => {
+    it('calls panelActions.openNewEntry with the clicked time slot on a gridline-zone click', () => {
       const { el, panelActions } = createHorizontalTimeline(0);
 
       // clientToSvgCoord falls back to raw clientX in this test environment
       // (no SVG geometry APIs), same as Timeline's own equivalent test
-      el.onTimelineClick({ target: { id: 'gridline_zone', dataset: {} }, clientX: 40, clientY: 0 });
+      el.onTimelineClick({
+        target: { dataset: { part: 'gridline-zone' } },
+        clientX: 40,
+        clientY: 0,
+      });
 
       expect(panelActions.openNewEntry).toHaveBeenCalledWith(20); // calculateTheTimeSlotClicked(40) -> 20
     });
@@ -356,7 +350,7 @@ describe('HorizontalTimeline mounted', () => {
       );
     });
 
-    it('does not open a new entry for a click outside the gridline_zone', () => {
+    it('does not open a new entry for a click outside the gridline zone', () => {
       const { el, panelActions } = createHorizontalTimeline(0);
 
       el.onTimelineClick({ target: { id: 'something-else', dataset: {} } });
@@ -390,7 +384,7 @@ describe('HorizontalTimeline mounted', () => {
         },
       });
       const { el } = createHorizontalTimeline(2);
-      const rect = el.querySelector('#events rect[data-id="1"]');
+      const rect = el.querySelector('[data-part="events"] rect[data-id="1"]');
 
       el.onEntryPointerDown({
         target: rect,
@@ -401,7 +395,7 @@ describe('HorizontalTimeline mounted', () => {
       });
       vi.advanceTimersByTime(500);
       const endHandleHitArea = el.querySelector(
-        '#drag-handles .resize-handle[data-handle-edge="end"] .resize-handle-hit-area'
+        '[data-part="drag-handles"] .resize-handle[data-handle-edge="end"] .resize-handle-hit-area'
       );
       expect(endHandleHitArea).not.toBeNull();
 

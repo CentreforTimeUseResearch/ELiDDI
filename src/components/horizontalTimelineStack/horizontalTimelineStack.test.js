@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { installSvgTemplates } from '../../testing/svgTemplates';
 import { HorizontalTimelineStack } from './horizontalTimelineStack';
 import { moveToNewParent, errorsDuring } from '../../testing/domMoves';
 // HorizontalTimelineStack only references '<el-details-panel>' as a string
@@ -18,31 +19,7 @@ describe('HorizontalTimelineStack', () => {
     if (!customElements.get('el-details-panel')) {
       customElements.define('el-details-panel', DetailsPanel);
     }
-    if (!document.getElementById('svg-horizontal-timeline-axis')) {
-      const template = document.createElement('template');
-      template.id = 'svg-horizontal-timeline-axis';
-      template.innerHTML = `
-        <svg>
-          <rect id="future-overlay"></rect>
-          <g id="grid-lines"></g>
-          <rect id="gradient-bar"></rect>
-          <g id="hour-labels"></g>
-        </svg>
-      `;
-      document.head.appendChild(template);
-    }
-    if (!document.getElementById('svg-horizontal-timeline-row')) {
-      const template = document.createElement('template');
-      template.id = 'svg-horizontal-timeline-row';
-      template.innerHTML = `
-        <svg>
-          <rect id="gridline_zone"></rect>
-          <g id="events"></g>
-          <g id="drag-handles"></g>
-        </svg>
-      `;
-      document.head.appendChild(template);
-    }
+    installSvgTemplates();
     document.body.innerHTML = '';
     appStore.dispatch({ type: HIDE_PANEL });
   });
@@ -62,7 +39,7 @@ describe('HorizontalTimelineStack', () => {
     const errors = errorsDuring(() => moveToNewParent(el));
     appStore.dispatch({ type: HIDE_PANEL });
     el.querySelectorAll('el-horizontal-timeline')[2]
-      .querySelector('[id="gridline_zone"]')
+      .querySelector('[data-part="gridline-zone"]')
       .dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
     expect(errors).toEqual([]);

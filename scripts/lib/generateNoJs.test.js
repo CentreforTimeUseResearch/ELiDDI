@@ -179,6 +179,110 @@ describe('buildDiaryHtml', () => {
   });
 });
 
+// regression coverage (#160): a submitted no-JS form must say, for every
+// slot, which answer belongs to which Dimension. Before, Primary activity
+// and Enjoyment shared the name "{slot}-enjoyed", checkboxes had no value
+// (each ticked box sent just "on"), every multiple-choice Dimension got a
+// hard-coded "Alone" box, and an untouched dropdown sent its first activity
+describe('the submitted form', () => {
+  const doc = parse(buildDiaryHtml(CONFIG_JSON));
+  const form = doc.querySelector('form');
+  const dimensions = createDimensionsWithFlattenedActivities(CONFIG.timeline);
+  const card = (id) => doc.getElementById(id);
+  const fieldName = (slotId, dimension) => `${slotId}-${dimension.uniqueRef}`;
+  const CONTINUE = 'activity_continued_until_next_entry';
+
+  it('gives every element in the document a unique id', () => {
+    const ids = [...doc.querySelectorAll('[id]')].map((element) => element.id);
+    const repeated = ids.filter((id, index) => ids.indexOf(id) !== index);
+    expect(repeated).toEqual([]);
+  });
+
+  it("points every label at the control in its own question, named for that label's Dimension", () => {
+    [...doc.querySelectorAll('li.card-tenMinutes')].forEach((cardElement) => {
+      cardElement.querySelectorAll('label[for]').forEach((label) => {
+        const control = doc.getElementById(label.htmlFor);
+        // inside the label's own question cell - with a repeated id, the
+        // document's first match is a different Dimension's control
+        expect(label.closest('.gridCell').contains(control), label.htmlFor).toBe(true);
+        expect(control.name, label.htmlFor).toBe(label.htmlFor);
+      });
+    });
+  });
+
+  it('names every control after exactly one Dimension of its slot (or the continue box)', () => {
+    const expected = new Set([...dimensions.map((d) => fieldName('1_1', d)), `1_1-${CONTINUE}`]);
+    const names = new Set([...card('1_1').querySelectorAll('[name]')].map((c) => c.name));
+    expect(names).toEqual(expected);
+  });
+
+  it("offers each multiple-choice Dimension exactly its configured options, each box's value its option", () => {
+    dimensions
+      .filter((dimension) => dimension.mode === 'multiple-choice')
+      .forEach((dimension) => {
+        const boxes = [
+          ...card('1_1').querySelectorAll(
+            `input[type="checkbox"][name="${fieldName('1_1', dimension)}"]`
+          ),
+        ];
+        expect(boxes.map((box) => box.value)).toEqual(dimension.options);
+        expect(boxes.map((box) => box.parentElement.textContent)).toEqual(dimension.options);
+      });
+  });
+
+  it('starts each dropdown on an empty "not answered" choice', () => {
+    card('1_1')
+      .querySelectorAll('select')
+      .forEach((select) => {
+        expect(select.value, select.name).toBe('');
+        expect(select.options[0].textContent).toMatch(/not answered/i);
+      });
+  });
+
+  it('puts no list attribute on the continue checkbox', () => {
+    expect(card('1_1').querySelector(`[name="1_1-${CONTINUE}"]`).hasAttribute('list')).toBe(false);
+  });
+
+  it("submits each Dimension's answer under its own name, and nothing for an untouched card", () => {
+    const [primary, secondary, location, who, device, enjoyment] = dimensions;
+    const set = (name, value) => {
+      form.querySelector(`[name="${name}"]`).value = value;
+    };
+    const tick = (name, option) => {
+      [...form.querySelectorAll(`[name="${name}"]`)].find((box) => box.value === option).checked =
+        true;
+    };
+
+    set(fieldName('1_1', primary), primary.options[3]);
+    set(fieldName('1_1', secondary), 'reading the news');
+    set(fieldName('1_1', location), location.options[0]);
+    tick(fieldName('1_1', who), who.options[1]);
+    tick(fieldName('1_1', who), who.options[2]);
+    tick(fieldName('1_1', device), device.options[0]);
+    set(fieldName('1_1', enjoyment), enjoyment.options[4]);
+    form.querySelector(`[name="1_1-${CONTINUE}"]`).checked = true;
+
+    const data = new FormData(form);
+    expect(data.getAll(fieldName('1_1', primary))).toEqual([primary.options[3]]);
+    expect(data.getAll(fieldName('1_1', secondary))).toEqual(['reading the news']);
+    expect(data.getAll(fieldName('1_1', location))).toEqual([location.options[0]]);
+    expect(data.getAll(fieldName('1_1', who))).toEqual([who.options[1], who.options[2]]);
+    expect(data.getAll(fieldName('1_1', device))).toEqual([device.options[0]]);
+    expect(data.getAll(fieldName('1_1', enjoyment))).toEqual([enjoyment.options[4]]);
+    expect(data.getAll(`1_1-${CONTINUE}`)).toEqual(['on']);
+
+    // an untouched card: empty dropdowns and text, no checkbox entries
+    const untouched = [...data.entries()].filter(([name]) => name.startsWith('1_2-'));
+    expect(untouched.every(([, value]) => value === '')).toBe(true);
+    expect(untouched.map(([name]) => name).sort()).toEqual(
+      dimensions
+        .filter((dimension) => dimension.mode === 'single-choice')
+        .map((dimension) => fieldName('1_2', dimension))
+        .sort()
+    );
+  });
+});
+
 // regression coverage (#147): createCardHTML assigned uniqueRef onto the
 // caller's dimension objects, once per card - 144 times over the same array
 describe('generation does not mutate its input', () => {

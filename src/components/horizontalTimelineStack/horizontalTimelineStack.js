@@ -17,6 +17,9 @@ import './horizontalTimelineStack.css';
 // so this class sits in the middle routing between whichever row is
 // currently "active" and the one real panel instance.
 export class HorizontalTimelineStack extends TinyBase {
+  // its axis, rows and shared panel are built once and kept across a DOM
+  // move - see TinyBase.connectedCallback
+  static renderOnce = true;
   store = super.getStore();
   numTimelines = GLOBALS.DATA.timeline.length;
   panelElement;

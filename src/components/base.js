@@ -36,9 +36,19 @@ export class TinyBase extends HTMLElement {
     this.registerCleanup(() => target.removeEventListener(type, handler, options));
   }
 
+  // A component sets `static renderOnce = true` when its markup must survive
+  // a DOM move: it renders on first connect only, and a reconnect keeps that
+  // markup (with whatever state it holds), re-running just the rest of its
+  // connectedCallback - so listeners and subscriptions, which disconnect
+  // tore down, must be set up there, per the lifecycle rule above. Every
+  // other component re-renders on each connect.
   connectedCallback() {
     this.resolveProps();
+    if (this.constructor.renderOnce && this.hasRendered) {
+      return;
+    }
     this.render();
+    this.hasRendered = true;
   }
 
   // props are resolved on first connect and kept: on a reconnect (a DOM

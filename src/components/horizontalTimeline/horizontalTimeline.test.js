@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { HorizontalTimeline } from './horizontalTimeline';
+import { moveToNewParent, errorsDuring } from '../../testing/domMoves';
 import { TinyBase } from '../base';
 import { appStore } from '../../store/appStore';
 import { ADD_ENTRY, SWITCH_DATE, SET_HORIZONTAL_ZOOM, HIDE_PANEL } from '../../store/actionTypes';
@@ -115,6 +116,24 @@ describe('HorizontalTimeline mounted', () => {
     document.body.appendChild(el);
     return { el, panelActions };
   }
+
+  // regression coverage (#163): see the Timeline equivalent in timeline.test.js
+  describe('moved in the DOM', () => {
+    it('keeps its SVG, without errors, and still opens a new Entry from a click - once', () => {
+      const { el, panelActions } = createHorizontalTimeline(2);
+      const svg = el.timeLineElement;
+
+      const errors = errorsDuring(() => moveToNewParent(el));
+      el.querySelector('[id="gridline_zone"]').dispatchEvent(
+        new MouseEvent('click', { bubbles: true })
+      );
+
+      expect(errors).toEqual([]);
+      expect(el.querySelectorAll(':scope > svg')).toHaveLength(1);
+      expect(el.timeLineElement).toBe(svg);
+      expect(panelActions.openNewEntry).toHaveBeenCalledOnce();
+    });
+  });
 
   it('draws a pre-existing entry for its dimension/date on mount', () => {
     const date = '2026-08-21';

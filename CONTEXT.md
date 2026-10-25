@@ -27,7 +27,7 @@ The person filling in the diary. Every other term here is defined from their poi
 ## Recording a span of time
 
 **Entry**:
-One recorded span of time within a Timeline: a Start time, an End time, and the Activity selected for that Dimension during that span. The actual data a Respondent produces — as distinct from an Activity, which is just the menu of things they could have chosen.
+One recorded span of time within a Timeline: a Start time, an End time, and the Activity selected for that Dimension during that span. The actual data a Respondent produces — as distinct from an Activity, which is just the menu of things they could have chosen. An Entry lasts at least 10 minutes (one time slot), however it's entered: typed in the details panel or resized by dragging.
 
 **Start time**:
 The clock time at which an Entry begins, measured as an offset from the Day boundary.

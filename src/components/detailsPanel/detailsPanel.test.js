@@ -154,6 +154,55 @@ describe('DetailsPanel', () => {
     });
   });
 
+  // #162: an Entry lasts at least 10 minutes, so Save stays disabled for
+  // anything shorter
+  describe('the 10-minute minimum', () => {
+    const saveEnabled = (el) => !el.querySelector('.btn-save-btn').classList.contains('opaque');
+
+    it.each([
+      [0, false],
+      [5, false],
+      [9, false],
+      [10, true],
+    ])('enables Save for a %i-minute Entry: %s', (minutes, enabled) => {
+      const el = createPanel();
+      el.setActivity('Sleep');
+      el.setStartTime(60);
+      el.setEndTime(60 + minutes);
+
+      expect(saveEnabled(el)).toBe(enabled);
+    });
+
+    // found checking #162 in a real browser: Save was only ever enabled,
+    // never disabled again, so shortening a valid Entry left it looking
+    // clickable
+    it('disables Save again when a valid Entry is shortened below 10 minutes', () => {
+      const el = createPanel();
+      el.openNewEntry(60); // ends 10 minutes later: valid
+      el.setActivity('Sleep');
+      expect(saveEnabled(el)).toBe(true);
+
+      el.setEndTime(60);
+
+      expect(saveEnabled(el)).toBe(false);
+    });
+
+    // regression coverage (#162): the offset of an end time typed past
+    // midnight was clock - day boundary, i.e. negative (01:00 under a 04:00
+    // boundary was -180), so the Entry ended before it started. Times
+    // earlier than the day boundary belong to the end of the diary day
+    it('stores an end time typed past midnight later in the same diary day', () => {
+      const el = createPanel();
+      el.openNewEntry(1140); // 23:00
+      el.setActivity('Sleep');
+
+      el.querySelector('el-time-picker-panel').onTimeInputChange('endTime', 60); // typed 01:00
+
+      expect(el.state.endOffsetMins).toBe(1260); // 01:00 is 21 hours after 04:00
+      expect(saveEnabled(el)).toBe(true);
+    });
+  });
+
   it("defaults a new entry's end time to ten minutes after its start time", () => {
     const el = createPanel();
 

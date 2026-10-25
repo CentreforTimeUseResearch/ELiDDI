@@ -312,6 +312,12 @@ export class BaseTimeline extends TinyBase {
   }
 
   saveEntry(entry) {
+    // the details panel already keeps Save disabled for these (#162)
+    const durationProblem = this.entryCommands.findDurationProblem(entry);
+    if (durationProblem) {
+      this.panelActions.reportSaveConflict(durationProblem);
+      return;
+    }
     const conflict = this.entryCommands.findConflict(entry, this.selectedID);
     if (conflict) {
       this.panelActions.reportSaveConflict(formatOverlapMessage(conflict));

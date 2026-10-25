@@ -101,6 +101,21 @@ describe('EntryCommands', () => {
     });
   });
 
+  // #162: the same 10-minute minimum the details panel and drag handles use
+  describe('findDurationProblem', () => {
+    it.each([
+      [0, 'An activity needs to last at least 10 minutes.'],
+      [9, 'An activity needs to last at least 10 minutes.'],
+      [10, undefined],
+      [600, undefined],
+    ])('for a %i-minute Entry: %s', (minutes, problem) => {
+      const { commands } = setup();
+      expect(
+        commands.findDurationProblem({ startOffsetMins: 60, endOffsetMins: 60 + minutes })
+      ).toBe(problem);
+    });
+  });
+
   describe('findConflict', () => {
     it('finds an overlapping entry in a single-choice Dimension', () => {
       const { commands } = setup(LOCATION, [home]);

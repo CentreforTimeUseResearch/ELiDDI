@@ -1,6 +1,7 @@
 import { findOverlappingEntry, findNextEntry } from '../../utils/entries';
 import { formatOffsetAsClockTime } from '../../utils/time';
 import { ADD_ENTRY, UPDATE_ENTRY, DELETE_ENTRY } from '../../store/actionTypes';
+import { MIN_ENTRY_DURATION_MINS } from './timelineConstants';
 
 // What a Timeline can do to its own Entries in the store, and the rules
 // that apply - id allocation, overlap validation - with no DOM. Shared by
@@ -29,6 +30,13 @@ export class EntryCommands {
 
   findNextEntryAfter(afterOffsetMins, ignoreId) {
     return findNextEntry(this.getEntries(), afterOffsetMins, ignoreId);
+  }
+
+  // why `entry` is too short to save, or undefined
+  findDurationProblem(entry) {
+    return entry.endOffsetMins - entry.startOffsetMins < MIN_ENTRY_DURATION_MINS
+      ? `An activity needs to last at least ${MIN_ENTRY_DURATION_MINS} minutes.`
+      : undefined;
   }
 
   // the Entry `entry` would overlap, or undefined. Only a single-choice

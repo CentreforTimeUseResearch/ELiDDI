@@ -65,35 +65,39 @@ function generateSingleCheckboxInput(chunk, cardNum, uniqueRef, questionText) {
   return `
   <div class="gridCell">
     <label for="${chunk}_${cardNum}-${escapeHtml(uniqueRef)}" class="header">${escapeHtml(questionText)}</label>
-    <span><input type="checkbox" id="${chunk}_${cardNum}-${escapeHtml(uniqueRef)}" name="${chunk}_${cardNum}-${escapeHtml(uniqueRef)}" list="${escapeHtml(uniqueRef)}"/></span>
+    <span><input type="checkbox" id="${chunk}_${cardNum}-${escapeHtml(uniqueRef)}" name="${chunk}_${cardNum}-${escapeHtml(uniqueRef)}"/></span>
   </div>
   `;
 }
 
+// one checkbox per configured option, all sharing the Dimension's name; a
+// ticked box submits its option as the value (see ADR 0004)
 function generateMultiCheckboxInput(chunk, cardNum, uniqueRef, options, questionText) {
+  const name = `${chunk}_${cardNum}-${escapeHtml(uniqueRef)}`;
   return `
               <div class="gridCell">
                 <fieldset>
                     <legend>${escapeHtml(questionText)} <small>Mark all relevant boxes</small></legend>
-                    <label><input type="checkbox" id="${chunk}_${cardNum}-alone" name="${chunk}_${cardNum}-${escapeHtml(uniqueRef)}"/>Alone</label><br />
   ${options
-    .map((option) => {
-      const safeId = option.replace(/ |\//g, '_');
-
-      return `<label><input type="checkbox" id="${chunk}_${cardNum}-${escapeHtml(safeId)}" name="${chunk}_${cardNum}-${escapeHtml(uniqueRef)}"/>${escapeHtml(option)}</label><br />`;
-    })
+    .map(
+      (option, index) =>
+        `<label><input type="checkbox" id="${name}-${index}" name="${name}" value="${escapeHtml(option)}"/>${escapeHtml(option)}</label><br />`
+    )
     .join('')}
                </fieldset>
             </div>
             `;
 }
 
+// named after its Dimension; starts on an empty choice, so an unanswered
+// slot submits "" rather than the first activity (see ADR 0004)
 function generateSelectDropDown(chunk, cardNum, uniqueRef, options, questionText) {
+  const name = `${chunk}_${cardNum}-${escapeHtml(uniqueRef)}`;
   return `
             <div class="gridCell">
-                <label for="${chunk}_${cardNum}-enjoyed" class="header">${escapeHtml(questionText)}</label>
-                <span><select id="${chunk}_${cardNum}-enjoyed" name="${chunk}_${cardNum}-enjoyed">
-                    ${options.map((option) => `<option>${escapeHtml(option)}</option>`).join('')}
+                <label for="${name}" class="header">${escapeHtml(questionText)}</label>
+                <span><select id="${name}" name="${name}">
+                    <option value="">Not answered</option>${options.map((option) => `<option>${escapeHtml(option)}</option>`).join('')}
                 </select></span>
             </div>`;
 }

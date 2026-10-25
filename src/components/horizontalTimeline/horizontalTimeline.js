@@ -37,7 +37,6 @@ export class HorizontalTimeline extends BaseTimeline {
   connectedCallback() {
     this.zoomLevel = this.store.getState().horizontalZoomLevel;
     super.connectedCallback();
-    this.panelActions = this.props;
     this.updateDimensions();
   }
 

@@ -22,10 +22,9 @@ export const EMPTY_ENTRIES = [];
 //   getPxPerMinute()        time-axis scale
 //   renderEntries()         draws this.entries (see entryBlocks.js)
 //   updateState()           what a store update redraws
-// and may extend connectedCallback, getChildElementReferences, render and
-// onPanelOpened. It also decides where panelActions comes from: Timeline
-// registers its own DetailsPanel's, HorizontalTimeline is handed the
-// stack's shared panel's.
+// and may extend connectedCallback and getChildElementReferences. Its
+// panelActions are always injected as props by the stack that owns the one
+// shared details panel (DetailsPanelCoordinator, ADR 0005).
 export class BaseTimeline extends TinyBase {
   static observedAttributes = [INDEX];
   // the SVG and (for Timeline) the details panel are built once and kept
@@ -70,6 +69,8 @@ export class BaseTimeline extends TinyBase {
       this.entries = timeline;
     }
     super.connectedCallback();
+    // injected by the stack, whose one shared panel (ADR 0005) it opens
+    this.panelActions = this.props;
     this.registerCleanup(this.store.subscribe(() => this.updateState()));
     this.getChildElementReferences();
 
@@ -279,11 +280,7 @@ export class BaseTimeline extends TinyBase {
         this.calculateTheTimeSlotClicked(svgCoord >= 0 ? svgCoord : 0)
       );
     }
-    this.onPanelOpened();
   }
-
-  // after a click opened an Entry (or a new one) in the details panel
-  onPanelOpened() {}
 
   get isSingleChoiceDimension() {
     return this.entryCommands.isSingleChoiceDimension;

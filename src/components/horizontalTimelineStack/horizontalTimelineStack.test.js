@@ -6,7 +6,7 @@ import { moveToNewParent, errorsDuring } from '../../testing/domMoves';
 // it in explicitly so the panelActions contract can actually wire up.
 import { DetailsPanel } from '../detailsPanel/detailsPanel';
 import { appStore } from '../../store/appStore';
-import { HIDE_PANEL, SWITCH_DATE } from '../../store/actionTypes';
+import { HIDE_PANEL, SWITCH_DATE, SWITCH_DIMENSION } from '../../store/actionTypes';
 
 const DIMENSION_COUNT = GLOBALS.DATA.timeline.length;
 
@@ -60,15 +60,15 @@ describe('HorizontalTimelineStack', () => {
     const children = [...el.children];
 
     const errors = errorsDuring(() => moveToNewParent(el));
-    const openNewEntryForRow = vi.spyOn(el, 'openNewEntryForRow');
+    appStore.dispatch({ type: HIDE_PANEL });
     el.querySelectorAll('el-horizontal-timeline')[2]
       .querySelector('[id="gridline_zone"]')
       .dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
     expect(errors).toEqual([]);
     expect([...el.children]).toEqual(children);
-    expect(openNewEntryForRow).toHaveBeenCalledOnce();
-    expect(openNewEntryForRow.mock.calls[0][0]).toBe(2);
+    expect(appStore.getState().uipanel).toBe('details');
+    expect(el.panelElement.getAttribute('dimensionindex')).toBe('2');
   });
 
   it('mounts one axis, one row per Dimension, and one shared details panel, in order', () => {
@@ -151,12 +151,17 @@ describe('HorizontalTimelineStack', () => {
       expect(findSpy).toHaveBeenCalledWith(30);
     });
 
-    it('does not throw when nothing has been activated yet', () => {
+    // #151: there is always a current Dimension, so the panel always acts
+    // on that Dimension's row - before any row has been clicked, too
+    it("routes to the current Dimension's row before any row has been clicked", () => {
+      appStore.dispatch({ type: SWITCH_DIMENSION, payload: 4 });
       const el = createStack();
+      const findSpy = vi.spyOn(el.rows[4], 'findNextEntryAfter');
 
-      expect(() => el.saveEntry({})).not.toThrow();
-      expect(() => el.deleteEntry(1)).not.toThrow();
-      expect(el.findNextEntryAfter(0)).toBeUndefined();
+      el.findNextEntryAfter(30);
+
+      expect(findSpy).toHaveBeenCalledWith(30);
+      expect(el.panelElement.getAttribute('dimensionindex')).toBe('4');
     });
   });
 

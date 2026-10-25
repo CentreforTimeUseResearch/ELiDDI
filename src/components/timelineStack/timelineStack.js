@@ -1,20 +1,36 @@
 import { TinyBase } from '../base';
 import { Timeline } from '../timeline/timeline';
+import '../detailsPanel/detailsPanel';
+import { DetailsPanelCoordinator } from '../detailsPanel/detailsPanelCoordinator';
 import { SWITCH_DIMENSION } from '../../store/actionTypes';
 
 import './timelineStack.css';
 
+// The mobile layout: one Timeline per Dimension in a horizontally
+// scroll-snapping strip (swipe between Dimensions), and below it the app's
+// one details panel (ADR 0005), which a DetailsPanelCoordinator routes to
+// the current Dimension's Timeline - the same arrangement as
+// HorizontalTimelineStack on desktop.
+//
+// <el-timeline-stack>
+//   <div class="timeline-scroller"> <el-timeline index="0..5"> </div>
+//   <el-details-panel>
 export class TimelineStack extends TinyBase {
-  // its Timelines are built once and kept across a DOM move - see
-  // TinyBase.connectedCallback
+  // its Timelines and panel are built once and kept across a DOM move -
+  // see TinyBase.connectedCallback
   static renderOnce = true;
   store = super.getStore();
   timelinesData = GLOBALS.DATA.timeline;
   numTimelines = GLOBALS.DATA.timeline.length;
   dimensionIndex = 0;
+  scroller;
 
   constructor() {
     super();
+    this.panelCoordinator = new DetailsPanelCoordinator({
+      store: this.store,
+      getTimeline: (dimensionIndex) => this.scroller?.children[dimensionIndex],
+    });
   }
 
   connectedCallback() {
@@ -29,10 +45,12 @@ export class TimelineStack extends TinyBase {
       this.dimensionIndex = currentDimensionIndex;
       this.scrollToTimeline();
     }
+    this.panelCoordinator.onStoreUpdate();
   }
 
   scrollToTimeline() {
-    this.scrollLeft = this.dimensionIndex * (this.scrollWidth / this.numTimelines);
+    this.scroller.scrollLeft =
+      this.dimensionIndex * (this.scroller.scrollWidth / this.numTimelines);
   }
 
   switchDimension(index) {
@@ -46,7 +64,7 @@ export class TimelineStack extends TinyBase {
   }
 
   assignEventHandlers() {
-    this.listen(this, 'scrollsnapchange', (event) => {
+    this.listen(this.scroller, 'scrollsnapchange', (event) => {
       // the attribute, not snapTargetInline.index - that property only
       // exists because Timeline's attributeChangedCallback mirrors the
       // attribute onto the instance. parseInt so a missing attribute
@@ -61,11 +79,18 @@ export class TimelineStack extends TinyBase {
   }
 
   render() {
+    this.scroller = document.createElement('div');
+    this.scroller.className = 'timeline-scroller';
+    this.appendChild(this.scroller);
     for (let i = 0; i < this.numTimelines; i++) {
-      const myCustomInstance = new Timeline();
-      myCustomInstance.setAttribute('index', i);
-      this.appendChild(myCustomInstance);
+      const timeline = new Timeline();
+      timeline.setAttribute('index', i);
+      timeline.setAttribute('key', this.setProps(this.panelCoordinator.timelineProps(i), true));
+      this.scroller.appendChild(timeline);
     }
+    this.appendChild(
+      this.panelCoordinator.createPanel((props, returnKey) => this.setProps(props, returnKey))
+    );
   }
 }
 

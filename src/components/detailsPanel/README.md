@@ -6,7 +6,7 @@
 
 ## What it does
 
-The panel used to create or edit one Entry on the currently-active Dimension's Timeline. On the mobile/tablet vertical timeline, one instance is mounted per Dimension (by [Timeline](../timeline/README.md), one per Dimension's `<el-timeline>`), and the app store's `uipanel`/`currentDimensionIndex` decide which single instance is actually visible at a time. On the desktop horizontal timeline (`≥1024px`), [HorizontalTimelineStack](../horizontalTimelineStack/README.md) mounts a **single shared instance** instead (all six rows are visible simultaneously, so the per-row visibility gate above doesn't apply the same way) and owns the desktop-specific right-docked CSS treatment in its own stylesheet — see that component's README for the full story; this component's own CSS (below) stays written for the mobile case only.
+The panel used to create or edit one Entry on the current Dimension's Timeline. The app has **one** of these, in the mobile and desktop layouts alike ([ADR 0005](../../../docs/adr/0005-one-details-panel-in-every-layout.md)). The stack that owns the Timelines ([TimelineStack](../timelineStack/README.md) or [HorizontalTimelineStack](../horizontalTimelineStack/README.md)) creates it through a `DetailsPanelCoordinator` (`detailsPanelCoordinator.js`), which retargets it to whichever Dimension is current, however that changes (a swipe, the Timeline picker, a click on another row), and keeps an unsaved draft per Dimension: switching away parks it, switching back restores it, and saving, deleting or a date change ends it. Where the panel sits is each stack's CSS: below the swipe strip on mobile, docked right on desktop.
 
 It composes:
 
@@ -22,7 +22,7 @@ Terminology (Dimension, Timeline, Entry, Activity, Day boundary) follows [CONTEX
 
 ## The `panelActions` contract
 
-Timeline never calls DetailsPanel's methods directly. Instead, on connect, DetailsPanel calls a `registerPanelActions` prop it receives, handing Timeline a small named set of callbacks it's allowed to invoke:
+Nothing calls DetailsPanel's methods directly. Instead, on connect, DetailsPanel calls a `registerPanelActions` prop it receives, handing the coordinator a small named set of callbacks; the coordinator gives each Timeline its own `panelActions` with the same names, which route through it (switching Dimension and opening the panel first):
 
 | Action                          | Purpose                                                                |
 | ------------------------------- | ---------------------------------------------------------------------- |
@@ -31,13 +31,12 @@ Timeline never calls DetailsPanel's methods directly. Instead, on connect, Detai
 | `close()`                       | Reset the panel's state.                                               |
 | `reportSaveConflict(message)`   | Show a save-time validation error (e.g. an overlapping Entry).         |
 
-This keeps Timeline decoupled from DetailsPanel's actual method names — a rename on either side can't silently desync the other.
+This keeps the Timelines decoupled from DetailsPanel's actual method names — a rename on either side can't silently desync the other.
 
-DetailsPanel, in turn, receives (via props) `saveEntry(entry)`, `deleteEntry(id)`, and `findNextEntryAfter(offsetMins)` from Timeline, plus a `registerPanelActions` callback to complete the handshake.
+DetailsPanel, in turn, receives (via props) `saveEntry(entry)`, `deleteEntry(id)`, and `findNextEntryAfter(offsetMins)`, which the coordinator routes to the current Dimension's Timeline, plus the `registerPanelActions` callback that completes the handshake.
 
 ## Store interaction
 
-- Reads `currentDimensionIndex` to decide whether it's the panel that should currently be visible.
 - Subscribes to the store and shows/hides itself in response to `uipanel === 'details'`.
 - Dispatches `SHOW_PANEL`/`HIDE_PANEL` when its own open/close button is used.
 

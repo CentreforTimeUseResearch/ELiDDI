@@ -1,11 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Timeline } from './timeline';
 import { moveToNewParent, errorsDuring } from '../../testing/domMoves';
-// Timeline only references '<el-details-panel>' as a string in its render
-// template - it never imports the class, so DetailsPanel is only ever
-// registered as a customElements side effect of *something* importing it.
-// Pull that in explicitly so the panelActions contract can actually wire up.
-import '../detailsPanel/detailsPanel';
+// a Timeline's panelActions are injected by its stack (ADR 0005); mounted
+// on its own here, it gets stub ones
+import { stubPanelActionsKey } from '../../testing/panelActions';
 import { appStore } from '../../store/appStore';
 import {
   ADD_TIMELINE,
@@ -115,12 +113,11 @@ describe('Timeline.renderEntriesInto', () => {
   });
 });
 
-// regression coverage for the Timeline -> DetailsPanel props-based contract:
-// Timeline used to hold a raw `this.detailsPanel` DOM reference and call
+// regression coverage for the Timeline -> details panel contract: Timeline
+// used to hold a raw `this.detailsPanel` DOM reference and call
 // setStartTime/setEndTime/setActivity/setEntryId/reset/showError on it
-// directly - any rename on DetailsPanel's side would silently break
-// Timeline. It now only knows about the four functions DetailsPanel hands
-// back via the registerPanelActions callback prop.
+// directly. It only knows four panelActions, injected by its stack, whose
+// one shared panel they reach (ADR 0005).
 describe('Timeline panelActions contract', () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -147,28 +144,18 @@ describe('Timeline panelActions contract', () => {
 
   function createTimeline(dimensionIndex) {
     const el = document.createElement('el-timeline');
+    el.setAttribute('key', stubPanelActionsKey());
     el.setAttribute('index', String(dimensionIndex));
     document.body.appendChild(el);
     return el;
   }
 
-  // regression coverage (#145): heading/instruction were interpolated
-  // straight from the Dimension config, so a Dimension with no instruction
-  // (Location, Who, Device, Enjoyment in the real config) passed down the
-  // literal text "undefined", shown under the activity input on mobile
-  it('passes an empty instruction, not "undefined", for a Dimension with none configured', () => {
-    expect(GLOBALS.DATA.timeline[2].instruction).toBeUndefined();
+  // #151: the app has one details panel, owned by the stack
+  it('renders no details panel of its own, and uses the panelActions it was given', () => {
     const el = createTimeline(2); // Location
-
-    const panel = el.querySelector('el-details-panel');
-    expect(panel.getAttribute('instruction')).toBe('');
-    expect(panel.querySelector('el-activity-picker').textContent).not.toContain('undefined');
-  });
-
-  it('does not hold a direct reference to the details panel instance', () => {
-    const el = createTimeline(2); // Location
+    expect(el.querySelector('el-details-panel')).toBeNull();
     expect(el.detailsPanel).toBeUndefined();
-    expect(el.panelActions).toBeDefined();
+    expect(el.panelActions).toBe(el.props);
   });
 
   it('calls panelActions.openNewEntry (not a direct method call) when clicking the gridline zone', () => {
@@ -375,6 +362,7 @@ describe('Timeline long-press resize handles', () => {
       appStore.dispatch({ type: ADD_ENTRY, payload: { dimensionIndex, date, ...entry } })
     );
     const el = document.createElement('el-timeline');
+    el.setAttribute('key', stubPanelActionsKey());
     el.setAttribute('index', String(dimensionIndex));
     document.body.appendChild(el);
     return el;
@@ -617,6 +605,7 @@ describe('Timeline drag-to-resize handles', () => {
       appStore.dispatch({ type: ADD_ENTRY, payload: { dimensionIndex, date, ...entry } })
     );
     const el = document.createElement('el-timeline');
+    el.setAttribute('key', stubPanelActionsKey());
     el.setAttribute('index', String(dimensionIndex));
     document.body.appendChild(el);
     return el;
@@ -898,6 +887,7 @@ describe('Timeline drag hard limits', () => {
       appStore.dispatch({ type: ADD_ENTRY, payload: { dimensionIndex, date, ...entry } })
     );
     const el = document.createElement('el-timeline');
+    el.setAttribute('key', stubPanelActionsKey());
     el.setAttribute('index', String(dimensionIndex));
     document.body.appendChild(el);
     return el;
@@ -1118,6 +1108,7 @@ describe('Timeline drag lifecycle', () => {
 
   function createTimeline(dimensionIndex) {
     const el = document.createElement('el-timeline');
+    el.setAttribute('key', stubPanelActionsKey());
     el.setAttribute('index', String(dimensionIndex));
     document.body.appendChild(el);
     return el;
@@ -1330,6 +1321,7 @@ describe('Timeline multi-day scoping', () => {
 
   function createTimeline(dimensionIndex) {
     const el = document.createElement('el-timeline');
+    el.setAttribute('key', stubPanelActionsKey());
     el.setAttribute('index', String(dimensionIndex));
     document.body.appendChild(el);
     return el;
@@ -1394,16 +1386,19 @@ describe('Timeline multi-day scoping', () => {
     appStore.dispatch(entryOn(dateB, 'Friends'));
     appStore.dispatch({ type: SWITCH_DATE, payload: dateA });
     const el = createTimeline(3); // Who
-    const panel = el.querySelector('el-details-panel');
+    const openEntry = vi.fn();
+    const close = vi.fn();
+    el.panelActions.openEntry = openEntry;
+    el.panelActions.close = close;
 
     el.onTimelineClick({ target: { dataset: { id: '0' } } });
     expect(el.selectedID).toBe(0);
-    expect(panel.state.activity).toBe('Family');
+    expect(openEntry).toHaveBeenCalledWith(expect.objectContaining({ activity: 'Family' }));
 
     appStore.dispatch({ type: SWITCH_DATE, payload: dateB });
 
     expect(el.selectedID).toBeUndefined();
-    expect(panel.state).toEqual({});
+    expect(close).toHaveBeenCalled();
     expect(appStore.getState().diaries[dateB].timelines[3]).toEqual([
       { id: 0, startOffsetMins: 0, endOffsetMins: 30, activity: 'Friends' },
     ]);
@@ -1435,6 +1430,7 @@ describe('Timeline future overlay', () => {
 
   function createTimeline(dimensionIndex) {
     const el = document.createElement('el-timeline');
+    el.setAttribute('key', stubPanelActionsKey());
     el.setAttribute('index', String(dimensionIndex));
     document.body.appendChild(el);
     return el;
@@ -1494,6 +1490,7 @@ describe('Timeline moved in the DOM', () => {
 
   function createTimeline() {
     const el = document.createElement('el-timeline');
+    el.setAttribute('key', stubPanelActionsKey());
     el.setAttribute('index', '2');
     document.body.appendChild(el);
     // a click target, whichever test's <template> happened to be registered
@@ -1503,7 +1500,7 @@ describe('Timeline moved in the DOM', () => {
     return el;
   }
 
-  it('keeps one SVG and one details panel, without errors', () => {
+  it('keeps one SVG, without errors', () => {
     const el = createTimeline();
     const svg = el.timeLineElement;
 
@@ -1511,7 +1508,6 @@ describe('Timeline moved in the DOM', () => {
 
     expect(errors).toEqual([]);
     expect(el.querySelectorAll(':scope > svg')).toHaveLength(1);
-    expect(el.querySelectorAll('el-details-panel')).toHaveLength(1);
     expect(el.timeLineElement).toBe(svg);
     expect(svg.isConnected).toBe(true);
   });

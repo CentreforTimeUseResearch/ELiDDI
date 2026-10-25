@@ -1,11 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import './timelineStack';
 import { moveToNewParent, errorsDuring } from '../../testing/domMoves';
-// deliberately NOT importing DetailsPanel (unlike timeline.test.js): this
-// suite is only about scroll-snap, and leaving <el-details-panel>
-// unregistered keeps it inert. Six registered panels would render six
-// DurationInputs sharing the same element ids, which jsdom's scoped
-// #id lookup can't resolve past the first copy
 import { appStore } from '../../store/appStore';
 import { SWITCH_DIMENSION } from '../../store/actionTypes';
 
@@ -50,17 +45,20 @@ describe('TimelineStack scroll-snap Dimension switching', () => {
   });
 
   // snapTargetInline can't be set through the Event constructor, so it's
-  // attached to a plain Event the way a browser exposes it
+  // attached to a plain Event the way a browser exposes it. The event fires
+  // on the strip that scrolls, inside the stack (#151)
   function snapTo(stack, target) {
     const event = new Event('scrollsnapchange');
     event.snapTargetInline = target;
-    stack.dispatchEvent(event);
+    stack.querySelector('.timeline-scroller').dispatchEvent(event);
   }
+
+  const timelinesOf = (stack) => [...stack.querySelectorAll('el-timeline')];
 
   it('switches to the Dimension of the timeline it snapped to', () => {
     const stack = createStack();
 
-    snapTo(stack, stack.children[3]);
+    snapTo(stack, timelinesOf(stack)[3]);
 
     expect(appStore.getState().currentDimensionIndex).toBe(3);
   });

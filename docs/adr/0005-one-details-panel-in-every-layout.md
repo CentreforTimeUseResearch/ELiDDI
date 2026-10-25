@@ -12,7 +12,7 @@ The app has one `<el-details-panel>`, in the mobile and desktop layouts alike. T
 
 ## Decisions
 
-1. **An unsaved draft is kept per Dimension, in both layouts.** Switching Dimension parks the draft (start, end, activity, and the Entry being edited, if any). Returning to that Dimension restores it. A draft ends when it's saved, deleted or closed. This keeps today's mobile behaviour, where each Dimension's own panel held its draft. Desktop changes: it used to discard the draft on a row change (`activateRow()` → `reset()`).
+1. **An unsaved draft is kept per Dimension, in both layouts.** Switching Dimension parks the draft (start, end, activity, and the Entry being edited, if any). Returning to that Dimension restores it. A draft ends when it's saved or deleted, or when the Diary date changes; collapsing the panel keeps it. Opening an Entry, or empty time, on a Dimension replaces that Dimension's parked draft. This keeps today's mobile behaviour, where each Dimension's own panel held its draft. Desktop changes: it used to discard the draft on a row change (`activateRow()` → `reset()`).
 2. **A swipe with the panel open follows the swipe and stays open.** The panel switches to the new Dimension and shows that Dimension's draft, or an empty form. This is what mobile does today.
 3. **The panel lives outside the scrolling Timelines,** as a sibling of the stack, and is styled to match the Timeline column it's acting on. Its heading names the current Dimension, so it's always clear which one the form is for.
 

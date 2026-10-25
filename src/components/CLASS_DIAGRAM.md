@@ -4,7 +4,7 @@
 
 ---
 
-Every class in `src/`. All Web Components extend [`TinyBase`](README.md#basejs) (itself extending the platform's `HTMLElement`); three plain helper classes — [`KeyboardGridNavigation`](activityPicker/README.md), [`EntryResizeController`](timeline/README.md) and [`EntryCommands`](timeline/README.md) — are not custom elements, just state machines constructed and owned by the component that needs them. `src/store/` and `src/utils/` are deliberately function/module-based, not classes (see the [store README](../store/README.md)) — the hand-rolled Redux clone in `store.js` and the props-passing registry in `propsRegistry.js` are the main reasons `TinyBase` can stay so small.
+Every class in `src/`. All Web Components extend [`TinyBase`](README.md#basejs) (itself extending the platform's `HTMLElement`); four plain helper classes — [`KeyboardGridNavigation`](activityPicker/README.md), [`EntryResizeController`](timeline/README.md), [`EntryCommands`](timeline/README.md) and [`DetailsPanelCoordinator`](detailsPanel/README.md) — are not custom elements, just state machines constructed and owned by the component that needs them. `src/store/` and `src/utils/` are deliberately function/module-based, not classes (see the [store README](../store/README.md)) — the hand-rolled Redux clone in `store.js` and the props-passing registry in `propsRegistry.js` are the main reasons `TinyBase` can stay so small.
 
 ```mermaid
 classDiagram
@@ -122,6 +122,14 @@ classDiagram
         +updateDimensions()
     }
 
+    class DetailsPanelCoordinator {
+        +createPanel(setProps)
+        +timelineProps(dimensionIndex)
+        +openFor(dimensionIndex, open)
+        +onStoreUpdate()
+        -switchTo(dimensionIndex)
+    }
+
     class EntryCommands {
         +isSingleChoiceDimension
         +create(entry)
@@ -142,8 +150,7 @@ classDiagram
 
     class HorizontalTimelineStack {
         <<el-horizontal-timeline-stack>>
-        -activeRow : HorizontalTimeline
-        +activateRow(dimensionIndex)
+        -panelCoordinator : DetailsPanelCoordinator
         +openEntryForRow(dimensionIndex, entry)
         +openNewEntryForRow(dimensionIndex, startOffsetMins)
         +saveEntry(entry)
@@ -230,10 +237,11 @@ classDiagram
     DynamicTimelineUI ..> DatePicker : renders (inside a dialog)
     HorizontalTimelineStack ..> HorizontalTimelineAxis : renders
     HorizontalTimelineStack ..> HorizontalTimeline : renders x6, injects panelActions props
-    HorizontalTimelineStack ..> DetailsPanel : renders, panelActions contract (one shared instance, not one per row)
     Navbar ..> TimelinePicker : renders
     Navbar ..> ContextualHelp : renders
-    Timeline ..> DetailsPanel : renders, panelActions contract
+    TimelineStack *-- DetailsPanelCoordinator : constructs in constructor()
+    HorizontalTimelineStack *-- DetailsPanelCoordinator : constructs in constructor()
+    DetailsPanelCoordinator ..> DetailsPanel : creates the one panel, panelActions contract
     DetailsPanel ..> ActivityPicker : renders
     DetailsPanel ..> TimePickerPanel : renders
     TimePickerPanel ..> TimePicker : renders x2

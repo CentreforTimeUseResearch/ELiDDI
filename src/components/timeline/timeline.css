@@ -3,11 +3,11 @@ el-timeline {
   display: block;
 
   svg {
-    #wrapper {
+    [data-part='wrapper'] {
       transform: translateX(28px);
     }
 
-    #timeline-shadow {
+    [data-part='timeline-shadow'] {
       transform: translateX(-94px);
     }
   }

@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { installSvgTemplates } from '../../testing/svgTemplates';
 import { Timeline } from './timeline';
 import { moveToNewParent, errorsDuring } from '../../testing/domMoves';
 // a Timeline's panelActions are injected by its stack (ADR 0005); mounted
@@ -127,18 +128,7 @@ describe('Timeline panelActions contract', () => {
     if (!customElements.get('el-timeline')) {
       customElements.define('el-timeline', Timeline);
     }
-    if (!document.getElementById('svg-timeline')) {
-      const template = document.createElement('template');
-      template.id = 'svg-timeline';
-      template.innerHTML = `
-        <svg>
-          <g id="timeline-shadow"></g>
-          <rect id="future-overlay"></rect>
-          <g id="events"></g>
-        </svg>
-      `;
-      document.head.appendChild(template);
-    }
+    installSvgTemplates();
     document.body.innerHTML = '';
   });
 
@@ -166,7 +156,7 @@ describe('Timeline panelActions contract', () => {
     // clientToSvgCoord falls back to raw clientY in this test environment
     // (no SVG geometry APIs), same as the real getScreenCTM path would
     // resolve to for a click 40px into an unscaled SVG
-    el.onTimelineClick({ target: { id: 'gridline_zone', dataset: {} }, clientX: 0, clientY: 40 });
+    el.onTimelineClick({ target: { dataset: { part: 'gridline-zone' } }, clientX: 0, clientY: 40 });
 
     expect(openNewEntry).toHaveBeenCalledWith(20); // calculateTheTimeSlotClicked(40) -> 20
   });
@@ -197,7 +187,11 @@ describe('Timeline panelActions contract', () => {
     });
     svg.getScreenCTM = () => ({ inverse: () => ({ a: 1 / SCALE, d: 1 / SCALE }) });
 
-    el.onTimelineClick({ target: { id: 'gridline_zone', dataset: {} }, clientX: 0, clientY: 850 });
+    el.onTimelineClick({
+      target: { dataset: { part: 'gridline-zone' } },
+      clientX: 0,
+      clientY: 850,
+    });
 
     // 850 rendered px, unscaled to ~971 viewBox units -> 12:00 (480min).
     // Raw offsetY would have given floor(850/20)*10 = 420min -> 11:00.
@@ -320,7 +314,7 @@ describe('Timeline panelActions contract', () => {
 
     const newEntry = el.entries[el.entries.length - 1];
     expect(el.activeHandleEntryId).toBe(newEntry.id);
-    expect(el.querySelectorAll('#drag-handles .resize-handle')).toHaveLength(2);
+    expect(el.querySelectorAll('[data-part="drag-handles"] .resize-handle')).toHaveLength(2);
   });
 
   it('does not show resize handles when saving an edit to an existing entry', () => {
@@ -331,7 +325,7 @@ describe('Timeline panelActions contract', () => {
     el.saveEntry({ startOffsetMins: 0, endOffsetMins: 45, activity: 'Reading' });
 
     expect(el.activeHandleEntryId).toBeUndefined();
-    expect(el.querySelectorAll('#drag-handles .resize-handle')).toHaveLength(0);
+    expect(el.querySelectorAll('[data-part="drag-handles"] .resize-handle')).toHaveLength(0);
   });
 });
 
@@ -342,18 +336,7 @@ describe('Timeline long-press resize handles', () => {
     if (!customElements.get('el-timeline')) {
       customElements.define('el-timeline', Timeline);
     }
-    if (!document.getElementById('svg-timeline')) {
-      const template = document.createElement('template');
-      template.id = 'svg-timeline';
-      template.innerHTML = `
-        <svg>
-          <g id="timeline-shadow"></g>
-          <rect id="future-overlay"></rect>
-          <g id="events"></g>
-        </svg>
-      `;
-      document.head.appendChild(template);
-    }
+    installSvgTemplates();
     document.body.innerHTML = '';
     appStore.dispatch({ type: HIDE_PANEL });
     // a fixed past date, not "today" - these tests aren't about the Phase 3
@@ -400,13 +383,13 @@ describe('Timeline long-press resize handles', () => {
   it('reveals a top and bottom handle after holding on an entry past the long-press threshold', () => {
     const entry = { id: 1, startOffsetMins: 60, endOffsetMins: 90, activity: 'Reading' };
     const el = createTimeline(2, [entry]); // Location
-    const rect = el.querySelector('#events rect[data-id="1"]');
+    const rect = el.querySelector('[data-part="events"] rect[data-id="1"]');
 
     el.onEntryPointerDown(pointerDownOn(rect));
     vi.advanceTimersByTime(500);
 
     expect(el.activeHandleEntryId).toBe(1);
-    const handles = el.querySelectorAll('#drag-handles .resize-handle');
+    const handles = el.querySelectorAll('[data-part="drag-handles"] .resize-handle');
     expect(handles).toHaveLength(2);
     expect([...handles].map((h) => h.dataset.handleEdge).sort()).toEqual(['end', 'start']);
   });
@@ -420,7 +403,9 @@ describe('Timeline long-press resize handles', () => {
     const controller = el.resizeController;
     const showHandles = vi.spyOn(controller, 'showHandles');
 
-    el.onEntryPointerDown(pointerDownOn(el.querySelector('#events rect[data-id="1"]')));
+    el.onEntryPointerDown(
+      pointerDownOn(el.querySelector('[data-part="events"] rect[data-id="1"]'))
+    );
     el.remove();
 
     expect(vi.getTimerCount()).toBe(0);
@@ -431,7 +416,9 @@ describe('Timeline long-press resize handles', () => {
   it('removes its document keydown listener on disconnect', () => {
     const entry = { id: 1, startOffsetMins: 60, endOffsetMins: 90, activity: 'Reading' };
     const el = createTimeline(2, [entry]);
-    el.onEntryPointerDown(pointerDownOn(el.querySelector('#events rect[data-id="1"]')));
+    el.onEntryPointerDown(
+      pointerDownOn(el.querySelector('[data-part="events"] rect[data-id="1"]'))
+    );
     vi.advanceTimersByTime(500);
     const hideHandles = vi.spyOn(el.resizeController, 'hideHandles');
 
@@ -444,27 +431,27 @@ describe('Timeline long-press resize handles', () => {
   it('sizes each handle a generous hit target independent of its visible grip', () => {
     const entry = { id: 1, startOffsetMins: 0, endOffsetMins: 30, activity: 'Reading' };
     const el = createTimeline(2, [entry]);
-    const rect = el.querySelector('#events rect[data-id="1"]');
+    const rect = el.querySelector('[data-part="events"] rect[data-id="1"]');
 
     el.onEntryPointerDown(pointerDownOn(rect));
     vi.advanceTimersByTime(500);
 
-    const hitArea = el.querySelector('#drag-handles .resize-handle-hit-area');
-    const grip = el.querySelector('#drag-handles .resize-handle-grip');
+    const hitArea = el.querySelector('[data-part="drag-handles"] .resize-handle-hit-area');
+    const grip = el.querySelector('[data-part="drag-handles"] .resize-handle-grip');
     expect(Number(hitArea.getAttribute('r'))).toBeGreaterThan(Number(grip.getAttribute('r')));
   });
 
   it('cancels the pending long-press if the pointer moves too far before the hold completes', () => {
     const entry = { id: 1, startOffsetMins: 0, endOffsetMins: 30, activity: 'Reading' };
     const el = createTimeline(2, [entry]);
-    const rect = el.querySelector('#events rect[data-id="1"]');
+    const rect = el.querySelector('[data-part="events"] rect[data-id="1"]');
 
     el.onEntryPointerDown(pointerDownOn(rect));
     el.onEntryPointerMove(pointerDownOn(rect, { clientX: 40, clientY: 0 }));
     vi.advanceTimersByTime(500);
 
     expect(el.activeHandleEntryId).toBeUndefined();
-    expect(el.querySelectorAll('#drag-handles .resize-handle')).toHaveLength(0);
+    expect(el.querySelectorAll('[data-part="drag-handles"] .resize-handle')).toHaveLength(0);
   });
 
   it('never arms a long-press for an entry on the read-only Primary activity mirror strip', () => {
@@ -477,7 +464,7 @@ describe('Timeline long-press resize handles', () => {
       labelX: 100,
       labelWidth: 50,
     });
-    const shadowRect = el.querySelector('#timeline-shadow rect[data-id="9"]');
+    const shadowRect = el.querySelector('[data-part="timeline-shadow"] rect[data-id="9"]');
 
     el.onEntryPointerDown(pointerDownOn(shadowRect));
     vi.advanceTimersByTime(500);
@@ -488,7 +475,7 @@ describe('Timeline long-press resize handles', () => {
   it('does not arm a long-press while the details panel is open', () => {
     const entry = { id: 1, startOffsetMins: 0, endOffsetMins: 30, activity: 'Reading' };
     const el = createTimeline(2, [entry]);
-    const rect = el.querySelector('#events rect[data-id="1"]');
+    const rect = el.querySelector('[data-part="events"] rect[data-id="1"]');
     appStore.dispatch({ type: SHOW_PANEL, payload: 'details' });
 
     el.onEntryPointerDown(pointerDownOn(rect));
@@ -500,7 +487,7 @@ describe('Timeline long-press resize handles', () => {
   it('swallows the click that follows a fired long-press, so it does not also open the details panel', () => {
     const entry = { id: 1, startOffsetMins: 0, endOffsetMins: 30, activity: 'Reading' };
     const el = createTimeline(2, [entry]);
-    const rect = el.querySelector('#events rect[data-id="1"]');
+    const rect = el.querySelector('[data-part="events"] rect[data-id="1"]');
     const openEntry = vi.fn();
     el.panelActions.openEntry = openEntry;
 
@@ -516,8 +503,8 @@ describe('Timeline long-press resize handles', () => {
     const entryA = { id: 1, startOffsetMins: 0, endOffsetMins: 30, activity: 'Reading' };
     const entryB = { id: 2, startOffsetMins: 30, endOffsetMins: 60, activity: 'Walking' };
     const el = createTimeline(2, [entryA, entryB]);
-    const rectA = el.querySelector('#events rect[data-id="1"]');
-    const rectB = el.querySelector('#events rect[data-id="2"]');
+    const rectA = el.querySelector('[data-part="events"] rect[data-id="1"]');
+    const rectB = el.querySelector('[data-part="events"] rect[data-id="2"]');
     const openEntry = vi.fn();
     el.panelActions.openEntry = openEntry;
 
@@ -537,7 +524,7 @@ describe('Timeline long-press resize handles', () => {
   it('dismisses visible handles when a subsequent real click lands elsewhere on the timeline', () => {
     const entry = { id: 1, startOffsetMins: 0, endOffsetMins: 30, activity: 'Reading' };
     const el = createTimeline(2, [entry]);
-    const rect = el.querySelector('#events rect[data-id="1"]');
+    const rect = el.querySelector('[data-part="events"] rect[data-id="1"]');
     el.onEntryPointerDown(pointerDownOn(rect));
     vi.advanceTimersByTime(500);
     el.onTimelineClick({ target: rect }); // the click the long-press's own release also fires - swallowed
@@ -546,13 +533,13 @@ describe('Timeline long-press resize handles', () => {
     el.onTimelineClick({ target: { dataset: {} }, offsetY: 10 }); // a separate, later click elsewhere
 
     expect(el.activeHandleEntryId).toBeUndefined();
-    expect(el.querySelectorAll('#drag-handles .resize-handle')).toHaveLength(0);
+    expect(el.querySelectorAll('[data-part="drag-handles"] .resize-handle')).toHaveLength(0);
   });
 
   it('dismisses visible, idle handles when Escape is pressed', () => {
     const entry = { id: 1, startOffsetMins: 0, endOffsetMins: 30, activity: 'Reading' };
     const el = createTimeline(2, [entry]);
-    const rect = el.querySelector('#events rect[data-id="1"]');
+    const rect = el.querySelector('[data-part="events"] rect[data-id="1"]');
     el.onEntryPointerDown(pointerDownOn(rect));
     vi.advanceTimersByTime(500);
     expect(el.activeHandleEntryId).toBe(1);
@@ -560,13 +547,13 @@ describe('Timeline long-press resize handles', () => {
     el.onGlobalKeyDown({ key: 'Escape' });
 
     expect(el.activeHandleEntryId).toBeUndefined();
-    expect(el.querySelectorAll('#drag-handles .resize-handle')).toHaveLength(0);
+    expect(el.querySelectorAll('[data-part="drag-handles"] .resize-handle')).toHaveLength(0);
   });
 
   it('hides handles when the entry they belong to is deleted', () => {
     const entry = { id: 1, startOffsetMins: 0, endOffsetMins: 30, activity: 'Reading' };
     const el = createTimeline(2, [entry]);
-    const rect = el.querySelector('#events rect[data-id="1"]');
+    const rect = el.querySelector('[data-part="events"] rect[data-id="1"]');
     el.onEntryPointerDown(pointerDownOn(rect));
     vi.advanceTimersByTime(500);
     expect(el.activeHandleEntryId).toBe(1);
@@ -585,18 +572,7 @@ describe('Timeline drag-to-resize handles', () => {
     if (!customElements.get('el-timeline')) {
       customElements.define('el-timeline', Timeline);
     }
-    if (!document.getElementById('svg-timeline')) {
-      const template = document.createElement('template');
-      template.id = 'svg-timeline';
-      template.innerHTML = `
-        <svg>
-          <g id="timeline-shadow"></g>
-          <rect id="future-overlay"></rect>
-          <g id="events"></g>
-        </svg>
-      `;
-      document.head.appendChild(template);
-    }
+    installSvgTemplates();
     document.body.innerHTML = '';
     appStore.dispatch({ type: HIDE_PANEL });
     // a fixed past date - see the identical note in the Phase 1 describe
@@ -632,7 +608,7 @@ describe('Timeline drag-to-resize handles', () => {
   // long-presses entry `id` to reveal its handles (Phase 1), returning the
   // hit-area element for the requested edge so a drag can start on it
   function revealHandle(el, entryId, edge) {
-    const rect = el.querySelector(`#events rect[data-id="${entryId}"]`);
+    const rect = el.querySelector(`[data-part="events"] rect[data-id="${entryId}"]`);
     el.onEntryPointerDown({
       target: rect,
       pointerId: 1,
@@ -642,7 +618,7 @@ describe('Timeline drag-to-resize handles', () => {
     });
     vi.advanceTimersByTime(500);
     return el.querySelector(
-      `#drag-handles .resize-handle[data-handle-edge="${edge}"] .resize-handle-hit-area`
+      `[data-part="drag-handles"] .resize-handle[data-handle-edge="${edge}"] .resize-handle-hit-area`
     );
   }
 
@@ -666,10 +642,10 @@ describe('Timeline drag-to-resize handles', () => {
       currentStart: 0,
       currentEnd: 50,
     });
-    const rect = el.querySelector('#events rect[data-id="1"]');
+    const rect = el.querySelector('[data-part="events"] rect[data-id="1"]');
     expect(rect.getAttribute('y')).toBe('0'); // start edge unmoved
     expect(rect.getAttribute('height')).toBe('100'); // (50-0)min * 2px/min
-    const readout = el.querySelector('#drag-handles .resize-handle-readout');
+    const readout = el.querySelector('[data-part="drag-handles"] .resize-handle-readout');
     expect(readout).not.toBeNull();
   });
 
@@ -693,7 +669,7 @@ describe('Timeline drag-to-resize handles', () => {
       currentStart: 20,
       currentEnd: 90,
     });
-    const rect = el.querySelector('#events rect[data-id="1"]');
+    const rect = el.querySelector('[data-part="events"] rect[data-id="1"]');
     expect(rect.getAttribute('y')).toBe('40'); // 20min * 2px/min
     expect(rect.getAttribute('height')).toBe('140'); // (90-20)min * 2px/min
   });
@@ -723,7 +699,7 @@ describe('Timeline drag-to-resize handles', () => {
     });
     expect(el.activeDrag).toBeUndefined();
     expect(el.activeHandleEntryId).toBe(1); // still up, re-draggable
-    expect(el.querySelectorAll('#drag-handles .resize-handle')).toHaveLength(2);
+    expect(el.querySelectorAll('[data-part="drag-handles"] .resize-handle')).toHaveLength(2);
   });
 
   it('reverts to the pre-drag start/end and dispatches nothing when the pointer is cancelled mid-drag', () => {
@@ -744,7 +720,7 @@ describe('Timeline drag-to-resize handles', () => {
 
     expect(dispatchSpy.mock.calls.some(([action]) => action.type === UPDATE_ENTRY)).toBe(false);
     expect(el.activeDrag).toBeUndefined();
-    const rect = el.querySelector('#events rect[data-id="1"]');
+    const rect = el.querySelector('[data-part="events"] rect[data-id="1"]');
     expect(rect.getAttribute('height')).toBe('60'); // reverted to (30-0)min * 2px/min
     expect(el.activeHandleEntryId).toBe(1); // handles stay up at the reverted position
   });
@@ -768,7 +744,7 @@ describe('Timeline drag-to-resize handles', () => {
 
     expect(dispatchSpy.mock.calls.some(([action]) => action.type === UPDATE_ENTRY)).toBe(false);
     expect(el.activeDrag).toBeUndefined();
-    const rect = el.querySelector('#events rect[data-id="1"]');
+    const rect = el.querySelector('[data-part="events"] rect[data-id="1"]');
     expect(rect.getAttribute('height')).toBe('60');
   });
 
@@ -867,18 +843,7 @@ describe('Timeline drag hard limits', () => {
     if (!customElements.get('el-timeline')) {
       customElements.define('el-timeline', Timeline);
     }
-    if (!document.getElementById('svg-timeline')) {
-      const template = document.createElement('template');
-      template.id = 'svg-timeline';
-      template.innerHTML = `
-        <svg>
-          <g id="timeline-shadow"></g>
-          <rect id="future-overlay"></rect>
-          <g id="events"></g>
-        </svg>
-      `;
-      document.head.appendChild(template);
-    }
+    installSvgTemplates();
     document.body.innerHTML = '';
     appStore.dispatch({ type: HIDE_PANEL });
     // a fixed past date by default - individual tests switch to today where
@@ -912,7 +877,7 @@ describe('Timeline drag hard limits', () => {
   }
 
   function revealHandle(el, entryId, edge) {
-    const rect = el.querySelector(`#events rect[data-id="${entryId}"]`);
+    const rect = el.querySelector(`[data-part="events"] rect[data-id="${entryId}"]`);
     el.onEntryPointerDown({
       target: rect,
       pointerId: 1,
@@ -922,7 +887,7 @@ describe('Timeline drag hard limits', () => {
     });
     vi.advanceTimersByTime(500);
     return el.querySelector(
-      `#drag-handles .resize-handle[data-handle-edge="${edge}"] .resize-handle-hit-area`
+      `[data-part="drag-handles"] .resize-handle[data-handle-edge="${edge}"] .resize-handle-hit-area`
     );
   }
 
@@ -941,7 +906,7 @@ describe('Timeline drag hard limits', () => {
     el.onEntryPointerMove({ target: hitArea, pointerId: 2, clientX: 0, clientY: 65 }); // raw snap -> 30min, past the 20min ceiling
 
     expect(el.activeDrag.currentStart).toBe(20); // clamped to end(30) - 10min minimum
-    const rect = el.querySelector('#events rect[data-id="1"]');
+    const rect = el.querySelector('[data-part="events"] rect[data-id="1"]');
     expect(rect.classList.contains('resize-limit-flash')).toBe(true);
   });
 
@@ -1002,7 +967,7 @@ describe('Timeline drag hard limits', () => {
     el.onEntryPointerMove({ target: hitArea, pointerId: 2, clientX: 0, clientY: 200 }); // raw snap -> 100min, past entryB's start
 
     expect(el.activeDrag.currentEnd).toBe(60); // clamped to entryB's start
-    const rect = el.querySelector('#events rect[data-id="1"]');
+    const rect = el.querySelector('[data-part="events"] rect[data-id="1"]');
     expect(rect.classList.contains('resize-limit-flash')).toBe(true);
   });
 
@@ -1022,7 +987,7 @@ describe('Timeline drag hard limits', () => {
     el.onEntryPointerMove({ target: hitArea, pointerId: 2, clientX: 0, clientY: 200 }); // -> 100min, past entryB's start
 
     expect(el.activeDrag.currentEnd).toBe(100); // not stopped by the neighbor
-    const rect = el.querySelector('#events rect[data-id="1"]');
+    const rect = el.querySelector('[data-part="events"] rect[data-id="1"]');
     expect(rect.classList.contains('resize-limit-flash')).toBe(false);
   });
 
@@ -1041,7 +1006,7 @@ describe('Timeline drag hard limits', () => {
     el.onEntryPointerMove({ target: hitArea, pointerId: 2, clientX: 0, clientY: 3000 }); // raw snap way past the day's end
 
     expect(el.activeDrag.currentEnd).toBe(1440);
-    const rect = el.querySelector('#events rect[data-id="1"]');
+    const rect = el.querySelector('[data-part="events"] rect[data-id="1"]');
     expect(rect.classList.contains('resize-limit-flash')).toBe(true);
   });
 
@@ -1062,7 +1027,7 @@ describe('Timeline drag hard limits', () => {
     el.onEntryPointerMove({ target: hitArea, pointerId: 2, clientX: 0, clientY: 3000 }); // raw snap way past "now"
 
     expect(el.activeDrag.currentEnd).toBe(nowLimit);
-    const rect = el.querySelector('#events rect[data-id="1"]');
+    const rect = el.querySelector('[data-part="events"] rect[data-id="1"]');
     expect(rect.classList.contains('resize-limit-flash')).toBe(true);
   });
 
@@ -1100,18 +1065,7 @@ describe('Timeline drag lifecycle', () => {
     if (!customElements.get('el-timeline')) {
       customElements.define('el-timeline', Timeline);
     }
-    if (!document.getElementById('svg-timeline')) {
-      const template = document.createElement('template');
-      template.id = 'svg-timeline';
-      template.innerHTML = `
-        <svg>
-          <g id="timeline-shadow"></g>
-          <rect id="future-overlay"></rect>
-          <g id="events"></g>
-        </svg>
-      `;
-      document.head.appendChild(template);
-    }
+    installSvgTemplates();
     document.body.innerHTML = '';
     appStore.dispatch({ type: HIDE_PANEL });
     appStore.dispatch({ type: SWITCH_DATE, payload: '2020-01-01' });
@@ -1133,7 +1087,7 @@ describe('Timeline drag lifecycle', () => {
   }
 
   function revealHandle(el, entryId, edge) {
-    const rect = el.querySelector(`#events rect[data-id="${entryId}"]`);
+    const rect = el.querySelector(`[data-part="events"] rect[data-id="${entryId}"]`);
     el.onEntryPointerDown({
       target: rect,
       pointerId: 1,
@@ -1147,7 +1101,7 @@ describe('Timeline drag lifecycle', () => {
     // armed and swallow an unrelated later onTimelineClick call in the test
     el.onTimelineClick({ target: rect });
     return el.querySelector(
-      `#drag-handles .resize-handle[data-handle-edge="${edge}"] .resize-handle-hit-area`
+      `[data-part="drag-handles"] .resize-handle[data-handle-edge="${edge}"] .resize-handle-hit-area`
     );
   }
 
@@ -1170,7 +1124,7 @@ describe('Timeline drag lifecycle', () => {
 
     expect(el.activeHandleEntryId).toBe(entry.id);
     const startHit = el.querySelector(
-      '#drag-handles .resize-handle[data-handle-edge="start"] .resize-handle-hit-area'
+      '[data-part="drag-handles"] .resize-handle[data-handle-edge="start"] .resize-handle-hit-area'
     );
     expect(startHit).not.toBeNull();
 
@@ -1206,7 +1160,7 @@ describe('Timeline drag lifecycle', () => {
     el.commitDrag();
 
     const startHit = el.querySelector(
-      '#drag-handles .resize-handle[data-handle-edge="start"] .resize-handle-hit-area'
+      '[data-part="drag-handles"] .resize-handle[data-handle-edge="start"] .resize-handle-hit-area'
     );
     el.onEntryPointerDown({
       target: startHit,
@@ -1253,7 +1207,7 @@ describe('Timeline drag lifecycle', () => {
     el.onTimelineClick({ target: { dataset: {} }, offsetY: 10 }); // a later click, on empty space
 
     expect(el.activeHandleEntryId).toBeUndefined();
-    expect(el.querySelectorAll('#drag-handles .resize-handle')).toHaveLength(0);
+    expect(el.querySelectorAll('[data-part="drag-handles"] .resize-handle')).toHaveLength(0);
   });
 
   it("dismisses this entry's handles when a later click opens a different entry, even after a completed drag", () => {
@@ -1278,7 +1232,7 @@ describe('Timeline drag lifecycle', () => {
     el.commitDrag();
     expect(el.activeHandleEntryId).toBe(entryA.id);
 
-    const rectB = el.querySelector(`#events rect[data-id="${entryB.id}"]`);
+    const rectB = el.querySelector(`[data-part="events"] rect[data-id="${entryB.id}"]`);
     el.onTimelineClick({ target: rectB });
 
     expect(el.activeHandleEntryId).toBeUndefined();
@@ -1309,7 +1263,7 @@ describe('Timeline drag lifecycle', () => {
     el.onGlobalKeyDown({ key: 'Escape' });
 
     expect(el.activeHandleEntryId).toBeUndefined();
-    expect(el.querySelectorAll('#drag-handles .resize-handle')).toHaveLength(0);
+    expect(el.querySelectorAll('[data-part="drag-handles"] .resize-handle')).toHaveLength(0);
   });
 });
 
@@ -1322,18 +1276,7 @@ describe('Timeline multi-day scoping', () => {
     if (!customElements.get('el-timeline')) {
       customElements.define('el-timeline', Timeline);
     }
-    if (!document.getElementById('svg-timeline')) {
-      const template = document.createElement('template');
-      template.id = 'svg-timeline';
-      template.innerHTML = `
-        <svg>
-          <g id="timeline-shadow"></g>
-          <rect id="future-overlay"></rect>
-          <g id="events"></g>
-        </svg>
-      `;
-      document.head.appendChild(template);
-    }
+    installSvgTemplates();
     document.body.innerHTML = '';
   });
 
@@ -1380,11 +1323,11 @@ describe('Timeline multi-day scoping', () => {
     // mounted while dateC is current, so the pre-existing entry should
     // already be drawn
     const el = createTimeline(3);
-    expect(el.querySelector('#events rect[data-id="1"]')).not.toBeNull();
+    expect(el.querySelector('[data-part="events"] rect[data-id="1"]')).not.toBeNull();
 
     appStore.dispatch({ type: SWITCH_DATE, payload: dateD });
 
-    expect(el.querySelector('#events rect[data-id="1"]')).toBeNull();
+    expect(el.querySelector('[data-part="events"] rect[data-id="1"]')).toBeNull();
   });
 
   // regression coverage (#143): an entry selected on one date stayed
@@ -1431,18 +1374,7 @@ describe('Timeline future overlay', () => {
     if (!customElements.get('el-timeline')) {
       customElements.define('el-timeline', Timeline);
     }
-    if (!document.getElementById('svg-timeline')) {
-      const template = document.createElement('template');
-      template.id = 'svg-timeline';
-      template.innerHTML = `
-        <svg>
-          <g id="timeline-shadow"></g>
-          <rect id="future-overlay"></rect>
-          <g id="events"></g>
-        </svg>
-      `;
-      document.head.appendChild(template);
-    }
+    installSvgTemplates();
     document.body.innerHTML = '';
   });
 
@@ -1458,7 +1390,7 @@ describe('Timeline future overlay', () => {
     appStore.dispatch({ type: SWITCH_DATE, payload: getCurrentDiaryDateKey() });
     const el = createTimeline(4);
 
-    const height = Number(el.querySelector('#future-overlay').getAttribute('height'));
+    const height = Number(el.querySelector('[data-part="future-overlay"]').getAttribute('height'));
     expect(height).toBeGreaterThan(0);
   });
 
@@ -1466,18 +1398,20 @@ describe('Timeline future overlay', () => {
     appStore.dispatch({ type: SWITCH_DATE, payload: '2000-01-01' });
     const el = createTimeline(4);
 
-    const height = Number(el.querySelector('#future-overlay').getAttribute('height'));
+    const height = Number(el.querySelector('[data-part="future-overlay"]').getAttribute('height'));
     expect(height).toBe(0);
   });
 
   it('hides the future overlay immediately on switching away from today, without waiting for the 30s interval', () => {
     appStore.dispatch({ type: SWITCH_DATE, payload: getCurrentDiaryDateKey() });
     const el = createTimeline(4);
-    expect(Number(el.querySelector('#future-overlay').getAttribute('height'))).toBeGreaterThan(0);
+    expect(
+      Number(el.querySelector('[data-part="future-overlay"]').getAttribute('height'))
+    ).toBeGreaterThan(0);
 
     appStore.dispatch({ type: SWITCH_DATE, payload: '2000-01-01' });
 
-    expect(Number(el.querySelector('#future-overlay').getAttribute('height'))).toBe(0);
+    expect(Number(el.querySelector('[data-part="future-overlay"]').getAttribute('height'))).toBe(0);
   });
 });
 
@@ -1491,18 +1425,7 @@ describe('Timeline moved in the DOM', () => {
     if (!customElements.get('el-timeline')) {
       customElements.define('el-timeline', Timeline);
     }
-    if (!document.getElementById('svg-timeline')) {
-      const template = document.createElement('template');
-      template.id = 'svg-timeline';
-      template.innerHTML = `
-        <svg>
-          <g id="timeline-shadow"></g>
-          <rect id="future-overlay"></rect>
-          <g id="events"></g>
-        </svg>
-      `;
-      document.head.appendChild(template);
-    }
+    installSvgTemplates();
     document.body.innerHTML = '';
   });
 
@@ -1511,10 +1434,6 @@ describe('Timeline moved in the DOM', () => {
     el.setAttribute('key', stubPanelActionsKey());
     el.setAttribute('index', '2');
     document.body.appendChild(el);
-    // a click target, whichever test's <template> happened to be registered
-    const zone = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    zone.id = 'gridline_zone';
-    el.timeLineElement.appendChild(zone);
     return el;
   }
 
@@ -1536,7 +1455,7 @@ describe('Timeline moved in the DOM', () => {
     const openNewEntry = vi.fn();
     el.panelActions.openNewEntry = openNewEntry;
 
-    el.querySelector('[id="gridline_zone"]').dispatchEvent(
+    el.querySelector('[data-part="gridline-zone"]').dispatchEvent(
       new MouseEvent('click', { bubbles: true })
     );
 

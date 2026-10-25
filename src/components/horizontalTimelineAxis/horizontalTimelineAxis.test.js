@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+import { installSvgTemplates } from '../../testing/svgTemplates';
 import { HorizontalTimelineAxis } from './horizontalTimelineAxis';
 import { appStore } from '../../store/appStore';
 import { SWITCH_DATE, SET_HORIZONTAL_ZOOM } from '../../store/actionTypes';
@@ -14,19 +15,7 @@ describe('HorizontalTimelineAxis', () => {
     if (!customElements.get('el-horizontal-timeline-axis')) {
       customElements.define('el-horizontal-timeline-axis', HorizontalTimelineAxis);
     }
-    if (!document.getElementById('svg-horizontal-timeline-axis')) {
-      const template = document.createElement('template');
-      template.id = 'svg-horizontal-timeline-axis';
-      template.innerHTML = `
-        <svg>
-          <rect id="future-overlay"></rect>
-          <g id="grid-lines"></g>
-          <rect id="gradient-bar"></rect>
-          <g id="hour-labels"></g>
-        </svg>
-      `;
-      document.head.appendChild(template);
-    }
+    installSvgTemplates();
     document.body.innerHTML = '';
     appStore.dispatch({ type: SET_HORIZONTAL_ZOOM, payload: 1 });
   });
@@ -47,12 +36,12 @@ describe('HorizontalTimelineAxis', () => {
   describe('grid generation', () => {
     it('renders a tick every 10 minutes, 145 total, at native zoom', () => {
       const el = createAxis();
-      expect(el.querySelectorAll('#grid-lines line').length).toBe(145); // 0..1440 step 10
+      expect(el.querySelectorAll('[data-part="grid-lines"] line').length).toBe(145); // 0..1440 step 10
     });
 
     it('draws hour marks solid and gray, half-hour marks dashed, other ticks plain', () => {
       const el = createAxis();
-      const lines = [...el.querySelectorAll('#grid-lines line')];
+      const lines = [...el.querySelectorAll('[data-part="grid-lines"] line')];
 
       const hourMark = lines.find((l) => l.getAttribute('x1') === '0'); // offset 0
       expect(hourMark.getAttribute('stroke')).toBe('#8f97a3');
@@ -69,7 +58,7 @@ describe('HorizontalTimelineAxis', () => {
 
     it('renders 25 hour labels using formatOffsetAsClockTime, wrapping back to the day-boundary time', () => {
       const el = createAxis();
-      const labels = [...el.querySelectorAll('#hour-labels text')];
+      const labels = [...el.querySelectorAll('[data-part="hour-labels"] text')];
       expect(labels).toHaveLength(25);
       expect(labels[0].textContent).toBe('04:00');
       expect(labels[1].textContent).toBe('05:00');
@@ -81,10 +70,10 @@ describe('HorizontalTimelineAxis', () => {
 
       appStore.dispatch({ type: SET_HORIZONTAL_ZOOM, payload: 2 });
 
-      const lines = [...el.querySelectorAll('#grid-lines line')];
+      const lines = [...el.querySelectorAll('[data-part="grid-lines"] line')];
       // offset 10min * (PX_PER_MINUTE(2) * zoom(2)) = 40, vs 20 at native zoom
       expect(lines.length).toBe(145);
-      expect(el.querySelectorAll('#grid-lines line')[1].getAttribute('x1')).toBe('40');
+      expect(el.querySelectorAll('[data-part="grid-lines"] line')[1].getAttribute('x1')).toBe('40');
     });
   });
 
@@ -92,7 +81,7 @@ describe('HorizontalTimelineAxis', () => {
     it('sizes the svg and gradient bar to the native width at zoom 1', () => {
       const el = createAxis();
       expect(el.querySelector('svg').getAttribute('width')).toBe('2880'); // 1440min * 2px/min
-      expect(el.querySelector('#gradient-bar').getAttribute('width')).toBe('2880');
+      expect(el.querySelector('[data-part="gradient-bar"]').getAttribute('width')).toBe('2880');
     });
 
     it('sizes the svg and gradient bar to the zoomed width on a zoom change', () => {
@@ -101,7 +90,7 @@ describe('HorizontalTimelineAxis', () => {
       appStore.dispatch({ type: SET_HORIZONTAL_ZOOM, payload: 2 });
 
       expect(el.querySelector('svg').getAttribute('width')).toBe('5760'); // 1440min * (2*2)px/min
-      expect(el.querySelector('#gradient-bar').getAttribute('width')).toBe('5760');
+      expect(el.querySelector('[data-part="gradient-bar"]').getAttribute('width')).toBe('5760');
     });
   });
 
@@ -150,7 +139,7 @@ describe('HorizontalTimelineAxis', () => {
       appStore.dispatch({ type: SWITCH_DATE, payload: getCurrentDiaryDateKey() });
       const el = createAxis();
 
-      const width = Number(el.querySelector('#future-overlay').getAttribute('width'));
+      const width = Number(el.querySelector('[data-part="future-overlay"]').getAttribute('width'));
       expect(width).toBeGreaterThan(0);
     });
 
@@ -158,18 +147,22 @@ describe('HorizontalTimelineAxis', () => {
       appStore.dispatch({ type: SWITCH_DATE, payload: '2000-01-01' });
       const el = createAxis();
 
-      const width = Number(el.querySelector('#future-overlay').getAttribute('width'));
+      const width = Number(el.querySelector('[data-part="future-overlay"]').getAttribute('width'));
       expect(width).toBe(0);
     });
 
     it('hides the future overlay immediately on switching away from today, without waiting for the 30s interval', () => {
       appStore.dispatch({ type: SWITCH_DATE, payload: getCurrentDiaryDateKey() });
       const el = createAxis();
-      expect(Number(el.querySelector('#future-overlay').getAttribute('width'))).toBeGreaterThan(0);
+      expect(
+        Number(el.querySelector('[data-part="future-overlay"]').getAttribute('width'))
+      ).toBeGreaterThan(0);
 
       appStore.dispatch({ type: SWITCH_DATE, payload: '2000-01-01' });
 
-      expect(Number(el.querySelector('#future-overlay').getAttribute('width'))).toBe(0);
+      expect(Number(el.querySelector('[data-part="future-overlay"]').getAttribute('width'))).toBe(
+        0
+      );
     });
   });
 });

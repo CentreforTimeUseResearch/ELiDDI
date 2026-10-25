@@ -42,7 +42,7 @@ export class HorizontalTimeline extends BaseTimeline {
 
   getChildElementReferences() {
     super.getChildElementReferences();
-    this.gridlineZoneElement = this.timeLineElement.querySelector('[id="gridline_zone"]');
+    this.gridlineZoneElement = this.part('gridline-zone');
   }
 
   getPxPerMinute() {

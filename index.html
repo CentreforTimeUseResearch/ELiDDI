@@ -17,6 +17,41 @@
       <div id="data">__GENERATED__</div>
     </main>
 
+    <!-- the timelines' gradients, defined once for every clone of the
+         templates below (an id inside a template is repeated per clone).
+         Zero-size rather than display:none, which would stop a gradient
+         rendering anywhere it's referenced -->
+    <svg
+      class="shared-svg-defs"
+      width="0"
+      height="0"
+      aria-hidden="true"
+      focusable="false"
+      style="position: absolute"
+    >
+      <defs>
+        <!-- Time-of-day gradient: orange (sunrise) -> yellow -> green -> cyan -> blue -> violet (night) -->
+        <linearGradient id="timeGradient" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#ff9500" />
+          <stop offset="8%" stop-color="#ffe600" />
+          <stop offset="30%" stop-color="#7ed321" />
+          <stop offset="50%" stop-color="#22d3ee" />
+          <stop offset="70%" stop-color="#3b82f6" />
+          <stop offset="90%" stop-color="#8b5cf6" />
+          <stop offset="100%" stop-color="#4c1d95" />
+        </linearGradient>
+        <linearGradient id="horizontalTimeGradient" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#ff9500" />
+          <stop offset="8%" stop-color="#ffe600" />
+          <stop offset="30%" stop-color="#7ed321" />
+          <stop offset="50%" stop-color="#22d3ee" />
+          <stop offset="70%" stop-color="#3b82f6" />
+          <stop offset="90%" stop-color="#8b5cf6" />
+          <stop offset="100%" stop-color="#4c1d95" />
+        </linearGradient>
+      </defs>
+    </svg>
+
     <template id="svg-timeline">
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -25,30 +60,25 @@
         preserveAspectRatio="xMinYMin meet"
       >
         <!-- ============ DEFS ============ -->
-        <defs>
-          <!-- Time-of-day gradient: orange (sunrise) -> yellow -> green -> cyan -> blue -> violet (night) -->
-          <linearGradient id="timeGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#ff9500" />
-            <stop offset="8%" stop-color="#ffe600" />
-            <stop offset="30%" stop-color="#7ed321" />
-            <stop offset="50%" stop-color="#22d3ee" />
-            <stop offset="70%" stop-color="#3b82f6" />
-            <stop offset="90%" stop-color="#8b5cf6" />
-            <stop offset="100%" stop-color="#4c1d95" />
-          </linearGradient>
-        </defs>
 
         <!-- ============ BACKGROUND ============ -->
-        <rect x="110" y="0" width="220" height="2880" fill="#ffffff" id="gridline_zone" />
+        <rect x="110" y="0" width="220" height="2880" fill="#ffffff" data-part="gridline-zone" />
 
-        <g id="timeline-shadow"></g>
+        <g data-part="timeline-shadow"></g>
 
-        <g id="wrapper">
+        <g data-part="wrapper">
           <!-- "Future" shading (now -> end of day) - y/height are set live by Timeline.updateFutureOverlay() -->
-          <rect id="future-overlay" x="0" y="1050" width="320" height="1350" fill="#eef0f3" />
+          <rect
+            data-part="future-overlay"
+            x="0"
+            y="1050"
+            width="320"
+            height="1350"
+            fill="#eef0f3"
+          />
 
           <!-- ============ GRID LINES ============ -->
-          <g id="grid-lines">
+          <g data-part="grid-lines">
             <line x1="100" y1="0" x2="320" y2="0" stroke="#8f97a3" stroke-width="1" />
             <!-- 4:00 -->
             <line x1="100" y1="20" x2="320" y2="20" stroke="#d8dbe0" stroke-width="1" />
@@ -465,7 +495,7 @@
           <rect x="85" y="0" width="4" height="2880" rx="2" fill="url(#timeGradient)" />
 
           <!-- ============ HOUR LABELS ============ -->
-          <g id="hour-labels" font-size="14" fill="#8a8f98" text-anchor="end">
+          <g data-part="hour-labels" font-size="14" fill="#8a8f98" text-anchor="end">
             <text x="65" y="10">04:00</text>
             <text x="65" y="125">05:00</text>
             <text x="65" y="245">06:00</text>
@@ -494,11 +524,11 @@
           </g>
 
           <!-- ============ EVENTS ============ -->
-          <g id="events"></g>
+          <g data-part="events"></g>
 
           <!-- ============ RESIZE HANDLES ============ -->
           <!-- populated live by Timeline's long-press handling; always sits above #events -->
-          <g id="drag-handles"></g>
+          <g data-part="drag-handles"></g>
         </g>
       </svg>
     </template>
@@ -511,9 +541,9 @@
          #svg-timeline's own. -->
     <template id="svg-horizontal-timeline-row">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2880 60">
-        <rect id="gridline_zone" x="0" y="0" width="2880" height="60" fill="#ffffff" />
-        <g id="events"></g>
-        <g id="drag-handles"></g>
+        <rect data-part="gridline-zone" x="0" y="0" width="2880" height="60" fill="#ffffff" />
+        <g data-part="events"></g>
+        <g data-part="drag-handles"></g>
       </svg>
     </template>
 
@@ -529,29 +559,17 @@
          live in the document at once. -->
     <template id="svg-horizontal-timeline-axis">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2880 40">
-        <defs>
-          <linearGradient id="horizontalTimeGradient" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stop-color="#ff9500" />
-            <stop offset="8%" stop-color="#ffe600" />
-            <stop offset="30%" stop-color="#7ed321" />
-            <stop offset="50%" stop-color="#22d3ee" />
-            <stop offset="70%" stop-color="#3b82f6" />
-            <stop offset="90%" stop-color="#8b5cf6" />
-            <stop offset="100%" stop-color="#4c1d95" />
-          </linearGradient>
-        </defs>
-
         <!-- "Future" shading (now -> end of day) - x/width are set live by
              HorizontalTimelineAxis.updateFutureOverlay() -->
-        <rect id="future-overlay" x="0" y="0" width="0" height="40" fill="#eef0f3" />
+        <rect data-part="future-overlay" x="0" y="0" width="0" height="40" fill="#eef0f3" />
 
         <!-- ============ GRID TICKS ============ -->
         <!-- populated live by HorizontalTimelineAxis.renderGrid() -->
-        <g id="grid-lines"></g>
+        <g data-part="grid-lines"></g>
 
         <!-- ============ TIME GRADIENT BAR ============ -->
         <rect
-          id="gradient-bar"
+          data-part="gradient-bar"
           x="0"
           y="20"
           width="2880"
@@ -562,7 +580,7 @@
 
         <!-- ============ HOUR LABELS ============ -->
         <!-- populated live by HorizontalTimelineAxis.renderGrid() -->
-        <g id="hour-labels" font-size="14" fill="#8a8f98" text-anchor="middle"></g>
+        <g data-part="hour-labels" font-size="14" fill="#8a8f98" text-anchor="middle"></g>
       </svg>
     </template>
 

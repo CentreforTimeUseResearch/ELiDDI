@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { installSvgTemplates } from '../../testing/svgTemplates';
 import '../timelineStack/timelineStack';
 import '../horizontalTimelineStack/horizontalTimelineStack';
 import { appStore } from '../../store/appStore';
@@ -8,15 +9,6 @@ import { getActivityDisplayName } from '../../utils/activities';
 // #151 / ADR 0005: one details panel in every layout, routed to the
 // current Dimension by DetailsPanelCoordinator. Each test runs against the
 // real mobile and desktop stacks.
-
-function addTemplate(id, markup) {
-  if (!document.getElementById(id)) {
-    const template = document.createElement('template');
-    template.id = id;
-    template.innerHTML = markup;
-    document.head.appendChild(template);
-  }
-}
 
 const DATE = '2026-07-01';
 const DIMENSIONS = GLOBALS.DATA.timeline;
@@ -30,18 +22,7 @@ describe.each([
   let stack;
 
   beforeEach(() => {
-    addTemplate(
-      'svg-timeline',
-      '<svg><rect id="gridline_zone"></rect><g id="timeline-shadow"></g><rect id="future-overlay"></rect><g id="events"></g></svg>'
-    );
-    addTemplate(
-      'svg-horizontal-timeline-axis',
-      '<svg><rect id="future-overlay"></rect><g id="grid-lines"></g><rect id="gradient-bar"></rect><g id="hour-labels"></g></svg>'
-    );
-    addTemplate(
-      'svg-horizontal-timeline-row',
-      '<svg><rect id="gridline_zone"></rect><g id="events"></g><g id="drag-handles"></g></svg>'
-    );
+    installSvgTemplates();
     document.body.innerHTML = '';
     appStore.dispatch({ type: SWITCH_DATE, payload: DATE });
     DIMENSIONS.forEach((__, dimensionIndex) =>

@@ -11,7 +11,7 @@ import './horizontalTimelineAxis.css';
 
 const FUTURE_OVERLAY_REFRESH_MS = 30000; // matches Timeline.updateFutureOverlay's interval
 const AXIS_HEIGHT = 40; // matches #svg-horizontal-timeline-axis's viewBox height in index.html
-const GRID_STEP_MINS = 10; // matches the vertical Timeline's own #grid-lines resolution
+const GRID_STEP_MINS = 10; // matches the vertical Timeline's own grid-lines resolution
 const GRID_TICK_TOP = 28;
 const HOUR_LABEL_Y = 14;
 
@@ -60,10 +60,11 @@ export class HorizontalTimelineAxis extends TinyBase {
 
   getChildElementReferences() {
     this.svgElement = this.querySelector('svg');
-    this.gridLinesElement = this.svgElement.querySelector('#grid-lines');
-    this.hourLabelsElement = this.svgElement.querySelector('#hour-labels');
-    this.gradientBarElement = this.svgElement.querySelector('#gradient-bar');
-    this.futureOverlayElement = this.svgElement.querySelector('#future-overlay');
+    // parts named with data-part, like the Timelines' templates (#170)
+    this.gridLinesElement = this.svgElement.querySelector('[data-part="grid-lines"]');
+    this.hourLabelsElement = this.svgElement.querySelector('[data-part="hour-labels"]');
+    this.gradientBarElement = this.svgElement.querySelector('[data-part="gradient-bar"]');
+    this.futureOverlayElement = this.svgElement.querySelector('[data-part="future-overlay"]');
     this.zoomInButton = this.querySelector('.zoom-in');
     this.zoomOutButton = this.querySelector('.zoom-out');
   }

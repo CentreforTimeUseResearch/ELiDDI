@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { installSvgTemplates } from '../../testing/svgTemplates';
 import './timelineStack';
 import { moveToNewParent, errorsDuring } from '../../testing/domMoves';
 import { appStore } from '../../store/appStore';
@@ -6,18 +7,7 @@ import { SWITCH_DIMENSION } from '../../store/actionTypes';
 
 describe('TimelineStack scroll-snap Dimension switching', () => {
   beforeEach(() => {
-    if (!document.getElementById('svg-timeline')) {
-      const template = document.createElement('template');
-      template.id = 'svg-timeline';
-      template.innerHTML = `
-        <svg>
-          <g id="timeline-shadow"></g>
-          <rect id="future-overlay"></rect>
-          <g id="events"></g>
-        </svg>
-      `;
-      document.head.appendChild(template);
-    }
+    installSvgTemplates();
     document.body.innerHTML = '';
     appStore.dispatch({ type: SWITCH_DIMENSION, payload: 0 });
   });

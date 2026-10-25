@@ -18,7 +18,7 @@ The app has one `<el-details-panel>`, in the mobile and desktop layouts alike. T
 
 ## The spike
 
-A throwaway prototype is kept on the branch `spike-151-shared-details-panel` (not for merging). Set `localStorage.spikeSharedPanel` to `keep`, `discard` or `close`, then reload, and the mobile layout gets one shared panel with that swipe policy. Measured in desktop Chrome with a real scroll-snap swipe:
+A throwaway prototype gave the mobile layout one shared panel, with the swipe policy switchable between `keep`, `discard` and `close`. It was deleted once the decision was implemented (PR #168). Measured in desktop Chrome with a real scroll-snap swipe:
 
 |                                   | Today: 6 panels                      | `keep`   | `discard` | `close`             |
 | --------------------------------- | ------------------------------------ | -------- | --------- | ------------------- |

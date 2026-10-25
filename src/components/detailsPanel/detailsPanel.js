@@ -4,6 +4,7 @@ import { TinyBase } from '../base';
 import { HIDE_PANEL, SHOW_PANEL } from '../../store/actionTypes';
 import './detailsPanel.css';
 import { escapeHtml } from '../../utils/html';
+import { MIN_ENTRY_DURATION_MINS } from '../timeline/timelineConstants';
 
 const DIMENSION_INDEX = 'dimensionindex';
 const HEADING = 'heading';
@@ -85,9 +86,11 @@ export class DetailsPanel extends TinyBase {
     const hasActivity = Array.isArray(this.state.activity)
       ? this.state.activity.length > 0
       : !!this.state.activity;
+    const { startOffsetMins, endOffsetMins } = this.state;
     return (
-      typeof this.state.startOffsetMins === 'number' &&
-      typeof this.state.endOffsetMins === 'number' &&
+      typeof startOffsetMins === 'number' &&
+      typeof endOffsetMins === 'number' &&
+      endOffsetMins - startOffsetMins >= MIN_ENTRY_DURATION_MINS &&
       hasActivity
     );
   }
@@ -97,8 +100,12 @@ export class DetailsPanel extends TinyBase {
     // rejection message from a previous save attempt
     this.clearError();
     this.state = newState;
+    // both ways: an Entry can become incomplete again, e.g. shortened below
+    // the minimum duration (#162)
     if (this.isEntryComplete()) {
       this.showSaveButton();
+    } else {
+      this.hideSaveButton();
     }
   }
 
@@ -288,7 +295,12 @@ export class DetailsPanel extends TinyBase {
 
   // triggered by adding a  valid end time to an entry that has a valid start time
   onSetOffsetMins({ timeField, timeInMinutes }) {
-    const offsetMins = timeInMinutes - this.dayBoundaryInMinutes;
+    // a clock time earlier than the day boundary (01:00 with a 04:00
+    // boundary) is the end of this diary day, not before its start
+    let offsetMins = timeInMinutes - this.dayBoundaryInMinutes;
+    if (offsetMins < 0) {
+      offsetMins += 24 * 60;
+    }
 
     switch (timeField) {
       case 'endTime':

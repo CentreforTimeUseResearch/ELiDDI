@@ -214,6 +214,45 @@ describe('TimePickerPanel', () => {
   describe('the end-time error', () => {
     const endError = (el) => el.querySelector('[data-id="endTime-time-error"]');
 
+    // #162: an Entry lasts at least 10 minutes - one time slot, the same
+    // minimum the drag handles enforce
+    it.each([
+      ['the same as the start', 480],
+      ['5 minutes after the start', 485],
+      ['9 minutes after the start', 489],
+    ])('asks for at least 10 minutes when the end time is %s', (_, endMinutes) => {
+      const el = createPanel();
+      el.onTimeInputChange('startTime', 480); // 08:00
+      el.onTimeInputChange('endTime', endMinutes);
+
+      expect(endError(el).textContent).toBe(
+        'End time must be at least 10 minutes after the start time'
+      );
+      expect(endError(el).hidden).toBe(false);
+    });
+
+    it('accepts an end time exactly 10 minutes after the start, clearing the message', () => {
+      const el = createPanel();
+      el.onTimeInputChange('startTime', 480);
+      el.onTimeInputChange('endTime', 485);
+
+      el.onTimeInputChange('endTime', 490);
+
+      expect(endError(el).textContent).toBe('');
+      expect(endError(el).hidden).toBe(true);
+    });
+
+    it('applies the same minimum to a typed duration', () => {
+      const el = createPanel();
+      el.onTimeInputChange('startTime', 480);
+
+      el.onTimeInputChange('duration', 5);
+
+      expect(endError(el).textContent).toBe(
+        'End time must be at least 10 minutes after the start time'
+      );
+    });
+
     it('shows when the end time falls past the end of the diary day, and clears once it is valid', () => {
       const el = createPanel();
       el.onTimeInputChange('startTime', 600); // 10:00

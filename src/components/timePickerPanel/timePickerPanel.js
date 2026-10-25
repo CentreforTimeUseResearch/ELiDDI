@@ -2,6 +2,7 @@ import '../timePicker/timePicker';
 import '../durationInput/durationInput';
 import { TinyBase } from '../base';
 import { getMaxEditableTimeInMinutes } from '../../utils/time';
+import { MIN_ENTRY_DURATION_MINS } from '../timeline/timelineConstants';
 import './timePickerPanel.css';
 
 const DAY_BOUNDARY = 'day-boundary';
@@ -132,12 +133,16 @@ export class TimePickerPanel extends TinyBase {
 
     const endDayBoundaryInMinutes = Number(this[DAY_BOUNDARY]) - 1 + 24 * 60;
 
-    /* don't let the end time be beyond the end day boundary - recomputed
-       on every change, so the message clears once the times are valid */
-    this.endTimeError =
-      endTotalMinutes > endDayBoundaryInMinutes
-        ? `End time can't be between ${GLOBALS.DATA.day_boundary} and ${this.convertMinutesToTimePickerFormat(this.startInputMinutes)}`
-        : '';
+    /* don't let the end time be beyond the end day boundary, or less than
+       the minimum after the start (#162) - recomputed on every change, so
+       the message clears once the times are valid */
+    if (endTotalMinutes > endDayBoundaryInMinutes) {
+      this.endTimeError = `End time can't be between ${GLOBALS.DATA.day_boundary} and ${this.convertMinutesToTimePickerFormat(this.startInputMinutes)}`;
+    } else if (endTotalMinutes - startTotalMinutes < MIN_ENTRY_DURATION_MINS) {
+      this.endTimeError = `End time must be at least ${MIN_ENTRY_DURATION_MINS} minutes after the start time`;
+    } else {
+      this.endTimeError = '';
+    }
 
     // store total difference in minutes
     this.durationInputMinutes = endTotalMinutes - startTotalMinutes;
@@ -180,6 +185,8 @@ export class TimePickerPanel extends TinyBase {
         this.durationInputMinutes = minutes;
         if (isSet(this.startInputMinutes)) {
           this.recalculateEndTime(this.startInputMinutes, this.durationInputMinutes);
+          // re-checks the new end time (minimum duration, end of day)
+          this.recalculateDuration(this.startInputMinutes, this.endInputMinutes);
         }
         break;
     }

@@ -295,6 +295,24 @@ describe('Timeline panelActions contract', () => {
     expect(close).not.toHaveBeenCalled();
   });
 
+  // #162: a safety net behind the details panel's disabled Save button
+  it('refuses to save an Entry shorter than 10 minutes, reporting why', () => {
+    const el = createTimeline(4); // Device (multiple-choice, so no overlap check)
+    const close = vi.fn();
+    const reportSaveConflict = vi.fn();
+    el.panelActions.close = close;
+    el.panelActions.reportSaveConflict = reportSaveConflict;
+    const before = el.entries.length;
+
+    el.saveEntry({ startOffsetMins: 30, endOffsetMins: 35, activity: ['Phone'] });
+
+    expect(reportSaveConflict).toHaveBeenCalledWith(
+      'An activity needs to last at least 10 minutes.'
+    );
+    expect(close).not.toHaveBeenCalled();
+    expect(el.entries).toHaveLength(before);
+  });
+
   it('shows resize handles on the newly-created entry after saving a brand-new entry', () => {
     const el = createTimeline(4); // Device (multiple-choice, no overlap-conflict path)
 

@@ -3,7 +3,7 @@ import {
   getCurrentOffsetMins,
   getCurrentDiaryDateKey,
 } from '../../utils/time';
-import { SVGNS, MINUTES_PER_DAY } from './timelineConstants';
+import { SVGNS, MINUTES_PER_DAY, MIN_ENTRY_DURATION_MINS } from './timelineConstants';
 
 // Phase 10.6: which SVG attributes carry "position along the timeline axis"
 // vs "fixed cross-axis center" - everything else in this controller already
@@ -29,7 +29,6 @@ const LONG_PRESS_MS = 500;
 const LONG_PRESS_CANCEL_DISTANCE_PX = 10; // pointer movement past this before the timer fires reads as a scroll/mis-tap, not a long-press
 const HANDLE_HIT_RADIUS = 22; // ~44px hit target (WCAG target-size guidance), independent of the visible grip size
 const HANDLE_GRIP_RADIUS = 6;
-const MIN_ENTRY_DURATION_MINS = 10; // one slot - the shortest a drag can resize an entry to
 const LIMIT_FLASH_MS = 300;
 
 // Owns the long-press -> reveal handles -> drag -> live-resize -> commit/cancel

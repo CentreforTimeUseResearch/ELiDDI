@@ -7,11 +7,11 @@ import {
 } from '../../utils/time';
 import { SET_HORIZONTAL_ZOOM } from '../../store/actionTypes';
 import { NATIVE_ZOOM, MAX_ZOOM, ZOOM_STEP, getEffectivePxPerMinute } from './zoomConstants';
+import { renderGridLines } from './gridLines';
 import './horizontalTimelineAxis.css';
 
 const FUTURE_OVERLAY_REFRESH_MS = 30000; // matches Timeline.updateFutureOverlay's interval
 const AXIS_HEIGHT = 40; // matches #svg-horizontal-timeline-axis's viewBox height in index.html
-const GRID_STEP_MINS = 10; // matches the vertical Timeline's own grid-lines resolution
 const GRID_TICK_TOP = 28;
 const HOUR_LABEL_Y = 14;
 
@@ -143,38 +143,20 @@ export class HorizontalTimelineAxis extends TinyBase {
   }
 
   renderGrid(effectivePxPerMinute) {
-    this.gridLinesElement.innerHTML = '';
+    renderGridLines(this.gridLinesElement, effectivePxPerMinute, GRID_TICK_TOP, AXIS_HEIGHT);
+
     this.hourLabelsElement.innerHTML = '';
-
-    for (let offset = 0; offset <= MINUTES_PER_DAY; offset += GRID_STEP_MINS) {
-      const x = offset * effectivePxPerMinute;
-      const isHourMark = offset % 60 === 0;
-      const isHalfHourMark = !isHourMark && offset % 30 === 0;
-
-      const line = document.createElementNS(SVGNS, 'line');
-      line.setAttributeNS(null, 'x1', x);
-      line.setAttributeNS(null, 'x2', x);
-      line.setAttributeNS(null, 'y1', GRID_TICK_TOP);
-      line.setAttributeNS(null, 'y2', AXIS_HEIGHT);
-      line.setAttributeNS(null, 'stroke', isHourMark ? '#8f97a3' : '#d8dbe0');
-      line.setAttributeNS(null, 'stroke-width', '1');
-      if (isHalfHourMark) {
-        line.setAttributeNS(null, 'stroke-dasharray', '2,3');
+    for (let offset = 0; offset <= MINUTES_PER_DAY; offset += 60) {
+      const text = document.createElementNS(SVGNS, 'text');
+      text.setAttributeNS(null, 'x', offset * effectivePxPerMinute);
+      text.setAttributeNS(null, 'y', HOUR_LABEL_Y);
+      if (offset === 0) {
+        text.setAttribute('text-anchor', 'start');
+      } else if (offset === MINUTES_PER_DAY) {
+        text.setAttribute('text-anchor', 'end');
       }
-      this.gridLinesElement.appendChild(line);
-
-      if (isHourMark) {
-        const text = document.createElementNS(SVGNS, 'text');
-        text.setAttributeNS(null, 'x', x);
-        text.setAttributeNS(null, 'y', HOUR_LABEL_Y);
-        if (offset === 0) {
-          text.setAttribute('text-anchor', 'start');
-        } else if (offset === MINUTES_PER_DAY) {
-          text.setAttribute('text-anchor', 'end');
-        }
-        text.textContent = formatOffsetAsClockTime(offset);
-        this.hourLabelsElement.appendChild(text);
-      }
+      text.textContent = formatOffsetAsClockTime(offset);
+      this.hourLabelsElement.appendChild(text);
     }
   }
 
@@ -196,7 +178,6 @@ export class HorizontalTimelineAxis extends TinyBase {
   }
 
   render() {
-    this.appendChild(this.fragment);
     const controls = document.createElement('div');
     controls.className = 'zoom-controls';
     controls.innerHTML = `
@@ -204,6 +185,7 @@ export class HorizontalTimelineAxis extends TinyBase {
       <button type="button" class="reset-to-div zoom-button zoom-in" aria-label="Zoom in">+</button>
     `;
     this.appendChild(controls);
+    this.appendChild(this.fragment);
   }
 }
 

@@ -3,6 +3,7 @@ import { renderEntryBlocks, visibleLength } from '../timeline/entryBlocks';
 import { X_AXIS } from '../timeline/entryResizeController';
 import { MINUTES_PER_DAY } from '../timeline/timelineConstants';
 import { NATIVE_ZOOM, getEffectivePxPerMinute } from '../horizontalTimelineAxis/zoomConstants';
+import { renderGridLines } from '../horizontalTimelineAxis/gridLines';
 // .event-label is shared with the vertical timeline's entry labels - import
 // its CSS directly rather than relying on timeline.js happening to already
 // be loaded elsewhere, so this component's labels are styled correctly even
@@ -32,7 +33,10 @@ export class HorizontalTimeline extends BaseTimeline {
   static crossAxisCenter = ROW_HEIGHT / 2;
 
   gridlineZoneElement;
+  gridLinesElement;
   zoomLevel = NATIVE_ZOOM;
+  // the scale the grid lines were last drawn at - they only depend on it
+  gridLinesPxPerMinute;
 
   connectedCallback() {
     this.zoomLevel = this.store.getState().horizontalZoomLevel;
@@ -43,6 +47,7 @@ export class HorizontalTimeline extends BaseTimeline {
   getChildElementReferences() {
     super.getChildElementReferences();
     this.gridlineZoneElement = this.part('gridline-zone');
+    this.gridLinesElement = this.part('grid-lines');
   }
 
   getPxPerMinute() {
@@ -61,6 +66,19 @@ export class HorizontalTimeline extends BaseTimeline {
     this.timeLineElement.setAttribute('width', totalWidthPx);
     this.style.width = `${totalWidthPx}px`;
     this.gridlineZoneElement?.setAttribute('width', totalWidthPx);
+    this.updateGridLines();
+  }
+
+  // a line every 10 minutes, behind the entries, like the vertical
+  // Timeline's. updateDimensions runs on every store update but the lines
+  // change only with the zoom, so they are not rebuilt otherwise
+  updateGridLines() {
+    const pxPerMinute = this.getPxPerMinute();
+    if (!this.gridLinesElement || pxPerMinute === this.gridLinesPxPerMinute) {
+      return;
+    }
+    renderGridLines(this.gridLinesElement, pxPerMinute, 0, ROW_HEIGHT);
+    this.gridLinesPxPerMinute = pxPerMinute;
   }
 
   updateState() {

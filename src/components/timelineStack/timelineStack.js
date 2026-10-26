@@ -6,6 +6,10 @@ import { SWITCH_DIMENSION } from '../../store/actionTypes';
 
 import './timelineStack.css';
 
+// how long the strip must stop moving before the scroll fallback decides which
+// Timeline it settled on
+const SCROLL_SETTLE_MS = 100;
+
 // The mobile layout: one Timeline per Dimension in a horizontally
 // scroll-snapping strip (swipe between Dimensions), and below it the app's
 // one details panel (ADR 0005), which a DetailsPanelCoordinator routes to
@@ -76,6 +80,26 @@ export class TimelineStack extends TinyBase {
       }
       this.switchDimension(index);
     });
+
+    // scrollsnapchange is Chromium-only; elsewhere the CSS scroll-snap still
+    // works visually, so work out the settled Timeline from the scroll position
+    if (!('onscrollsnapchange' in window)) {
+      let settleTimer;
+      this.listen(this.scroller, 'scroll', () => {
+        clearTimeout(settleTimer);
+        settleTimer = setTimeout(() => this.switchToScrolledTimeline(), SCROLL_SETTLE_MS);
+      });
+      this.registerCleanup(() => clearTimeout(settleTimer));
+    }
+  }
+
+  switchToScrolledTimeline() {
+    const timelineWidth = this.scroller.scrollWidth / this.numTimelines;
+    if (!timelineWidth) {
+      return;
+    }
+    const index = Math.round(this.scroller.scrollLeft / timelineWidth);
+    this.switchDimension(Math.min(Math.max(index, 0), this.numTimelines - 1));
   }
 
   render() {

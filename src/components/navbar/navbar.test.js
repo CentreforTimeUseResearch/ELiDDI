@@ -85,6 +85,20 @@ describe('Navbar', () => {
     expect(el.store.getState().onboarding).toBe(true);
   });
 
+  it('asks to reset (SHOW_PANEL reset) from either copy of the Reset item, clearing nothing itself', () => {
+    const el = document.createElement('el-nav-bar');
+    document.body.appendChild(el);
+    const before = el.store.getState().diaries;
+
+    el.querySelector('.nav-menu-list .reset-diary-button').click();
+
+    expect(el.store.getState().uipanel).toBe('reset');
+    expect(el.store.getState().diaries).toBe(before);
+    el.store.dispatch({ type: 'HIDE_PANEL' });
+    el.querySelector('.menu-list .reset-diary-button').click();
+    expect(el.store.getState().uipanel).toBe('reset');
+  });
+
   // the Dimension labels moved beside the timeline rows (HorizontalTimelineStack)
   it('does not render a Dimension list, which the desktop timeline rows carry instead', () => {
     const el = document.createElement('el-nav-bar');

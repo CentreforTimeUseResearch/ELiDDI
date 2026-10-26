@@ -10,7 +10,7 @@ import './navbar.css';
 // JS, so this is the one place their labels/handlers are defined
 const MENU_ITEMS = [
   { label: 'Instructions', buttonClass: 'instructions-button' },
-  { label: 'Reset (clears all entries)' },
+  { label: 'Reset (clears this day)', buttonClass: 'reset-diary-button' },
   { label: 'View stats' },
   { label: 'About this study' },
 ];
@@ -51,6 +51,14 @@ export class Navbar extends TinyBase {
           this.store.dispatch({ type: RESET_ONBOARDING });
           hamMenu.classList.toggle('active');
           offScreenMenu.classList.toggle('active');
+        });
+      });
+      // asks first: DynamicTimelineUI's reset dialog does the clearing
+      this.querySelectorAll('.reset-diary-button').forEach((button) => {
+        button.addEventListener('click', () => {
+          this.store.dispatch({ type: SHOW_PANEL, payload: 'reset' });
+          hamMenu.classList.remove('active');
+          offScreenMenu.classList.remove('active');
         });
       });
       this.querySelector('.change-date-button')?.addEventListener('click', () => {

@@ -61,7 +61,51 @@ describe('Navbar', () => {
     expect(el.querySelector('.date-indicator').textContent).toBe('Selected day: 25/12/2026 change');
   });
 
-  // todo: test that sidebar menu options are present
+  // #115
+  const MENU_LABELS = ['Instructions', 'Reset (clears this day)', 'View stats', 'About this study'];
+  const labelsIn = (el, listSelector) =>
+    [...el.querySelectorAll(`${listSelector} li`)].map((li) => li.textContent.trim());
+
+  it.each([
+    ['sidebar', '.menu-list[data-menu="generic"]'],
+    ['nav bar', '.nav-menu-list'],
+  ])('lists every menu option, in order, in the %s', (_, listSelector) => {
+    const el = document.createElement('el-nav-bar');
+    document.body.appendChild(el);
+
+    expect(labelsIn(el, listSelector)).toEqual(MENU_LABELS);
+  });
+
+  it.each([
+    ['sidebar', '.menu-list[data-menu="generic"]'],
+    ['nav bar', '.nav-menu-list'],
+  ])(
+    'makes only the wired-up options (Instructions, Reset) buttons in the %s',
+    (_, listSelector) => {
+      const el = document.createElement('el-nav-bar');
+      document.body.appendChild(el);
+
+      const buttons = [...el.querySelectorAll(`${listSelector} li button`)].map((b) =>
+        b.textContent.trim()
+      );
+
+      expect(buttons).toEqual(['Instructions', 'Reset (clears this day)']);
+    }
+  );
+
+  it.each([
+    ['Instructions', '.instructions-button'],
+    ['Reset', '.reset-diary-button'],
+  ])('closes the open sidebar when its %s option is chosen', (_, buttonSelector) => {
+    const el = document.createElement('el-nav-bar');
+    document.body.appendChild(el);
+    el.querySelector('.ham-menu').click();
+
+    el.querySelector(`.menu-list ${buttonSelector}`).click();
+
+    expect(el.querySelector('.off-screen-menu').classList.contains('active')).toBe(false);
+    expect(el.querySelector('.ham-menu').classList.contains('active')).toBe(false);
+  });
 
   it('renders the generic menu items twice - once in the sidebar, once duplicated into the nav bar - for the >=1024px CSS-only switch', () => {
     const el = document.createElement('el-nav-bar');

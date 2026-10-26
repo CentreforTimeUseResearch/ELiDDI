@@ -17,6 +17,7 @@ import {
   ADD_ENTRY,
   UPDATE_ENTRY,
   DELETE_ENTRY,
+  CLEAR_DIARY,
   RESET_STATUS,
   SET_COMPLETE,
 } from './actionTypes';
@@ -158,10 +159,17 @@ const diaryStatus = (state = DIARY_STATUS.IN_PROGRESS, action) => {
 };
 
 // one Diary = its Timelines + its Diary status (see CONTEXT.md)
-const diary = (state = { timelines: [], status: DIARY_STATUS.IN_PROGRESS }, action) => ({
-  timelines: dimensionTimelines(state.timelines, action),
-  status: diaryStatus(state.status, action),
-});
+const diary = (state = { timelines: [], status: DIARY_STATUS.IN_PROGRESS }, action) => {
+  if (action?.type === CLEAR_DIARY) {
+    // empty Timelines, not none: a Timeline treats a missing one as a Diary
+    // it still has to create
+    return { timelines: state.timelines.map(() => []), status: DIARY_STATUS.IN_PROGRESS };
+  }
+  return {
+    timelines: dimensionTimelines(state.timelines, action),
+    status: diaryStatus(state.status, action),
+  };
+};
 
 // all Diaries, keyed by date (YYYY-MM-DD)
 const diaries = (state = {}, action) => {
@@ -172,6 +180,7 @@ const diaries = (state = {}, action) => {
     case ADD_ENTRY:
     case UPDATE_ENTRY:
     case DELETE_ENTRY:
+    case CLEAR_DIARY:
     case RESET_STATUS:
     case SET_COMPLETE:
       return { ...state, [dateKey]: diary(state[dateKey], action) };

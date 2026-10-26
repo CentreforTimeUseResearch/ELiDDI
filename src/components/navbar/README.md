@@ -15,11 +15,11 @@ The top navigation bar: a hamburger menu (Instructions / Reset), the [Timeline P
 ## Store interaction
 
 - Subscribes to the store to keep the date indicator text in sync with `currentDate`.
-- Dispatches `RESET_ONBOARDING` (Instructions menu item) and `SHOW_PANEL` with payload `'date'` (date button).
+- Dispatches `RESET_ONBOARDING` (Instructions menu item), `SHOW_PANEL` with payload `'date'` (date button) and `SHOW_PANEL` with payload `'reset'` (Reset menu item). Reset clears nothing itself: [DynamicTimelineUI](../dynamicTimelineUI/README.md)'s confirm dialog dispatches `CLEAR_DIARY` for the viewed day.
 
 ## Behaviour notes
 
-- "Work in progress" per its own source comments — the off-screen hamburger menu's "Reset" item has no handler wired up yet.
+- "Work in progress" per its own source comments — the other menu items (View stats, About this study) have no handler wired up yet.
 
 ---
 

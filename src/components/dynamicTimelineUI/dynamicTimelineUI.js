@@ -7,7 +7,12 @@ import '../onboarding/onboarding';
 import '../datePicker/datePicker';
 
 import { TinyBase } from '../base';
-import { DISMISS_ONBOARDING, HIDE_PANEL, SET_DESKTOP_LAYOUT } from '../../store/actionTypes';
+import {
+  CLEAR_DIARY,
+  DISMISS_ONBOARDING,
+  HIDE_PANEL,
+  SET_DESKTOP_LAYOUT,
+} from '../../store/actionTypes';
 import { watchDesktopBreakpoint } from '../../utils/breakpoint';
 
 import './dynamicTimelineUI.css';
@@ -16,6 +21,7 @@ export class DynamicTimelineUI extends TinyBase {
   store = super.getStore();
   onboardingDialogActions;
   dateDialogActions;
+  resetDialogActions;
   stackContainer;
   isDesktopLayout;
 
@@ -48,6 +54,12 @@ export class DynamicTimelineUI extends TinyBase {
       this.dateDialogActions.close();
     }
 
+    if (uipanel === 'reset') {
+      this.resetDialogActions.open();
+    } else {
+      this.resetDialogActions.close();
+    }
+
     // only swap (and so only tear down/rebuild) the stack on an actual
     // breakpoint crossing, never on an unrelated store update (e.g. adding
     // an entry anywhere in the app) - mirrors the dateChanged-style guard
@@ -56,6 +68,15 @@ export class DynamicTimelineUI extends TinyBase {
       this.isDesktopLayout = isDesktopLayout;
       this.renderStack();
     }
+  }
+
+  // the Respondent confirmed the Navbar's Reset: empty the viewed day's Diary
+  clearCurrentDiary() {
+    this.store.dispatch({
+      type: CLEAR_DIARY,
+      payload: { date: this.store.getState().currentDate },
+    });
+    this.store.dispatch({ type: HIDE_PANEL });
   }
 
   // swaps the single mounted stack component in #stack-container - never
@@ -92,7 +113,21 @@ export class DynamicTimelineUI extends TinyBase {
               content: '<el-date-picker></el-date-picker>',
               onRequestClose: () => this.store.dispatch({ type: HIDE_PANEL }),
             })}></el-dialog>
+            <el-dialog id="reset-dialog" ${this.setProps({
+              registerDialogActions: (actions) => {
+                this.resetDialogActions = actions;
+              },
+              content: `<p>Clear every entry for the selected day? This can't be undone.</p>
+                <button type="button" data-confirm-reset>Clear this day</button>`,
+              closeLabel: 'cancel',
+              onRequestClose: () => this.store.dispatch({ type: HIDE_PANEL }),
+            })}></el-dialog>
             `;
+    this.querySelector('#reset-dialog').addEventListener('click', (event) => {
+      if (event.target.closest('[data-confirm-reset]')) {
+        this.clearCurrentDiary();
+      }
+    });
     this.stackContainer = this.querySelector('#stack-container');
   }
 }

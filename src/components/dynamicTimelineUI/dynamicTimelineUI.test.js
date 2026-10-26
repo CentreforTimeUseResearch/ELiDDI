@@ -7,6 +7,7 @@ import {
   SHOW_PANEL,
   HIDE_PANEL,
   SET_DESKTOP_LAYOUT,
+  ADD_ENTRY,
 } from '../../store/actionTypes';
 
 describe('DynamicTimelineUI', () => {
@@ -33,6 +34,38 @@ describe('DynamicTimelineUI', () => {
     expect(el.innerHTML).toContain('id="dialog"');
     expect(el.innerHTML).toContain('id="date-dialog"');
     expect(el.stackContainer).not.toBeNull();
+  });
+
+  // #114: confirming in the reset dialog clears only the viewed day
+  describe('reset dialog', () => {
+    it('clears the current Diary and closes the dialog when confirmed', () => {
+      const date = appStore.getState().currentDate;
+      appStore.dispatch({
+        type: ADD_ENTRY,
+        payload: {
+          date,
+          dimensionIndex: 0,
+          id: 1,
+          startOffsetMins: 0,
+          endOffsetMins: 10,
+          activity: 'x',
+        },
+      });
+      appStore.dispatch({ type: SHOW_PANEL, payload: 'reset' });
+      const el = document.createElement('el-dynamic-timeline');
+      el.render();
+
+      // the dialog's content only exists once <el-dialog> is connected, so
+      // stand in for the confirm button it would render
+      const confirm = document.createElement('button');
+      confirm.setAttribute('data-confirm-reset', '');
+      el.querySelector('#reset-dialog').appendChild(confirm);
+
+      confirm.click();
+
+      expect(appStore.getState().diaries[date].timelines[0]).toEqual([]);
+      expect(appStore.getState().uipanel).toBeUndefined();
+    });
   });
 
   // renderStack() swaps #stack-container's contents without touching
@@ -76,6 +109,7 @@ describe('DynamicTimelineUI', () => {
       const el = document.createElement('el-dynamic-timeline');
       el.onboardingDialogActions = { open: vi.fn(), close: vi.fn() };
       el.dateDialogActions = { open: vi.fn(), close: vi.fn() };
+      el.resetDialogActions = { open: vi.fn(), close: vi.fn() };
       el.stackContainer = document.createElement('div');
       return el;
     }
@@ -108,6 +142,18 @@ describe('DynamicTimelineUI', () => {
 
       expect(el.dateDialogActions.open).toHaveBeenCalledOnce();
       expect(el.dateDialogActions.close).not.toHaveBeenCalled();
+    });
+
+    it('opens the reset dialog when uipanel is "reset", and closes it otherwise', () => {
+      const el = createUnmounted();
+
+      appStore.dispatch({ type: SHOW_PANEL, payload: 'reset' });
+      el.onStoreUpdate();
+      expect(el.resetDialogActions.open).toHaveBeenCalledOnce();
+
+      appStore.dispatch({ type: HIDE_PANEL });
+      el.onStoreUpdate();
+      expect(el.resetDialogActions.close).toHaveBeenCalledOnce();
     });
 
     it('closes the date dialog when uipanel is anything else', () => {

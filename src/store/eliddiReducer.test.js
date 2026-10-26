@@ -10,6 +10,7 @@ import {
   ADD_ENTRY,
   UPDATE_ENTRY,
   DELETE_ENTRY,
+  CLEAR_DIARY,
 } from './actionTypes';
 
 const DATE = '2026-08-21';
@@ -134,10 +135,38 @@ describe('eliddiReducer - entries', () => {
     expect(timelineOf(state).map((e) => e.id)).toEqual([0, 2]);
   });
 
+  // #114: the Navbar's Reset
+  it('empties every Timeline of the dated Diary on CLEAR_DIARY, keeping the other days', () => {
+    const before = stateWithEntries();
+    const other = eliddiReducer(before, {
+      type: ADD_ENTRY,
+      payload: { date: '2026-08-22', dimensionIndex: 0, ...entry(9, 'Rest') },
+    });
+
+    const state = eliddiReducer(other, { type: CLEAR_DIARY, payload: { date: DATE } });
+
+    expect(state.diaries[DATE].timelines.every((t) => Array.isArray(t) && t.length === 0)).toBe(
+      true
+    );
+    expect(state.diaries[DATE].timelines).toHaveLength(other.diaries[DATE].timelines.length);
+    expect(state.diaries['2026-08-22']).toBe(other.diaries['2026-08-22']);
+  });
+
+  it('sets the cleared Diary back to in progress', () => {
+    const complete = eliddiReducer(stateWithEntries(), {
+      type: SET_COMPLETE,
+      payload: { date: DATE },
+    });
+
+    const state = eliddiReducer(complete, { type: CLEAR_DIARY, payload: { date: DATE } });
+
+    expect(state.diaries[DATE].status).toBe(DIARY_STATUS.IN_PROGRESS);
+  });
+
   // hardening (#143): the per-Dimension timeline reducer destructured
   // action.payload unconditionally - safe only because its one caller
   // happens to filter out payload-less actions first
-  it.each([ADD_ENTRY, UPDATE_ENTRY, DELETE_ENTRY, ADD_TIMELINE, SET_COMPLETE])(
+  it.each([ADD_ENTRY, UPDATE_ENTRY, DELETE_ENTRY, ADD_TIMELINE, SET_COMPLETE, CLEAR_DIARY])(
     'does not throw for a %s action with no payload',
     (type) => {
       const before = stateWithEntries();

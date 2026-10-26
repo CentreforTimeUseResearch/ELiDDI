@@ -10,7 +10,7 @@ The JS-layer root component. `scripts/generate_no_js.js` wraps the entire no-JS 
 
 - [`<el-nav-bar>`](../navbar/README.md)
 - An empty `#stack-container` wrapper, populated by `renderStack()` (see below) with either [`<el-timeline-stack>`](../timelineStack/README.md) or [`<el-horizontal-timeline-stack>`](../horizontalTimelineStack/README.md), depending on the current breakpoint.
-- Two [`<el-dialog>`](../dialogWidget/README.md)s: one hosting [`<el-onboarding>`](../onboarding/README.md), one hosting [`<el-date-picker>`](../datePicker/README.md).
+- Three [`<el-dialog>`](../dialogWidget/README.md)s: one hosting [`<el-onboarding>`](../onboarding/README.md), one hosting [`<el-date-picker>`](../datePicker/README.md), and a confirm dialog for the Navbar's Reset.
 
 ## Custom element
 
@@ -22,6 +22,7 @@ Subscribes to the store and opens/closes its two dialogs based on:
 
 - `onboarding` (boolean) → the onboarding dialog.
 - `uipanel === 'date'` → the date dialog.
+- `uipanel === 'reset'` → the reset confirm dialog; its "Clear this day" button dispatches `CLEAR_DIARY` for `currentDate` (empties that day's Timelines and sets its status back to in progress, leaving other days alone), then `HIDE_PANEL`.
 - `isDesktopLayout` (boolean, Phase 10.4) → which stack component is mounted in `#stack-container` (see `renderStack()` below). Only re-rendered on an actual crossing, not on every store update.
 
 Dismissing either dialog via its own close button dispatches `DISMISS_ONBOARDING` or `HIDE_PANEL` respectively, rather than the dialog just closing itself silently.

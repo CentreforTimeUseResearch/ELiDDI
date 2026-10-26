@@ -31,24 +31,16 @@
   left: 0;
 }
 
-/* The sidebar holds both the generic menu and the Dimension list at all
-   times (see navbar.js's renderMenuItems/renderDimensionItems) - which one
-   is visible is a pure CSS toggle, keyed on the same breakpoint as the nav
-   bar's own duplicate of the generic items below, so no JS needs to know
-   about the breakpoint itself. */
-.menu-list[data-menu='dimension'] {
-  display: none;
-}
-
-/* keep in sync with --desktop-width in style.css's :root - media queries
-   can't read custom properties, so this is a hand-kept literal */
+/* The sidebar is the generic menu's drawer (below 630px) and column (from
+   630px). From 1024px the nav bar carries those items itself and the
+   Dimension labels sit beside the timeline rows (HorizontalTimelineStack),
+   so the sidebar has nothing left to hold: it is dropped, and
+   dynamicTimelineUI.css gives its column to the timelines. Keep in sync with
+   --desktop-width in style.css's :root - media queries can't read custom
+   properties, so this is a hand-kept literal */
 @media (min-width: 1024px) {
-  .menu-list[data-menu='generic'] {
+  .off-screen-menu {
     display: none;
-  }
-
-  .menu-list[data-menu='dimension'] {
-    display: block;
   }
 }
 
@@ -69,16 +61,6 @@
 }
 
 .instructions-button:focus-visible {
-  outline: 2px solid var(--color-primary-focus);
-  outline-offset: 2px;
-}
-
-/* style.css's `button.reset-to-div:focus { outline: none }` (button + class
-   + pseudo-class) outranks a bare `.dimension-item:focus-visible` (two
-   classes) in the specificity fight, so this needs the extra `.reset-to-div`
-   class to win - same trick as horizontalTimeline.css's
-   .resize-handle-hit-area / this file's own .left-pane .ham-menu */
-.reset-to-div.dimension-item:focus-visible {
   outline: 2px solid var(--color-primary-focus);
   outline-offset: 2px;
 }

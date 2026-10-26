@@ -7,7 +7,8 @@ import { moveToNewParent, errorsDuring } from '../../testing/domMoves';
 // it in explicitly so the panelActions contract can actually wire up.
 import { DetailsPanel } from '../detailsPanel/detailsPanel';
 import { appStore } from '../../store/appStore';
-import { HIDE_PANEL, SWITCH_DATE, SWITCH_DIMENSION } from '../../store/actionTypes';
+import { HIDE_PANEL, SHOW_PANEL, SWITCH_DATE, SWITCH_DIMENSION } from '../../store/actionTypes';
+import { addSpecialDimension, SPECIAL_DIMENSION } from '../../testing/specialCharacters';
 
 const DIMENSION_COUNT = GLOBALS.DATA.timeline.length;
 
@@ -48,17 +49,72 @@ describe('HorizontalTimelineStack', () => {
     expect(el.panelElement.getAttribute('dimensionindex')).toBe('2');
   });
 
-  it('mounts one axis, one row per Dimension, and one shared details panel, in order', () => {
+  it('mounts one axis, a label and a row per Dimension, and one shared details panel, in order', () => {
     const el = createStack();
 
-    expect(el.children.length).toBe(DIMENSION_COUNT + 2); // axis + 6 rows + panel
+    expect(el.children.length).toBe(DIMENSION_COUNT * 2 + 2); // axis + 6 label/row pairs + panel
     expect(el.children[0].tagName.toLowerCase()).toBe('el-horizontal-timeline-axis');
     for (let i = 0; i < DIMENSION_COUNT; i++) {
-      const row = el.children[i + 1];
+      const label = el.children[i * 2 + 1];
+      const row = el.children[i * 2 + 2];
+      expect(label.tagName).toBe('BUTTON');
+      expect(label.dataset.dimensionIndex).toBe(String(i));
       expect(row.tagName.toLowerCase()).toBe('el-horizontal-timeline');
       expect(row.getAttribute('index')).toBe(String(i));
     }
-    expect(el.children[DIMENSION_COUNT + 1].tagName.toLowerCase()).toBe('el-details-panel');
+    expect(el.children[DIMENSION_COUNT * 2 + 1].tagName.toLowerCase()).toBe('el-details-panel');
+  });
+
+  describe('Dimension labels', () => {
+    it('names each Dimension, in the same grid row as its timeline row', () => {
+      const el = createStack();
+
+      el.querySelectorAll('.dimension-label').forEach((label, i) => {
+        expect(label.textContent).toBe(GLOBALS.DATA.timeline[i].name);
+        expect(label.style.gridRow).toBe(el.rows[i].style.gridRow);
+        // row 1 is the axis
+        expect(label.style.gridRow).toBe(String(i + 2));
+      });
+    });
+
+    // regression coverage (#146), moved from Navbar with the list
+    it('shows a Dimension name containing HTML special characters as text', () => {
+      const special = addSpecialDimension();
+      try {
+        const el = createStack();
+
+        const label = el.querySelector(`[data-dimension-index="${special.index}"]`);
+        expect(label.textContent).toBe(SPECIAL_DIMENSION.name);
+        expect(label.children.length).toBe(0);
+      } finally {
+        special.remove();
+      }
+    });
+
+    it('switches to that Dimension and hides the panel when a label is clicked', () => {
+      appStore.dispatch({ type: SHOW_PANEL, payload: 'details' });
+      const el = createStack();
+
+      el.querySelectorAll('.dimension-label')[2].click();
+
+      expect(appStore.getState().currentDimensionIndex).toBe(2);
+      expect(appStore.getState().uipanel).not.toBe('details');
+    });
+
+    it('marks only the current Dimension, and follows it as it changes', () => {
+      appStore.dispatch({ type: SWITCH_DIMENSION, payload: 1 });
+      const el = createStack();
+      const current = () =>
+        [...el.querySelectorAll('.dimension-label')]
+          .filter((label) => label.getAttribute('aria-current') === 'true')
+          .map((label) => label.dataset.dimensionIndex);
+
+      expect(current()).toEqual(['1']);
+
+      appStore.dispatch({ type: SWITCH_DIMENSION, payload: 4 });
+
+      expect(current()).toEqual(['4']);
+    });
   });
 
   describe('panel orchestration', () => {

@@ -94,12 +94,14 @@ export class HorizontalTimelineAxis extends TinyBase {
   // native-scale content (2880px) shrunk to exactly fit its current visible
   // width, so the whole day shows with no horizontal scrollbar
   computeMinZoom() {
-    const containerWidthPx = this.parentElement?.clientWidth;
-    if (!containerWidthPx) {
+    const stack = this.parentElement;
+    if (!stack?.clientWidth) {
       return NATIVE_ZOOM; // no real layout (e.g. a test environment) - a sane fallback
     }
+    // the stack's Dimension label gutter is not room for the day
+    const gutterPx = parseFloat(getComputedStyle(stack).getPropertyValue('--hz-label-width')) || 0;
     const nativeWidthPx = MINUTES_PER_DAY * PX_PER_MINUTE;
-    return Math.min(containerWidthPx / nativeWidthPx, MAX_ZOOM);
+    return Math.min((stack.clientWidth - gutterPx) / nativeWidthPx, MAX_ZOOM);
   }
 
   changeZoom(delta) {

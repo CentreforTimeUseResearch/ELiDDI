@@ -30,7 +30,7 @@ A generic, reusable modal wrapper around the native [`<dialog>`](https://develop
 ## Behaviour notes
 
 - `moveSpotlight(x, y, size)` and `moveModalTop(y)` set CSS custom properties (`--spotlight1-x`, `--spotlight1-y`, `--spotlight-size`, `--modal-y-pos`) rather than touching layout directly — see `dialogWidget.css` for how [Onboarding](../onboarding/README.md)'s spotlight effect consumes them.
-- Because content is injected as a raw HTML string (`this.props.content`), a caller assembling that string from Respondent-entered data would need to escape it themselves — nothing in DialogWidget does this for you.
+- `content` is trusted markup: it is injected as a raw HTML string (`this.props.content`) and DialogWidget does not escape or sanitize it. Sanitizing here would strip the deliberate HTML in [Onboarding](../onboarding/README.md)'s study-config step text (e.g. `<strong>`). Today's callers pass static markup or that config text. A caller building `content` from any dynamic or Respondent-entered data must run it through `escapeHtml` from `src/utils/html.js` first.
 
 ---
 

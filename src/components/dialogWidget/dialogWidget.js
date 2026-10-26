@@ -82,6 +82,10 @@ export class DialogWidget extends TinyBase {
   }
 
   render() {
+    // content is trusted markup and goes in unescaped: callers pass static
+    // HTML or study-config text (Onboarding's step text, deliberately HTML).
+    // Anything dynamic or Respondent-entered must go through escapeHtml
+    // (utils/html.js) before it is put in the content string (#117)
     this.innerHTML = `
         <dialog>
             <div class="dialog-layout">

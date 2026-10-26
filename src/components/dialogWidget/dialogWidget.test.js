@@ -54,6 +54,15 @@ describe('DialogWidget', () => {
     expect(el.querySelector('.dialog-content [data-marker]').textContent).toBe('hello');
   });
 
+  it('treats content as trusted HTML, not text (callers must escape dynamic data themselves)', () => {
+    const el = createDialog({ content: '<strong data-marker>bold</strong> &amp; <em>more</em>' });
+    const body = el.querySelector('.dialog-content');
+
+    expect(body.querySelector('strong[data-marker]')).not.toBeNull();
+    expect(body.querySelector('em')).not.toBeNull();
+    expect(body.textContent).toContain('bold & more');
+  });
+
   it('defaults the close button label to "close" when no closeLabel is supplied', () => {
     const el = createDialog({});
 

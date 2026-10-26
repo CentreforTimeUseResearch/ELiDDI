@@ -19,5 +19,7 @@ export function createConfigValidator(schema) {
 function describeProblem({ instancePath, message, params }) {
   const field = instancePath ? instancePath.slice(1) : '(config root)';
   const allowed = params?.allowedValues ? `: ${params.allowedValues.join(', ')}` : '';
-  return `${field} ${message}${allowed}`;
+  // name the unexpected field, e.g. a misspelt validation rule id
+  const extra = params?.additionalProperty ? `: ${params.additionalProperty}` : '';
+  return `${field} ${message}${allowed}${extra}`;
 }

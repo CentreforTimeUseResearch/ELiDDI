@@ -24,7 +24,7 @@ See [CONTEXT.md](CONTEXT.md) for the full domain glossary (Diary, Dimension, Tim
 | Working prototype           | ✅ Diary, Activity picker, drag-resize, onboarding |
 | Accessibility conformance   | 🔄 In progress                                     |
 | Documentation               | 🔄 Component & store READMEs added; more to come   |
-| Contribution guidelines     | 🕐 Coming soon                                     |
+| Contribution guidelines     | ✅ [CONTRIBUTING.md](CONTRIBUTING.md)              |
 | First tagged release        | 🕐 Coming soon                                     |
 
 ---
@@ -81,13 +81,11 @@ npm test -- --run # single pass
 
 ## Contributing
 
-It's early days for formal contribution guidelines, but interest and ideas from the time-use research and software engineering communities are very welcome. In the meantime:
+Interest and ideas from the time-use research and software engineering communities are very welcome. The full guide — branches, commits, pull requests and the checks a change must pass — is in [CONTRIBUTING.md](CONTRIBUTING.md). In short:
 
 - Start with the [Architecture](#architecture) section above and the linked component/store documentation to get oriented.
 - Open a [discussion or issue](https://github.com/CentreforTimeUseResearch/ELiDDI/issues) — bug reports, questions, and feature ideas are all welcome.
 - Run `npm test`, `npm run lint`, and `npm run format:check` before proposing changes; a pre-commit hook (Husky + lint-staged) runs a subset of these automatically.
-
-Formal contribution guidelines will be published as the project matures.
 
 ---
 
@@ -97,9 +95,8 @@ Immediate priorities:
 
 1. Improve and test accessibility conformance (targeting UK Government accessibility standards)
 2. Expand configuration/customisation options (activity categories, internationalisation, data definitions)
-3. Publish formal contribution guidelines
-4. First tagged release
-5. Build a user-friendly deployment pipeline with configuration tooling
+3. First tagged release
+4. Build a user-friendly deployment pipeline with configuration tooling
 
 Day-to-day work is tracked on the [project board](https://github.com/users/CentreforTimeUseResearch/projects/1); larger, not-yet-broken-down work and rough target dates live in [ROADMAP.md](ROADMAP.md).
 

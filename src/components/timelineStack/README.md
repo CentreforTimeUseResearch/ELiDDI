@@ -17,11 +17,11 @@ Terminology (Dimension, Timeline) follows [CONTEXT.md](../../../CONTEXT.md).
 ## Store interaction
 
 - Subscribes to `currentDimensionIndex` and scrolls the strip to the matching Timeline whenever it changes elsewhere; passes the same updates to its `DetailsPanelCoordinator`, which retargets the panel.
-- Dispatches `SWITCH_DIMENSION` in response to the browser's native `scrollsnapchange` event on the strip, when the Respondent swipes it.
+- Dispatches `SWITCH_DIMENSION` in response to the browser's native `scrollsnapchange` event on the strip, when the Respondent swipes it. In browsers without that event it falls back to the strip's `scroll` event: once scrolling has paused for 100ms, the Timeline the strip settled on (`scrollLeft` ÷ one Timeline's width, rounded) becomes the current Dimension.
 
 ## Behaviour notes
 
-- Relies on the (currently Chromium-only, per [caniuse](https://caniuse.com/?search=scrollsnapchange)) `scrollsnapchange` event and CSS scroll-snap for the scroll-driven Dimension switch — worth checking cross-browser support here before relying on this behaviour in a study.
+- `scrollsnapchange` is Chromium-only (per [caniuse](https://caniuse.com/?search=scrollsnapchange)), so the strip feature-detects it (`'onscrollsnapchange' in window`) and uses the debounced `scroll` fallback elsewhere. Both paths rely on CSS scroll-snap for the visual snapping, and both end in `switchDimension`, which ignores the current Dimension.
 - Tested in `timelineStack.test.js`, and with the shared panel in `detailsPanel/oneDetailsPanel.test.js`.
 
 ---

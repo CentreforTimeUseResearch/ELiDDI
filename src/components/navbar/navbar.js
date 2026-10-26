@@ -1,15 +1,9 @@
 import '../timelinePicker/timelinePicker.js';
 import '../contextualHelp/contextualHelp.js';
 import { TinyBase } from '../base';
-import {
-  RESET_ONBOARDING,
-  SHOW_PANEL,
-  HIDE_PANEL,
-  SWITCH_DIMENSION,
-} from '../../store/actionTypes';
+import { RESET_ONBOARDING, SHOW_PANEL } from '../../store/actionTypes';
 import { formatDateKeyAsDDMMYYYY } from '../../utils/time';
 import './navbar.css';
-import { escapeHtml } from '../../utils/html';
 
 // the sidebar's generic menu options - rendered twice (sidebar drawer below
 // 1024px, nav bar at/above it, see renderMenuItems) rather than switched via
@@ -25,22 +19,6 @@ export class Navbar extends TinyBase {
   ready = false;
   store = super.getStore();
   dateIndicator;
-  dimensionNames;
-
-  constructor() {
-    super();
-    this.parseDimensionNamesFromData();
-  }
-
-  parseDimensionNamesFromData() {
-    const dimensionsData = GLOBALS.DATA.timeline;
-    if (!Array.isArray(dimensionsData)) {
-      console.error('invalid dimension array');
-      this.dimensionNames = [];
-      return;
-    }
-    this.dimensionNames = dimensionsData.map((dimension) => dimension.name);
-  }
 
   connectedCallback() {
     super.connectedCallback();
@@ -80,13 +58,6 @@ export class Navbar extends TinyBase {
         // hamMenu.classList.toggle('active');
         // offScreenMenu.classList.toggle('active');
       });
-      this.querySelectorAll('.dimension-item').forEach((item) => {
-        item.addEventListener('click', () => {
-          const index = Number(item.dataset.dimensionIndex);
-          this.store.dispatch({ type: HIDE_PANEL });
-          this.store.dispatch({ type: SWITCH_DIMENSION, payload: index });
-        });
-      });
       this.ready = true;
     }
   }
@@ -102,15 +73,6 @@ export class Navbar extends TinyBase {
     ).join('');
   }
 
-  renderDimensionItems() {
-    return this.dimensionNames
-      .map(
-        (name, index) =>
-          `<li class="menu-item"><button class="reset-to-div dimension-item" type="button" data-dimension-index="${index}">${escapeHtml(name)}</button></li>`
-      )
-      .join('');
-  }
-
   render() {
     // this component is a work in progress so this output is for debug purposes
     this.innerHTML = `
@@ -119,9 +81,6 @@ export class Navbar extends TinyBase {
           <div class="menu-container">
             <ul class="menu-list" data-menu="generic">
                 ${this.renderMenuItems('menu-item')}
-            </ul>
-            <ul class="menu-list" data-menu="dimension">
-                ${this.renderDimensionItems()}
             </ul>
           </div>
         </div>

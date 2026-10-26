@@ -12,6 +12,25 @@ el-horizontal-timeline-stack {
      this now enables when six rows exceed the viewport. */
   flex-grow: 1;
 
+  /* Dimension labels in a gutter on the left, the axis and rows after it.
+     Each label and its row are in the same grid row, so they line up
+     whatever the row height and scroll together; row-gap is the space
+     between rows (and between the axis and the first row). Rows are
+     explicitly placed (horizontalTimelineStack.js), so align-content: start
+     stops the free space of a tall window stretching them.
+     HorizontalTimelineAxis reads --hz-label-width to work out its minimum
+     zoom, so the gutter is not counted as room for the day. */
+  --hz-label-width: 168px;
+  display: grid;
+  grid-template-columns: var(--hz-label-width) max-content;
+  row-gap: 10px;
+  align-content: start;
+
+  el-horizontal-timeline-axis {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
   /* the single shared horizontal scrollbar driving the axis and all six
      rows together, so they stay time-aligned while panning - each child
      SVG's own width/viewBox attributes are set directly by
@@ -22,8 +41,43 @@ el-horizontal-timeline-stack {
      dealt with). */
 
   el-horizontal-timeline {
-    /* matches the designer's row rhythm (deferred from Phase 10.3) */
-    margin-top: 10px;
+    grid-column: 2;
+  }
+
+  /* spans the whole grid width, not just the gutter, so that sticky has
+     room to travel: a sticky item can't leave its grid area, and a label
+     confined to the gutter cell would scroll away with it. Its width keeps
+     it to the gutter, over the start of the row. */
+  .dimension-label {
+    grid-column: 1 / -1;
+    justify-self: start;
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    width: var(--hz-label-width);
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    padding: 0 var(--space-sm);
+    appearance: none;
+    border: none;
+    border-right: 1px solid var(--color-canvas-parchment);
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    font: inherit;
+    text-align: left;
+    overflow-wrap: anywhere;
+    cursor: pointer;
+
+    &[aria-current='true'] {
+      font-weight: 600;
+      color: var(--color-primary);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--color-primary-focus);
+      outline-offset: -2px;
+    }
   }
 
   /* Phase 10.7: the real docked design, replacing Phase 10.6's

@@ -43,6 +43,16 @@ el-dynamic-timeline {
       display: contents;
     }
 
+    /* no sidebar from 1024px (navbar.css drops it; the Dimension labels
+       moved into HorizontalTimelineStack), so the timelines get the full
+       width. Keep in sync with --desktop-width in style.css's :root. */
+    @media (min-width: 1024px) {
+      grid-template-columns: 1fr;
+      grid-template-areas:
+        'nav'
+        'main';
+    }
+
     /* whichever stack component DynamicTimelineUI.renderStack() has
        mounted inside here fills "main" - grid-area lives on this wrapper,
        not on el-timeline-stack/el-horizontal-timeline-stack themselves,

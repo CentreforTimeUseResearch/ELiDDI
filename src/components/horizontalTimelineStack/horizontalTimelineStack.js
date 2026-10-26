@@ -3,10 +3,12 @@ import '../horizontalTimelineAxis/horizontalTimelineAxis';
 import '../horizontalTimeline/horizontalTimeline';
 import '../detailsPanel/detailsPanel';
 import { DetailsPanelCoordinator } from '../detailsPanel/detailsPanelCoordinator';
+import { HIDE_PANEL, SWITCH_DIMENSION } from '../../store/actionTypes';
 import './horizontalTimelineStack.css';
 
 // The desktop layout: the shared axis, one HorizontalTimeline row per
-// Dimension, and the app's one details panel (ADR 0005), which a
+// Dimension with its Dimension label beside it, and the app's one details
+// panel (ADR 0005), which a
 // DetailsPanelCoordinator routes to the current Dimension's row - the same
 // arrangement as TimelineStack on mobile.
 export class HorizontalTimelineStack extends TinyBase {
@@ -16,6 +18,7 @@ export class HorizontalTimelineStack extends TinyBase {
   store = super.getStore();
   numTimelines = GLOBALS.DATA.timeline.length;
   rows = [];
+  labels = [];
 
   constructor() {
     super();
@@ -28,7 +31,44 @@ export class HorizontalTimelineStack extends TinyBase {
   connectedCallback() {
     super.connectedCallback();
     this.rows = [...this.querySelectorAll('el-horizontal-timeline')];
-    this.registerCleanup(this.store.subscribe(() => this.panelCoordinator.onStoreUpdate()));
+    this.registerCleanup(
+      this.store.subscribe(() => {
+        this.panelCoordinator.onStoreUpdate();
+        this.updateCurrentLabel();
+      })
+    );
+    this.updateCurrentLabel();
+  }
+
+  // the label of the current Dimension is marked, for assistive tech and
+  // for the styling in horizontalTimelineStack.css
+  updateCurrentLabel() {
+    const { currentDimensionIndex } = this.store.getState();
+    this.labels.forEach((label, index) => {
+      if (index === currentDimensionIndex) {
+        label.setAttribute('aria-current', 'true');
+      } else {
+        label.removeAttribute('aria-current');
+      }
+    });
+  }
+
+  // the name of a Dimension, in the same grid row as that Dimension's row,
+  // so the two line up whatever the row's height and scroll together. A
+  // button, as the sidebar list it replaces was: it switches the current
+  // Dimension without opening an Entry
+  createLabel(dimensionIndex, gridRow) {
+    const label = document.createElement('button');
+    label.type = 'button';
+    label.className = 'dimension-label';
+    label.dataset.dimensionIndex = dimensionIndex;
+    label.style.gridRow = gridRow;
+    label.textContent = GLOBALS.DATA.timeline[dimensionIndex].name;
+    label.addEventListener('click', () => {
+      this.store.dispatch({ type: HIDE_PANEL });
+      this.store.dispatch({ type: SWITCH_DIMENSION, payload: dimensionIndex });
+    });
+    return label;
   }
 
   get panelElement() {
@@ -71,7 +111,14 @@ export class HorizontalTimelineStack extends TinyBase {
     this.appendChild(document.createElement('el-horizontal-timeline-axis'));
 
     for (let i = 0; i < this.numTimelines; i++) {
+      // row 1 of the grid is the axis
+      const gridRow = String(i + 2);
+      const label = this.createLabel(i, gridRow);
+      this.labels.push(label);
+      this.appendChild(label);
+
       const row = document.createElement('el-horizontal-timeline');
+      row.style.gridRow = gridRow;
       row.setAttribute('index', i);
       row.setAttribute('key', this.setProps(this.panelCoordinator.timelineProps(i), true));
       this.appendChild(row);

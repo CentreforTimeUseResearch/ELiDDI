@@ -2,9 +2,6 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { Navbar } from './navbar';
 import { appStore } from '../../store/appStore';
 import { SWITCH_DATE, DISMISS_ONBOARDING } from '../../store/actionTypes';
-import { addSpecialDimension, SPECIAL_DIMENSION } from '../../testing/specialCharacters';
-
-const DIMENSION_NAMES = GLOBALS.DATA.timeline.map((dimension) => dimension.name);
 
 describe('Navbar', () => {
   beforeEach(() => {
@@ -12,20 +9,6 @@ describe('Navbar', () => {
       customElements.define('el-nav-bar', Navbar);
     }
     document.body.innerHTML = '';
-  });
-
-  // regression coverage (#146)
-  it('shows a Dimension name containing HTML special characters as text', () => {
-    const special = addSpecialDimension();
-    try {
-      const el = document.createElement('el-nav-bar');
-      document.body.appendChild(el);
-
-      const item = el.querySelector(`[data-dimension-index="${special.index}"]`);
-      expect(item.textContent).toBe(SPECIAL_DIMENSION.name);
-    } finally {
-      special.remove();
-    }
   });
 
   it('renders sidebar html', () => {
@@ -102,32 +85,11 @@ describe('Navbar', () => {
     expect(el.store.getState().onboarding).toBe(true);
   });
 
-  it('renders a Dimension list item per Dimension in GLOBALS.DATA.timeline', () => {
+  // the Dimension labels moved beside the timeline rows (HorizontalTimelineStack)
+  it('does not render a Dimension list, which the desktop timeline rows carry instead', () => {
     const el = document.createElement('el-nav-bar');
     document.body.appendChild(el);
 
-    const items = [...el.querySelectorAll('.dimension-item')];
-    expect(items.map((item) => item.textContent)).toEqual(DIMENSION_NAMES);
-  });
-
-  it("dispatches SWITCH_DIMENSION with the clicked item's index when a Dimension list item is clicked", () => {
-    const el = document.createElement('el-nav-bar');
-    document.body.appendChild(el);
-
-    el.querySelectorAll('.dimension-item')[2].click();
-
-    expect(el.store.getState().currentDimensionIndex).toBe(2);
-  });
-
-  // regression test for a keyboard-accessibility gap found during Phase
-  // 10.8's audit: these previously rendered as plain <li> with only a click
-  // listener, so a keyboard-only user had no way to reach or activate them
-  it('renders each Dimension list item as a real, keyboard-focusable button', () => {
-    const el = document.createElement('el-nav-bar');
-    document.body.appendChild(el);
-
-    const items = [...el.querySelectorAll('.dimension-item')];
-    expect(items.length).toBe(DIMENSION_NAMES.length);
-    items.forEach((item) => expect(item.tagName).toBe('BUTTON'));
+    expect(el.querySelector('[data-dimension-index]')).toBeNull();
   });
 });

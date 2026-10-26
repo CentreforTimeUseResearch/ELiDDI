@@ -64,6 +64,12 @@ el-activity-picker {
     outline-offset: 2px;
   }
 
+  /* the item arrow-key navigation is on; focus itself stays in the input */
+  .kbd-active {
+    outline: 2px solid var(--color-primary-focus);
+    outline-offset: -2px;
+  }
+
   #activity-picker-popover {
     box-sizing: border-box;
     inset: 0;

@@ -155,20 +155,110 @@ describe('ActivityPicker', () => {
     });
   });
 
-  // regression test: the arrow-key branch used to set aria-activedescendant
-  // via a `selectedItem` variable that was never declared, throwing a
-  // ReferenceError as soon as this branch became reachable (rowsCount >= 1)
-  it('handles an arrow key without throwing once rowsCount is populated', () => {
-    const el = createPicker();
-    el.gridNavigation.rowsCount = 1;
-    const fakeEvent = {
-      keyCode: KEY_CODE.DOWN,
-      which: KEY_CODE.DOWN,
-      preventDefault: () => {},
+  // #113: arrow keys walk the popover's visible items; focus stays in the input
+  describe('keyboard navigation', () => {
+    const press = (el, key) => {
+      const evt = new KeyboardEvent('keydown', { keyCode: key, bubbles: true, cancelable: true });
+      Object.defineProperty(evt, 'which', { value: key });
+      el.input.dispatchEvent(evt);
+      return evt;
     };
+    const activeId = (el) => el.input.getAttribute('aria-activedescendant');
 
-    expect(() => el.gridNavigation.handleKeyDown(fakeEvent)).not.toThrow();
-    expect(el.input.getAttribute('aria-activedescendant')).toBe('');
+    it('points aria-activedescendant at the first item on DOWN, and marks it', () => {
+      const el = createPicker();
+      const first = el.getNavigableItems()[0];
+
+      const evt = press(el, KEY_CODE.DOWN);
+
+      expect(activeId(el)).toBe(first.id);
+      expect(first.id).not.toBe('');
+      expect(first.classList.contains('kbd-active')).toBe(true);
+      expect(evt.defaultPrevented).toBe(true);
+    });
+
+    it('moves the mark with the arrow keys, one item at a time', () => {
+      const el = createPicker();
+      const items = el.getNavigableItems();
+
+      press(el, KEY_CODE.DOWN);
+      press(el, KEY_CODE.DOWN);
+
+      expect(activeId(el)).toBe(items[1].id);
+      expect(items[0].classList.contains('kbd-active')).toBe(false);
+      expect(el.popoverElement.querySelectorAll('.kbd-active')).toHaveLength(1);
+    });
+
+    it('walks Category headers and the Activities of open Categories, not collapsed ones', () => {
+      const el = createPicker();
+      const trigger = el.popoverElement.querySelector('.accordion-trigger');
+      const panel = el.querySelector(`[id="${trigger.getAttribute('aria-controls')}"]`);
+      const open = el.getNavigableItems().length;
+
+      trigger.click(); // collapse the first Category
+      const collapsed = el.getNavigableItems();
+
+      expect(panel.hasAttribute('hidden')).toBe(true);
+      expect(collapsed.length).toBeLessThan(open);
+      expect(collapsed.some((item) => panel.contains(item))).toBe(false);
+      expect(collapsed).toContain(trigger);
+    });
+
+    it('selects the active Activity on Enter', () => {
+      const el = createPicker();
+      el.props = { ...el.props, onSetActivityOnSelectedEntry: vi.fn() };
+      el.hidePopover = vi.fn();
+      const items = el.getNavigableItems();
+      const activityIndex = items.findIndex((item) => item.matches('.activity-button'));
+
+      for (let i = 0; i <= activityIndex; i++) press(el, KEY_CODE.DOWN);
+      press(el, KEY_CODE.RETURN);
+
+      expect(el.props.onSetActivityOnSelectedEntry).toHaveBeenCalledWith(
+        items[activityIndex].dataset.activity
+      );
+    });
+
+    it('toggles a Category open or closed on Enter', () => {
+      const el = createPicker();
+      const trigger = el.popoverElement.querySelector('.accordion-trigger');
+
+      press(el, KEY_CODE.DOWN); // the first item is the first Category header
+      press(el, KEY_CODE.RETURN);
+
+      expect(trigger.getAttribute('aria-expanded')).toBe('false');
+    });
+
+    it('clears the active item when the text changes the results', () => {
+      const el = createPicker();
+      press(el, KEY_CODE.DOWN);
+
+      el.input.value = 'a';
+      el.updateResults();
+
+      expect(activeId(el)).toBe('');
+      expect(el.gridNavigation.gridFocused).toBe(false);
+    });
+
+    it('keeps the active item across a keyup that did not change the text', () => {
+      const el = createPicker();
+      press(el, KEY_CODE.DOWN);
+      const id = activeId(el);
+
+      el.gridNavigation.handleKeyUp({ which: KEY_CODE.SHIFT });
+
+      expect(activeId(el)).toBe(id);
+    });
+
+    it('clears the active item when the popover is hidden', () => {
+      const el = createPicker();
+      el.popoverElement.hidePopover = vi.fn();
+      press(el, KEY_CODE.DOWN);
+
+      el.hidePopover();
+
+      expect(activeId(el)).toBe('');
+    });
   });
 
   it('offers a free-text option for an unmatched search when allowFreeText is set', () => {

@@ -13,7 +13,7 @@ Terminology (Dimension, Category, Activity, Mode) follows [CONTEXT.md](../../../
 This folder contains two files:
 
 - **`activityPicker.js`** — the custom element itself.
-- **`keyboardGridNavigation.js`** — a plain (non-`HTMLElement`) `KeyboardGridNavigation` class that owns the arrow-key/Escape state machine for the grid, kept separate so it's testable without mounting a full custom element. It talks to its host only through a small callback interface (`updateResults`, `setActiveDescendant`, `clearInputDeferred`, `hideResults`) passed into its constructor.
+- **`keyboardGridNavigation.js`** — a plain (non-`HTMLElement`) `KeyboardGridNavigation` class that owns the arrow-key/Enter/Escape state machine, kept separate so it's testable without mounting a full custom element. It talks to its host only through a small callback interface (`updateResults`, `getItems`, `setActiveItem`, `activateItem`, `clearInputDeferred`, `hideResults`) passed into its constructor.
 
 ## Custom element
 
@@ -41,7 +41,8 @@ This folder contains two files:
 - If the Dimension's config sets `allow_free_text: true`, a "Use \"…\"" button appears above the results when the typed text doesn't match a known Activity, letting the Respondent record free text instead of picking from the list.
 - In multiple-choice mode, a "Done" button closes the popover explicitly (there's no single click that both selects and closes, since selecting doesn't close the popover).
 - `setSelectedActivities(activities)` is called by DetailsPanel when opening the panel for an existing multiple-choice Entry, so previously-selected Activities render as already-pressed.
-- The keyboard grid-navigation state machine's row/column focus movement (`rowsCount`/`colsCount`/`focusCell`) is scaffolding for grid-cell keyboard focus that isn't wired up yet — see the comment at the top of `keyboardGridNavigation.js`. Arrow keys currently move internal state but don't yet move visible focus.
+- **Keyboard (#113):** focus stays in the input, and the arrow keys move an _active item_ through the popover's visible items in document order — the free-text button, each Category header, and the Activity buttons inside open Categories (collapsed Categories are skipped). The active item is announced through `aria-activedescendant` and drawn with the `kbd-active` class. Down/Up move (Down wraps from the last to the first; Up from the first returns to the input), Home/End jump once in the list (they stay caret keys while typing), Enter clicks the active item (selects an Activity, toggles a multiple-choice Activity, or opens/closes a Category), and Escape leaves the list. The active item is cleared whenever the results are replaced or the popover closes.
+- A keyup that doesn't change the text (Shift, Tab…) no longer re-renders the results, which would have closed the open Categories and dropped the active item.
 
 ---
 

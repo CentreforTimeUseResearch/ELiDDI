@@ -1,14 +1,16 @@
-// Encapsulates the ARIA combobox/grid keyboard-navigation state machine
-// used by ActivityPicker's search input (arrow-key/escape handling and the
-// active row/column/focus state). This class owns no DOM of its own - the
-// `host` passed to the constructor supplies the handful of DOM effects it
-// needs (updating the input, setting aria-activedescendant), which keeps
-// this state machine testable without mounting a custom element.
+// Encapsulates the ARIA combobox keyboard-navigation state machine used by
+// ActivityPicker's search input (arrow-key/Enter/Escape handling and which
+// item is active). This class owns no DOM of its own - the `host` passed to
+// the constructor supplies the handful of DOM effects it needs (listing the
+// items, marking one active, activating one), which keeps this state machine
+// testable without mounting a custom element.
 //
-// Grid-cell lookup/focus (a real getItemAt/focusCell implementation) isn't
-// built yet, so rowsCount/colsCount are never populated by ActivityPicker
-// today and most of this only runs once that's wired up - this class
-// preserves that behavior as-is rather than finishing the feature.
+// The "grid" is the popover's visible items in document order, one per row
+// in a single column: the free-text button, each Category header, and each
+// Activity button inside an open Category. The list is read from the host on
+// every key press, so it always matches what is on screen. Focus stays in
+// the input throughout; the active item is announced through
+// aria-activedescendant.
 
 export const KEY_CODE = {
   BACKSPACE: 8,
@@ -30,15 +32,23 @@ export const KEY_CODE = {
 
 export class KeyboardGridNavigation {
   activeRowIndex = -1;
-  activeColIndex = 0;
   rowsCount = 0;
-  colsCount = 0;
   gridFocused = false;
   shown = false;
 
-  // host: { updateResults(), setActiveDescendant(value), clearInputDeferred(), hideResults() }
+  // host: { updateResults(), getItems(), setActiveItem(item | null),
+  //         activateItem(item), clearInputDeferred(), hideResults() }
   constructor(host) {
     this.host = host;
+  }
+
+  // back to "typing in the input": nothing active. Called when the items
+  // are replaced or the popover closes, so the index can't point at a
+  // stale row
+  reset() {
+    this.gridFocused = false;
+    this.activeRowIndex = -1;
+    this.host.setActiveItem(null);
   }
 
   handleKeyUp(evt) {
@@ -51,8 +61,8 @@ export class KeyboardGridNavigation {
       case KEY_CODE.RETURN:
         evt.preventDefault();
         return;
-      case KEY_CODE.LEFT:
-      case KEY_CODE.RIGHT:
+      case KEY_CODE.HOME:
+      case KEY_CODE.END:
         if (this.gridFocused) {
           evt.preventDefault();
           return;
@@ -65,15 +75,10 @@ export class KeyboardGridNavigation {
 
   handleKeyDown(evt) {
     const key = evt.which || evt.keyCode;
-    let activeRowIndex = this.activeRowIndex;
-    let activeColIndex = this.activeColIndex;
 
     if (key === KEY_CODE.ESC) {
       if (this.gridFocused) {
-        this.gridFocused = false;
-        this.activeRowIndex = -1;
-        this.activeColIndex = 0;
-        this.host.setActiveDescendant('');
+        this.reset();
       } else if (!this.shown) {
         this.host.clearInputDeferred();
       }
@@ -83,53 +88,46 @@ export class KeyboardGridNavigation {
       return;
     }
 
+    const items = this.host.getItems();
+    this.rowsCount = items.length;
     if (this.rowsCount < 1) {
       return;
     }
 
+    let row = this.activeRowIndex;
     switch (key) {
-      case KEY_CODE.UP:
-        this.gridFocused = true;
-        evt.preventDefault();
-        break;
       case KEY_CODE.DOWN:
-        this.gridFocused = true;
-        evt.preventDefault();
+        row = this.gridFocused ? (row + 1) % this.rowsCount : 0;
         break;
-      case KEY_CODE.LEFT:
-        if (activeColIndex <= 0) {
-          activeColIndex = this.colsCount - 1;
-        } else {
-          activeColIndex--;
-        }
-        if (this.gridFocused) {
+      case KEY_CODE.UP:
+        if (this.gridFocused && row <= 0) {
+          // above the first item is the input again
           evt.preventDefault();
+          this.reset();
+          return;
         }
+        row = this.gridFocused ? row - 1 : this.rowsCount - 1;
         break;
-      case KEY_CODE.RIGHT:
-        if (activeColIndex === -1 || activeColIndex >= this.colsCount - 1) {
-          activeColIndex = 0;
-        } else {
-          activeColIndex++;
+      case KEY_CODE.HOME:
+      case KEY_CODE.END:
+        if (!this.gridFocused) {
+          return; // the caret keys, in the input
         }
-        if (this.gridFocused) {
-          evt.preventDefault();
-        }
+        row = key === KEY_CODE.HOME ? 0 : this.rowsCount - 1;
         break;
       case KEY_CODE.RETURN:
-        this.gridFocused = false;
-        return;
-      case KEY_CODE.TAB:
+        if (this.gridFocused && items[row]) {
+          evt.preventDefault();
+          this.host.activateItem(items[row]);
+        }
         return;
       default:
         return;
     }
 
-    this.activeRowIndex = activeRowIndex;
-    this.activeColIndex = activeColIndex;
-
-    // grid-cell lookup/focus (getItemAt, focusCell) isn't implemented yet,
-    // so there's never an active item to point aria-activedescendant at
-    this.host.setActiveDescendant('');
+    evt.preventDefault();
+    this.gridFocused = true;
+    this.activeRowIndex = Math.min(row, this.rowsCount - 1);
+    this.host.setActiveItem(items[this.activeRowIndex]);
   }
 }

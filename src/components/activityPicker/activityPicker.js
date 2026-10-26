@@ -9,6 +9,11 @@ const HEADING = 'heading';
 const INSTRUCTION = 'instruction';
 const DIMENSION_INDEX = 'dimensionindex';
 
+// what the arrow keys walk: the popover's free-text button, Category headers
+// and Activity buttons - minus any inside a collapsed Category
+const NAVIGABLE_ITEMS = '[data-free-text], .accordion-trigger, .activity-button';
+const ACTIVE_ITEM_CLASS = 'kbd-active';
+
 export class ActivityPicker extends TinyBase {
   static observedAttributes = [HEADING, INSTRUCTION, DIMENSION_INDEX];
 
@@ -19,13 +24,17 @@ export class ActivityPicker extends TinyBase {
 
   input;
   popoverElement;
+  activeItem = null;
+  lastSearch = '';
 
   constructor() {
     super();
     this.extractActivities();
     this.gridNavigation = new KeyboardGridNavigation({
       updateResults: () => this.updateResults(),
-      setActiveDescendant: (value) => this.input.setAttribute('aria-activedescendant', value),
+      getItems: () => this.getNavigableItems(),
+      setActiveItem: (item) => this.setActiveItem(item),
+      activateItem: (item) => item.click(),
       clearInputDeferred: () => this.clearInputDeferred(),
       hideResults: () => this.hideResults(),
     });
@@ -86,6 +95,30 @@ export class ActivityPicker extends TinyBase {
 
   hidePopover() {
     this.popoverElement.hidePopover();
+    this.gridNavigation.reset();
+  }
+
+  getNavigableItems() {
+    return [...this.popoverElement.querySelectorAll(NAVIGABLE_ITEMS)].filter(
+      (item) => !item.closest('[hidden]')
+    );
+  }
+
+  // marks `item` as the combobox's active descendant (focus stays in the
+  // input); null clears it
+  setActiveItem(item) {
+    this.activeItem?.classList.remove(ACTIVE_ITEM_CLASS);
+    this.activeItem = item;
+    if (!item) {
+      this.input.setAttribute('aria-activedescendant', '');
+      return;
+    }
+    if (!item.id) {
+      item.id = `${this.input.id}_item${this.getNavigableItems().indexOf(item)}`;
+    }
+    item.classList.add(ACTIVE_ITEM_CLASS);
+    item.scrollIntoView?.({ block: 'nearest' });
+    this.input.setAttribute('aria-activedescendant', item.id);
   }
 
   // On Firefox the input does not get cleared unless wrapped in a
@@ -98,6 +131,11 @@ export class ActivityPicker extends TinyBase {
 
   updateResults() {
     const searchString = this.input.value;
+    if (searchString === this.lastSearch) {
+      // a key that didn't change the text (Shift, Tab...): keep the open
+      // Categories and the active item
+      return;
+    }
     const results = searchActivities(this.content, searchString);
     this.renderAccordion(results, searchString);
   }
@@ -164,6 +202,8 @@ export class ActivityPicker extends TinyBase {
   renderAccordion(results, searchString = '') {
     // replaces the accordion render() built, and any earlier search results
     this.releaseOwnedProps();
+    this.lastSearch = searchString;
+    this.gridNavigation.reset();
     this.popoverElement.innerHTML = `${this.freeTextOptionHtml(searchString)}<el-accordion ${this.setProps({ content: results, activitySelect: this.onActivitySelect, activityToggle: (activity, isSelected) => this.onActivityToggle(activity, isSelected), ...this.accordionProps() })}></el-accordion>${this.doneButtonHtml()}`;
     this.assignDoneButtonHandler();
     this.assignFreeTextHandler();

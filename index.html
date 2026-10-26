@@ -542,6 +542,9 @@
     <template id="svg-horizontal-timeline-row">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2880 60">
         <rect data-part="gridline-zone" x="0" y="0" width="2880" height="60" fill="#ffffff" />
+        <!-- populated live by HorizontalTimeline.updateDimensions(); clicks pass
+             through to gridline-zone, which is what starts a new Entry -->
+        <g data-part="grid-lines" pointer-events="none"></g>
         <g data-part="events"></g>
         <g data-part="drag-handles"></g>
       </svg>

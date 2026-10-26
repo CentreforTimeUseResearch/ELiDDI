@@ -216,6 +216,53 @@ describe('HorizontalTimeline mounted', () => {
     expect(el.querySelector('[data-part="events"] rect[data-id="7"]')).not.toBeNull();
   });
 
+  // #176: a line every 10 minutes down the row, like the vertical Timeline's
+  describe('grid lines', () => {
+    beforeEach(() => {
+      appStore.dispatch({ type: SET_HORIZONTAL_ZOOM, payload: 1 });
+    });
+
+    it('draws a full-height line every 10 minutes, behind the entries', () => {
+      const { el } = createHorizontalTimeline(0);
+      const layer = el.querySelector('[data-part="grid-lines"]');
+
+      const lines = layer.querySelectorAll('line');
+      expect(lines).toHaveLength(145);
+      expect(lines[1].getAttribute('x1')).toBe('20'); // 10min * 2px/min
+      expect(lines[1].getAttribute('y1')).toBe('0');
+      expect(lines[1].getAttribute('y2')).toBe('60'); // the row height
+      const parts = [...el.querySelectorAll('svg > [data-part]')].map((e) => e.dataset.part);
+      expect(parts.indexOf('grid-lines')).toBeLessThan(parts.indexOf('events'));
+    });
+
+    it('marks the lines pointer-events none, so clicks reach the gridline zone beneath', () => {
+      const { el } = createHorizontalTimeline(0);
+
+      expect(el.querySelector('[data-part="grid-lines"]').getAttribute('pointer-events')).toBe(
+        'none'
+      );
+    });
+
+    it('redraws the lines at the new scale on a zoom change', () => {
+      const { el } = createHorizontalTimeline(0);
+
+      appStore.dispatch({ type: SET_HORIZONTAL_ZOOM, payload: 2 });
+
+      const lines = el.querySelectorAll('[data-part="grid-lines"] line');
+      expect(lines).toHaveLength(145);
+      expect(lines[1].getAttribute('x1')).toBe('40'); // 10min * 4px/min
+    });
+
+    it('does not rebuild the lines on a store update that leaves the zoom alone', () => {
+      const { el } = createHorizontalTimeline(0);
+      const firstLine = el.querySelector('[data-part="grid-lines"] line');
+
+      appStore.dispatch({ type: SWITCH_DATE, payload: '2026-10-02' });
+
+      expect(el.querySelector('[data-part="grid-lines"] line')).toBe(firstLine);
+    });
+  });
+
   // Phase 10.5: geometry and the svg's own width/viewBox are both
   // recomputed from the current horizontalZoomLevel, keeping 1 viewBox
   // unit = 1 CSS px at every zoom level (see the Phase 10.5 plan)

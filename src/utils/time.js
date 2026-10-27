@@ -1,15 +1,22 @@
 // Entries store times as offsets in minutes from config/config.json's
 // general.day_boundary (e.g. "04:00"), not from midnight - see CONTEXT.md.
-export function getDayBoundaryInMinutes() {
-  const [hours, minutes] = GLOBALS.DATA.day_boundary.split(':').map(Number);
+// "HH:MM" -> minutes since midnight
+export function parseDayBoundary(dayBoundary) {
+  const [hours, minutes] = dayBoundary.split(':').map(Number);
   return hours * 60 + minutes;
+}
+
+export function getDayBoundaryInMinutes() {
+  return parseDayBoundary(GLOBALS.DATA.day_boundary);
 }
 
 // converts an entry's startOffsetMins/endOffsetMins back into a clock time
 // for display (e.g. in error messages) - mirrors TimePickerPanel's own
-// minutes -> HH:MM formatting, kept here so it doesn't need a component instance
-export function formatOffsetAsClockTime(offsetMins) {
-  let totalMinutes = offsetMins + getDayBoundaryInMinutes();
+// minutes -> HH:MM formatting, kept here so it doesn't need a component instance.
+// The day boundary defaults to the running study's; pass one to format against
+// a config that isn't GLOBALS (see src/validation)
+export function formatOffsetAsClockTime(offsetMins, dayBoundaryMins = getDayBoundaryInMinutes()) {
+  let totalMinutes = offsetMins + dayBoundaryMins;
   if (totalMinutes >= 24 * 60) {
     totalMinutes -= 24 * 60;
   }

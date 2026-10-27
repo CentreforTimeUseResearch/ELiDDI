@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { appStore } from '../../store/appStore';
+import { DIARY_STATUS } from '../../store/diaryStatus';
 import {
   ADD_ENTRY,
   CLEAR_DIARY,
@@ -22,6 +23,7 @@ const ALL_RULES = {
 };
 const originalValidation = GLOBALS.DATA.validation;
 const originalSubmitUrl = GLOBALS.DATA.general.submit_completed_diary_url;
+const originalRedirectUrl = GLOBALS.DATA.general.primary_redirect_url;
 
 let help;
 let panelEl;
@@ -56,6 +58,7 @@ describe('ValidationPanel', () => {
     document.body.innerHTML = '';
     GLOBALS.DATA.validation = originalValidation;
     GLOBALS.DATA.general.submit_completed_diary_url = originalSubmitUrl;
+    GLOBALS.DATA.general.primary_redirect_url = originalRedirectUrl;
     appStore.dispatch({ type: HIDE_PANEL });
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
@@ -380,6 +383,123 @@ describe('ValidationPanel', () => {
 
       expect(panelEl.querySelector('dialog img')).toBeNull();
       expect(panelEl.querySelector('.validation-soft-failures').textContent).toContain(name);
+    });
+
+    describe('after submitting', () => {
+      const status = () => panelEl.querySelector('.validation-submit-status');
+      const statusOf = (date) => appStore.getState().diaries[date].status;
+      const settle = () => new Promise((resolve) => setTimeout(resolve));
+      let redirect;
+
+      beforeEach(() => {
+        setValidation(HARD_ONLY);
+        GLOBALS.DATA.general.primary_redirect_url = 'pages/thank-you.html';
+        redirect = vi.spyOn(panelEl, 'redirect').mockImplementation(() => {});
+        open();
+        addEntry(DATE, 0, 'Working');
+      });
+
+      it('marks the Diary complete, says so and redirects on success', async () => {
+        button().click();
+        await settle();
+
+        expect(statusOf(DATE)).toBe(DIARY_STATUS.COMPLETE);
+        expect(status().textContent).toContain('submitted');
+        expect(redirect).toHaveBeenCalledWith('pages/thank-you.html');
+      });
+
+      it('does not redirect when the study sets no redirect URL', async () => {
+        GLOBALS.DATA.general.primary_redirect_url = '';
+
+        button().click();
+        await settle();
+
+        expect(statusOf(DATE)).toBe(DIARY_STATUS.COMPLETE);
+        expect(redirect).not.toHaveBeenCalled();
+      });
+
+      it('marks the date that was sent, even if another day is viewed meanwhile', async () => {
+        button().click();
+        appStore.dispatch({ type: SWITCH_DATE, payload: OTHER_DATE });
+        await settle();
+
+        expect(statusOf(DATE)).toBe(DIARY_STATUS.COMPLETE);
+        expect(appStore.getState().diaries[OTHER_DATE]?.status).not.toBe(DIARY_STATUS.COMPLETE);
+      });
+
+      it('is reopened, and the message goes, when the Diary is edited', async () => {
+        button().click();
+        await settle();
+
+        addEntry(DATE, 1, 'Working', 5);
+
+        expect(statusOf(DATE)).toBe(DIARY_STATUS.IN_PROGRESS);
+        expect(status().textContent).toBe('');
+      });
+
+      it('says the network failed, keeps the Diary in progress and lets it be retried', async () => {
+        fetchStub.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+
+        button().click();
+        await settle();
+
+        expect(status().textContent).toContain('Check your connection');
+        expect(status().dataset.state).toBe('error');
+        expect(statusOf(DATE)).toBe(DIARY_STATUS.IN_PROGRESS);
+        expect(redirect).not.toHaveBeenCalled();
+        expect(button().disabled).toBe(false);
+
+        button().click();
+        await settle();
+
+        expect(fetchStub).toHaveBeenCalledTimes(2);
+        expect(statusOf(DATE)).toBe(DIARY_STATUS.COMPLETE);
+        expect(status().dataset.state).toBe('success');
+      });
+
+      it('says the server refused it, with the status, for an HTTP error', async () => {
+        fetchStub.mockResolvedValueOnce({ ok: false, status: 500 });
+
+        button().click();
+        await settle();
+
+        expect(status().textContent).toContain('error 500');
+        expect(statusOf(DATE)).toBe(DIARY_STATUS.IN_PROGRESS);
+        expect(button().disabled).toBe(false);
+      });
+
+      it('shows a failure only for the day it happened on', async () => {
+        fetchStub.mockResolvedValueOnce({ ok: false, status: 500 });
+        button().click();
+        await settle();
+
+        appStore.dispatch({ type: SWITCH_DATE, payload: OTHER_DATE });
+
+        expect(status().textContent).toBe('');
+      });
+
+      it('disables the button while sending, so a double click sends one request', async () => {
+        let finish;
+        fetchStub.mockReturnValueOnce(new Promise((resolve) => (finish = resolve)));
+
+        button().click();
+        expect(button().disabled).toBe(true);
+        expect(button().textContent).toBe('Sending…');
+        button().click();
+        finish({ ok: true, status: 200 });
+        await settle();
+
+        expect(fetchStub).toHaveBeenCalledTimes(1);
+        expect(button().disabled).toBe(false);
+        expect(button().textContent).toBe('Diary complete');
+      });
+
+      it('shows no submitted message when the study has no submit URL', () => {
+        GLOBALS.DATA.general.submit_completed_diary_url = '';
+        appStore.dispatch({ type: 'SET_COMPLETE', payload: { date: DATE } });
+
+        expect(status().textContent).toBe('');
+      });
     });
   });
 });

@@ -17,7 +17,9 @@ At the bottom is the "Diary complete" button. It is shown only when the study ha
 - It is **disabled** while a **hard** check fails, and the panel says why (the button's `aria-describedby`). A failing soft check does not disable it.
 - Clicking it with every check passing calls `submitDiary()` ([src/submission](../../submission/README.md)) for the viewed day.
 - Clicking it with soft checks failing first opens a confirm dialog (an `<el-dialog>` inside the panel) that lists each failed soft check and asks "Are you sure?". "Submit anyway" calls `submitDiary()`; "Go back", or Escape, closes it and sends nothing. Escape in that dialog does not also close the panel.
-- What happens after the call (success, error, redirect) is not handled yet: the result is only logged.
+- While the request is out the button is disabled and says "Sending…", so it cannot be sent twice.
+- **Success:** the Diary is marked complete (`SET_COMPLETE` for the date that was sent), the panel says "This Diary has been submitted", and the browser is redirected to `general.primary_redirect_url` if the study sets one. Editing the Diary afterwards puts it back in progress (see the [store README](../../store/README.md)), and the message goes.
+- **Failure:** the panel says what went wrong (different wording for a network failure and for an HTTP error status) and the Diary stays in progress; pressing the button again retries. Nothing is lost.
 
 ## Custom element
 
@@ -37,7 +39,7 @@ Through the store's `uipanel` (value `'validation'`), so opening any other panel
 
 ## Store interaction
 
-Reads `uipanel`, `onboarding`, `currentDate` and `diaries`; dispatches `HIDE_PANEL`. It does not dispatch anything when submitting yet.
+Reads `uipanel`, `onboarding`, `currentDate` and `diaries`; dispatches `HIDE_PANEL`. Dispatches `SET_COMPLETE` after a successful submission.
 
 ## Tests
 

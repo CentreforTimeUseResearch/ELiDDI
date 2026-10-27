@@ -69,7 +69,7 @@ Nested reducers, innermost first:
 
 - **`timeline`** — one Dimension's `Entry[]`, always addressed by `id`: `ADD_ENTRY` appends, `UPDATE_ENTRY` replaces the entry with the payload's `id` in place (and is a no-op if no entry has it), `DELETE_ENTRY` filters it out.
 - **`dimensionTimelines`** — one Diary's array of six Timelines, indexed by `dimensionIndex`. Uses direct index assignment on a copied array rather than slice/splice, so results are correct regardless of which Dimension index is touched first.
-- **`diary`** — combines `dimensionTimelines` with `diaryStatus` (`SET_COMPLETE` → `COMPLETE`, `RESET_STATUS` → `IN_PROGRESS`). `CLEAR_DIARY` empties every Timeline of one date's Diary and sets it in progress.
+- **`diary`** — combines `dimensionTimelines` with `diaryStatus` (`SET_COMPLETE` → `COMPLETE`; `RESET_STATUS`, `ADD_ENTRY`, `UPDATE_ENTRY` and `DELETE_ENTRY` → `IN_PROGRESS`, so editing a completed Diary reopens it for another submission, handled here rather than in each component). `CLEAR_DIARY` empties every Timeline of one date's Diary and sets it in progress.
 - **`diaries`** — the full `{ [date]: Diary }` map, keyed by the `date` in the action payload.
 
 `startOffsetMins`/`endOffsetMins` are always relative to the config's Day boundary, not midnight — see [ADR-0001](../../docs/adr/0001-day-boundary-not-midnight.md) and [CONTEXT.md](../../CONTEXT.md)'s "Day boundary" entry.

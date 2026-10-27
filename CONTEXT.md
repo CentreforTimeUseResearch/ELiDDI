@@ -8,7 +8,7 @@ The time-use diary domain: Respondents record Entries against fixed Dimensions (
 A Respondent's complete record for one calendar day: every Timeline (one per Dimension) together with its Diary status. Identified by its date; a Respondent accumulates one Diary per day they record.
 
 **Diary status**:
-Whether a Diary is still in progress or has been completed.
+Whether a Diary is still in progress or has been completed. A Diary is completed by a successful submission, and returns to in progress when one of its Entries is changed.
 
 **Dimension**:
 One of the fixed axes a Respondent records for every span of time in the day — Primary activity, Secondary activity, Location, Who, Device, Enjoyment, in that order. Each Dimension has a Mode and its own Category → Activity hierarchy.

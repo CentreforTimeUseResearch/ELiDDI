@@ -146,10 +146,14 @@ const dimensionTimelines = (state = [], action) => {
   }
 };
 
-// one Diary's status - see diaryStatus.js
+// one Diary's status - see diaryStatus.js. Changing an Entry of a completed
+// Diary puts it back in progress, so it can be submitted again
 const diaryStatus = (state = DIARY_STATUS.IN_PROGRESS, action) => {
   switch (action?.type) {
     case RESET_STATUS:
+    case ADD_ENTRY:
+    case UPDATE_ENTRY:
+    case DELETE_ENTRY:
       return DIARY_STATUS.IN_PROGRESS;
     case SET_COMPLETE:
       return DIARY_STATUS.COMPLETE;

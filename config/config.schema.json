@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "ELiDDI activities configuration",
-  "description": "Validates config/config.json. `general` metadata is documented but not read by build code; `day_boundary` and `instructions` (onboarding steps) are read directly off the top level by src/ at runtime; `timeline` order controls display order in the JS-enhanced layer (see the `timeline` definition below) - scripts/generate_no_js.js itself is order-independent.",
+  "description": "Validates config/config.json. `general` metadata is documented but not read by build code; `day_boundary` and `instructions` (onboarding steps) are read directly off the top level by src/ at runtime; `validation` (optional) switches the Diary validation rules on and off; `timeline` order controls display order in the JS-enhanced layer (see the `timeline` definition below) - scripts/generate_no_js.js itself is order-independent.",
   "type": "object",
   "required": ["general", "day_boundary", "instructions", "timeline"],
   "properties": {
@@ -25,6 +25,9 @@
     },
     "timeline": {
       "$ref": "#/definitions/timeline"
+    },
+    "validation": {
+      "$ref": "#/definitions/validation"
     }
   },
   "definitions": {
@@ -62,7 +65,7 @@
         },
         "submit_completed_diary_url": {
           "type": "string",
-          "description": "URL a completed diary will be submitted to. Not yet consumed by ELiDDI itself - reserved for a future diary-submission feature."
+          "description": "URL a completed Diary is POSTed to, as JSON, when the Respondent submits it. If empty, ELiDDI shows no submit button."
         },
         "fallbackToCSV": {
           "type": "boolean"
@@ -93,6 +96,34 @@
           "description": "ELiDDI-specific extension - not part of the upstream O-TUD accessibility spec. Controls whether scripts/generate_no_js.js emits the full no-JS diary form (progressive enhancement) or just the minimal markup the JS layer needs. Absent or true = generate it; only an explicit false skips it, so configs predating this field keep their current behavior."
         }
       }
+    },
+    "validationLevel": {
+      "type": "string",
+      "enum": ["off", "soft", "hard"],
+      "description": "off: the rule is not applied. soft: a failure asks the Respondent 'are you sure?' but still lets them submit. hard: a failure stops them submitting the Diary until it passes."
+    },
+    "validation": {
+      "type": "object",
+      "description": "Which validation rules apply to a Diary before it can be submitted, and how strictly. ELiDDI ships every rule; this only switches them. Optional: a missing object, or a missing rule, means off.",
+      "properties": {
+        "no-gaps-in-primary": {
+          "$ref": "#/definitions/validationLevel",
+          "description": "Every time slot of the day has a Primary activity Entry."
+        },
+        "primary-secondary-differ": {
+          "$ref": "#/definitions/validationLevel",
+          "description": "The same Activity is not recorded as both Primary and Secondary activity at the same time."
+        },
+        "minimum-sleep": {
+          "$ref": "#/definitions/validationLevel",
+          "description": "At least 4 hours of sleep are recorded."
+        },
+        "eating-or-drinking": {
+          "$ref": "#/definitions/validationLevel",
+          "description": "At least one eating or drinking episode is recorded."
+        }
+      },
+      "additionalProperties": false
     },
     "onboardingStep": {
       "type": "object",

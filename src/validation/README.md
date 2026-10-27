@@ -23,11 +23,14 @@ Terminology (Validation rule, Hard check, Soft check, Diary, Entry) follows [CON
 
 `config.validation` maps a rule id to `'off'`, `'soft'` or `'hard'` (see `config/config.schema.json`). ELiDDI ships every rule and the config only switches them, so a missing setting, a missing rule, or `'off'` means the rule is not checked and is not in the results. An id that ELiDDI has no rule for is ignored.
 
-| Rule id              | Rule                                                                                                                       |
-| -------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `no-gaps-in-primary` | Every ten-minute slot of the whole day is used by a Primary activity Entry. Slots still in the future today count as gaps. |
+| Rule id                    | Rule                                                                                                                                                                                   |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `no-gaps-in-primary`       | Every ten-minute slot of the whole day is used by a Primary activity Entry. Slots still in the future today count as gaps.                                                             |
+| `primary-secondary-differ` | The same Activity is not recorded as both Primary and Secondary activity in the same slot. A slot with nothing on either Dimension never clashes. Activity names are compared exactly. |
 
 ## Adding a rule
+
+The slot helpers in `slots.js` (`entrySlots`, `slotClockTime`) are shared by the rules.
 
 Write it under `rules/` as `{ id, title, check({ diary, config }) }`, where `check` returns `{ passed, message }`, and add it to `RULES` in `validateDiary.js`. Add its id to `validation` in `config/config.schema.json`.
 

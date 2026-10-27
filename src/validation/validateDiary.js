@@ -1,4 +1,5 @@
 import { noGapsInPrimary } from './rules/noGapsInPrimary';
+import { primarySecondaryDiffer } from './rules/primarySecondaryDiffer';
 
 // Checks one Diary against the Validation rules a study has switched on, and
 // says whether the Respondent may submit it (CONTEXT.md: Validation rule,
@@ -10,7 +11,7 @@ import { noGapsInPrimary } from './rules/noGapsInPrimary';
 // 'off' | 'soft' | 'hard'). A rule is a { id, title, check } where
 // check({ diary, config }) -> { passed, message } (message is for a failure).
 // To add a rule, write it under ./rules/ and list it here.
-const RULES = [noGapsInPrimary];
+const RULES = [noGapsInPrimary, primarySecondaryDiffer];
 
 const ACTIVE_LEVELS = ['soft', 'hard'];
 

@@ -44,18 +44,69 @@ describe('eliddiReducer - status', () => {
     expect(resetState.diaries[DATE].status).toBe(DIARY_STATUS.IN_PROGRESS);
   });
 
-  // carried over from the old SET_STATUS regression test: an action that
-  // targets a Diary but not its status must preserve it, not reset it
-  it('preserves a completed status across entry edits to the same Diary', () => {
-    const completedState = eliddiReducer(undefined, {
-      type: SET_COMPLETE,
-      payload: { date: DATE },
+  // editing a completed Diary puts it back in progress, so it can be submitted again
+  describe('editing a completed Diary', () => {
+    const OTHER_DATE = '2026-08-22';
+    const entryPayload = (date, id = 0) => ({
+      date,
+      dimensionIndex: 0,
+      id,
+      startOffsetMins: 0,
+      endOffsetMins: 10,
+      activity: 'Sleeping',
     });
-    const afterEdit = eliddiReducer(completedState, {
-      type: ADD_ENTRY,
-      payload: { date: DATE, dimensionIndex: 0, id: 0, startOffsetMins: 0, endOffsetMins: 10 },
+    const completeDiaryWithEntry = (date) =>
+      [
+        { type: ADD_ENTRY, payload: entryPayload(date) },
+        { type: SET_COMPLETE, payload: { date } },
+      ].reduce(eliddiReducer, undefined);
+
+    it.each([
+      [ADD_ENTRY, entryPayload(DATE, 1)],
+      [UPDATE_ENTRY, { ...entryPayload(DATE), activity: 'Working' }],
+      [DELETE_ENTRY, entryPayload(DATE)],
+    ])('puts it back in progress on %s', (type, payload) => {
+      const complete = completeDiaryWithEntry(DATE);
+      expect(complete.diaries[DATE].status).toBe(DIARY_STATUS.COMPLETE);
+
+      const after = eliddiReducer(complete, { type, payload });
+
+      expect(after.diaries[DATE].status).toBe(DIARY_STATUS.IN_PROGRESS);
     });
-    expect(afterEdit.diaries[DATE].status).toBe(DIARY_STATUS.COMPLETE);
+
+    it('leaves the other date Diary complete', () => {
+      const both = eliddiReducer(completeDiaryWithEntry(OTHER_DATE), {
+        type: SET_COMPLETE,
+        payload: { date: DATE },
+      });
+
+      const after = eliddiReducer(both, { type: ADD_ENTRY, payload: entryPayload(DATE, 1) });
+
+      expect(after.diaries[DATE].status).toBe(DIARY_STATUS.IN_PROGRESS);
+      expect(after.diaries[OTHER_DATE]).toBe(both.diaries[OTHER_DATE]);
+      expect(after.diaries[OTHER_DATE].status).toBe(DIARY_STATUS.COMPLETE);
+    });
+
+    it('changes nothing else about the Diary, which stays in progress', () => {
+      const inProgress = eliddiReducer(undefined, {
+        type: ADD_ENTRY,
+        payload: entryPayload(DATE),
+      });
+
+      const after = eliddiReducer(inProgress, { type: ADD_ENTRY, payload: entryPayload(DATE, 1) });
+
+      expect(after.diaries[DATE].status).toBe(DIARY_STATUS.IN_PROGRESS);
+      expect(after.diaries[DATE].timelines[0].map((e) => e.id)).toEqual([0, 1]);
+    });
+
+    it('keeps a completed status for an action that touches no Entry', () => {
+      const after = eliddiReducer(completeDiaryWithEntry(DATE), {
+        type: ADD_TIMELINE,
+        payload: { date: DATE, dimensionIndex: 1 },
+      });
+
+      expect(after.diaries[DATE].status).toBe(DIARY_STATUS.COMPLETE);
+    });
   });
 
   it('tracks status independently per date', () => {

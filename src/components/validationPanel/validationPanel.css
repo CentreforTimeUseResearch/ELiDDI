@@ -113,6 +113,20 @@
   color: var(--color-body-muted);
 }
 
+.validation-submit-status {
+  margin: 0 0 var(--space-xs);
+  font-size: var(--text-caption-size);
+  line-height: var(--text-caption-lh);
+
+  &[data-state='error'] {
+    color: #ff6b6b;
+  }
+
+  &[data-state='success'] {
+    color: #4cd964;
+  }
+}
+
 .validation-complete {
   width: 100%;
   min-height: 44px;

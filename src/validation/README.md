@@ -28,6 +28,11 @@ Terminology (Validation rule, Hard check, Soft check, Diary, Entry) follows [CON
 | `no-gaps-in-primary`       | Every ten-minute slot of the whole day is used by a Primary activity Entry. Slots still in the future today count as gaps.                                                             |
 | `primary-secondary-differ` | The same Activity is not recorded as both Primary and Secondary activity in the same slot. A slot with nothing on either Dimension never clashes. Activity names are compared exactly. |
 
+| `minimum-sleep` | At least 4 hours of Primary activity Entries with Activity code 101 (sleeping). Sleep recorded as a Secondary activity does not count. |
+| `eating-or-drinking` | At least one Primary or Secondary activity Entry has Activity code 104 (eating, drinking). |
+
+Both are meant to be soft, but take their level from the config like any rule. Entries store the Activity's display name, so `activityCodes.js` looks the name up in the study config to find its code; a free-text Entry has no code and never counts. The codes and the 4 hour threshold are constants in that file.
+
 ## Adding a rule
 
 The slot helpers in `slots.js` (`entrySlots`, `slotClockTime`) are shared by the rules.

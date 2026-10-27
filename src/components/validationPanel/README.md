@@ -10,7 +10,14 @@ A panel that slides in from the right-hand side (the Navbar's off-screen menu, m
 
 The results come from `validateDiary()` ([src/validation](../../validation/README.md)) and are redrawn while the panel is open, whenever the Diary changes. Only rules that are `soft` or `hard` in `GLOBALS.DATA.validation` are listed; with none, the panel says no checks are set for this study.
 
-There is empty space at the bottom (`.validation-actions`) for the "Diary complete" button, which a later change adds.
+## Diary complete
+
+At the bottom is the "Diary complete" button. It is shown only when the study has `general.submit_completed_diary_url` (the rules above work either way).
+
+- It is **disabled** while a **hard** check fails, and the panel says why (the button's `aria-describedby`). A failing soft check does not disable it.
+- Clicking it with every check passing calls `submitDiary()` ([src/submission](../../submission/README.md)) for the viewed day.
+- Clicking it with soft checks failing first opens a confirm dialog (an `<el-dialog>` inside the panel) that lists each failed soft check and asks "Are you sure?". "Submit anyway" calls `submitDiary()`; "Go back", or Escape, closes it and sends nothing. Escape in that dialog does not also close the panel.
+- What happens after the call (success, error, redirect) is not handled yet: the result is only logged.
 
 ## Custom element
 
@@ -30,7 +37,7 @@ Through the store's `uipanel` (value `'validation'`), so opening any other panel
 
 ## Store interaction
 
-Reads `uipanel`, `onboarding`, `currentDate` and `diaries`; dispatches `HIDE_PANEL`.
+Reads `uipanel`, `onboarding`, `currentDate` and `diaries`; dispatches `HIDE_PANEL`. It does not dispatch anything when submitting yet.
 
 ## Tests
 

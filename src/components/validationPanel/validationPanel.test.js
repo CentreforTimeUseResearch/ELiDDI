@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { appStore } from '../../store/appStore';
 import {
   ADD_ENTRY,
@@ -21,6 +21,7 @@ const ALL_RULES = {
   'eating-or-drinking': 'soft',
 };
 const originalValidation = GLOBALS.DATA.validation;
+const originalSubmitUrl = GLOBALS.DATA.general.submit_completed_diary_url;
 
 let help;
 let panelEl;
@@ -54,7 +55,10 @@ describe('ValidationPanel', () => {
   afterEach(() => {
     document.body.innerHTML = '';
     GLOBALS.DATA.validation = originalValidation;
+    GLOBALS.DATA.general.submit_completed_diary_url = originalSubmitUrl;
     appStore.dispatch({ type: HIDE_PANEL });
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
   describe('opening and closing', () => {
@@ -220,6 +224,162 @@ describe('ValidationPanel', () => {
       expect(panelEl.querySelector('.validation-empty').textContent).toBe(
         'No checks are set for this study.'
       );
+    });
+  });
+
+  describe('Diary complete button', () => {
+    const HARD_ONLY = { 'no-gaps-in-primary': 'hard' };
+    const WITH_SOFT = {
+      'no-gaps-in-primary': 'hard',
+      'minimum-sleep': 'soft',
+      'eating-or-drinking': 'soft',
+    };
+    const button = () => panelEl.querySelector('.validation-complete');
+    const confirmDialog = () => panelEl.querySelector('dialog');
+    const isConfirmOpen = () => confirmDialog().hasAttribute('open');
+    let fetchStub;
+
+    beforeEach(() => {
+      fetchStub = vi.fn().mockResolvedValue({ ok: true, status: 200 });
+      vi.stubGlobal('fetch', fetchStub);
+      vi.spyOn(console, 'log').mockImplementation(() => {});
+      GLOBALS.DATA.general.submit_completed_diary_url = 'https://example.org/submit';
+    });
+
+    it('is not shown when the study has no submit URL', () => {
+      GLOBALS.DATA.general.submit_completed_diary_url = '';
+
+      open();
+
+      expect(button().hidden).toBe(true);
+      expect(results().length).toBeGreaterThan(0);
+    });
+
+    it('is disabled, with the reason, while a hard check fails', () => {
+      setValidation(HARD_ONLY);
+
+      open();
+
+      expect(button().hidden).toBe(false);
+      expect(button().disabled).toBe(true);
+      const hint = panelEl.querySelector('.validation-complete-hint');
+      expect(hint.hidden).toBe(false);
+      expect(button().getAttribute('aria-describedby')).toBe(hint.id);
+    });
+
+    it('is enabled once every hard check passes, even when soft checks fail', () => {
+      setValidation(WITH_SOFT);
+      open();
+
+      addEntry(DATE, 0, 'Working');
+
+      expect(button().disabled).toBe(false);
+      expect(panelEl.querySelector('.validation-complete-hint').hidden).toBe(true);
+    });
+
+    it('is disabled again when a hard check fails again', () => {
+      setValidation(HARD_ONLY);
+      open();
+      addEntry(DATE, 0, 'Working');
+      expect(button().disabled).toBe(false);
+
+      appStore.dispatch({ type: CLEAR_DIARY, payload: { date: DATE } });
+
+      expect(button().disabled).toBe(true);
+    });
+
+    it('submits at once, with no confirmation, when every check passes', () => {
+      setValidation(HARD_ONLY);
+      open();
+      addEntry(DATE, 0, 'Working');
+
+      button().click();
+
+      expect(isConfirmOpen()).toBe(false);
+      expect(fetchStub).toHaveBeenCalledTimes(1);
+      expect(JSON.parse(fetchStub.mock.calls[0][1].body).date).toBe(DATE);
+    });
+
+    it('asks first, naming each failed soft check, when only soft checks fail', () => {
+      setValidation(WITH_SOFT);
+      open();
+      addEntry(DATE, 0, 'Working');
+
+      button().click();
+
+      expect(isConfirmOpen()).toBe(true);
+      expect(fetchStub).not.toHaveBeenCalled();
+      const listed = [...panelEl.querySelectorAll('.validation-soft-failures li')];
+      expect(listed).toHaveLength(2);
+      expect(listed[0].textContent).toContain('At least 4 hours of sleep');
+      expect(listed[1].textContent).toContain('Eating or drinking recorded');
+    });
+
+    it('sends nothing when the Respondent goes back', () => {
+      setValidation(WITH_SOFT);
+      open();
+      addEntry(DATE, 0, 'Working');
+      button().click();
+
+      confirmDialog().querySelector('[data-close]').click();
+
+      expect(isConfirmOpen()).toBe(false);
+      expect(fetchStub).not.toHaveBeenCalled();
+      expect(isOpen()).toBe(true);
+    });
+
+    it('submits once when the Respondent chooses Submit anyway', () => {
+      setValidation(WITH_SOFT);
+      open();
+      addEntry(DATE, 0, 'Working');
+      button().click();
+
+      panelEl.querySelector('[data-confirm-submit]').click();
+
+      expect(isConfirmOpen()).toBe(false);
+      expect(fetchStub).toHaveBeenCalledTimes(1);
+    });
+
+    it('is cancelled by Escape, which does not also close the panel', () => {
+      setValidation(WITH_SOFT);
+      open();
+      addEntry(DATE, 0, 'Working');
+      button().click();
+
+      pressEscape();
+      expect(isOpen()).toBe(true);
+      confirmDialog().dispatchEvent(new Event('cancel'));
+
+      expect(isConfirmOpen()).toBe(false);
+      expect(isOpen()).toBe(true);
+      expect(fetchStub).not.toHaveBeenCalled();
+
+      pressEscape();
+      expect(isOpen()).toBe(false);
+    });
+
+    it('does not close the panel when the dialog is clicked', () => {
+      setValidation(WITH_SOFT);
+      open();
+      addEntry(DATE, 0, 'Working');
+      button().click();
+
+      confirmDialog().click();
+
+      expect(isOpen()).toBe(true);
+    });
+
+    it('escapes an Activity name in the confirmation', () => {
+      setValidation({ 'no-gaps-in-primary': 'hard', 'primary-secondary-differ': 'soft' });
+      open();
+      const name = '<img src=x onerror=alert(1)>';
+      addEntry(DATE, 0, name);
+      addEntry(DATE, 1, name);
+
+      button().click();
+
+      expect(panelEl.querySelector('dialog img')).toBeNull();
+      expect(panelEl.querySelector('.validation-soft-failures').textContent).toContain(name);
     });
   });
 });

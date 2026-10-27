@@ -99,8 +99,54 @@
   color: var(--color-body-muted);
 }
 
-/* room for the "Diary complete" button, added later */
+/* the "Diary complete" button, and why it may be disabled */
 .validation-actions {
   flex: 0 0 auto;
   min-height: 56px;
+  padding-top: var(--space-sm);
+}
+
+.validation-complete-hint {
+  margin: 0 0 var(--space-xs);
+  font-size: var(--text-caption-size);
+  line-height: var(--text-caption-lh);
+  color: var(--color-body-muted);
+}
+
+.validation-complete {
+  width: 100%;
+  min-height: 44px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+  font-family: var(--font-text);
+  font-size: var(--text-body-size);
+
+  &:disabled {
+    background-color: var(--color-ink-muted-80);
+    color: var(--color-body-muted);
+  }
+
+  &:not(:disabled):focus-visible {
+    outline: 2px solid var(--color-on-dark);
+    outline-offset: 2px;
+  }
+}
+
+/* the confirm dialog (el-dialog, inside the panel) */
+.validation-soft-failures {
+  margin: 0 0 var(--space-md);
+  padding-left: var(--space-md);
+  font-size: var(--text-caption-size);
+}
+
+.validation-confirm {
+  min-height: 44px;
+  padding: 0 var(--space-md);
+  border: 0;
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+  font-family: var(--font-text);
+  font-size: var(--text-body-size);
 }

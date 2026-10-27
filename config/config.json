@@ -18,6 +18,12 @@
     }
   },
   "day_boundary": "04:00",
+  "validation": {
+    "no-gaps-in-primary": "hard",
+    "primary-secondary-differ": "hard",
+    "minimum-sleep": "soft",
+    "eating-or-drinking": "soft"
+  },
   "instructions": [
     {
       "title": "Welcome to ELiDDI",

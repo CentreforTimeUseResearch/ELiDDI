@@ -2,48 +2,27 @@ import helpIconSource from '../../assets/icons/help-252.svg?raw';
 import doneIconSource from '../../assets/icons/check-252.svg?raw';
 
 import { TinyBase } from '../base';
+import { HIDE_PANEL, SHOW_PANEL } from '../../store/actionTypes';
 
 import './contextualHelp.css';
 
 const ID = 'id';
+const VALIDATION_PANEL = 'validation';
 
+// The help button in the nav bar. It opens and closes the validation panel
+// (el-validation-panel); the panel does the rest.
 export class ContextualHelp extends TinyBase {
   static observedAttributes = [ID];
 
-  ready = false;
-  popover;
-  helpButton;
-  store;
+  store = super.getStore();
   done = true;
-  // contentWindow;
-
-  constructor() {
-    super();
-    this.store = super.getStore();
-  }
 
   connectedCallback() {
-    this.render();
-    // get a handle on the popover it has to be outside this component so it can be fullscreen
-
-    this.popover = document.querySelector('el-help-popover');
-    const isHelpWindowReadyPromise = customElements.whenDefined('el-help-popover'); // there is only one el-help-popover so this works
-
-    isHelpWindowReadyPromise.then(() => {
-      this.stateUpdate();
-    });
-
-    this.helpButton = this.querySelector(`#help-button-${this[ID]}`);
-
-    // set up state management
-    // this.store.subscribe(this.stateUpdate.bind(this))
-    // this.stateUpdate();
-    // console.log(this.store.getState());
-    // this.store.dispatch({
-    //     type: 'NEXT_INSTRUCTION'
-    // })
-    // console.log(this.store.getState());
-    // this.assignEventHandlers();
+    super.connectedCallback();
+    this.helpButton = this.querySelector('button');
+    this.helpButton.addEventListener('click', () => this.toggle());
+    this.registerCleanup(this.store.subscribe(() => this.updateExpanded()));
+    this.updateExpanded();
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
@@ -52,19 +31,23 @@ export class ContextualHelp extends TinyBase {
     }
   }
 
-  stateUpdate() {
-    const { onboarding, instructionStep } = this.store.getState();
-    if (onboarding) {
-      this.popover.showPopover({ source: this.helpButton });
-      this.popover.currentText = GLOBALS.DATA.instructions[instructionStep].text;
-    }
-    // this.render();
+  isPanelOpen() {
+    return this.store.getState().uipanel === VALIDATION_PANEL;
+  }
+
+  toggle() {
+    this.store.dispatch(
+      this.isPanelOpen() ? { type: HIDE_PANEL } : { type: SHOW_PANEL, payload: VALIDATION_PANEL }
+    );
+  }
+
+  updateExpanded() {
+    this.helpButton.setAttribute('aria-expanded', String(this.isPanelOpen()));
   }
 
   render() {
-    // this component is a work in progress so this output is for debug purposes
     this.innerHTML = `
-            <button id="help-button-${this[ID]}" class="reset-to-div" popovertarget="help-popover-${this[ID]}">
+            <button id="help-button-${this[ID]}" class="reset-to-div" type="button" aria-label="Checks" aria-controls="validation-panel" aria-expanded="false">
             ${this.done ? doneIconSource : helpIconSource}
             </button>
             `;

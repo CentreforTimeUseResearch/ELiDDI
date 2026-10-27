@@ -12,7 +12,7 @@ Each component subfolder has its own `README.md`:
 | ------------------------------------------------ | ------------------------ | ---------------------------------------------------------- |
 | [accordion](accordion/README.md)                 | `<el-accordion>`         | Category/Activity list rendered inside a picker's popover. |
 | [activityPicker](activityPicker/README.md)       | `<el-activity-picker>`   | Searchable Activity picker (ARIA combobox + grid).         |
-| [contextualHelp](contextualHelp/README.md)       | `<el-contextual-help>`   | Help button (work in progress).                            |
+| [contextualHelp](contextualHelp/README.md)       | `<el-contextual-help>`   | Help button that toggles the validation panel.             |
 | [datePicker](datePicker/README.md)               | `<el-date-picker>`       | Switches the currently-viewed Diary date.                  |
 | [detailsPanel](detailsPanel/README.md)           | `<el-details-panel>`     | Create/edit panel for one Entry.                           |
 | [dialogWidget](dialogWidget/README.md)           | `<el-dialog>`            | Generic native-`<dialog>` modal wrapper.                   |
@@ -25,6 +25,7 @@ Each component subfolder has its own `README.md`:
 | [timelineStack](timelineStack/README.md)         | `<el-timeline-stack>`    | Horizontally-scrolling stack of all Timelines.             |
 | [timePicker](timePicker/README.md)               | `<el-time-picker>`       | Single 24-hour time field.                                 |
 | [timePickerPanel](timePickerPanel/README.md)     | `<el-time-picker-panel>` | Start/end/duration group for one Entry.                    |
+| [validationPanel](validationPanel/README.md)     | `<el-validation-panel>`  | Right-hand panel listing the Validation rule results.      |
 
 See also: [Class Diagram](CLASS_DIAGRAM.md) — every class in `src/`, how they inherit from `TinyBase`, and how they're actually wired together (real object composition vs. rendered-as-a-custom-element dependency).
 

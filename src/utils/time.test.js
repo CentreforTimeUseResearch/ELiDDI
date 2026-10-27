@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { getMaxEditableTimeInMinutes, getCurrentDiaryDateKey } from './time';
+import {
+  getMaxEditableTimeInMinutes,
+  getCurrentDiaryDateKey,
+  formatOffsetAsClockTime,
+  parseDayBoundary,
+} from './time';
 
 // GLOBALS.DATA.day_boundary is "04:00" (240 minutes) in the real config
 // vitest.setup.js loads for these tests.
@@ -39,5 +44,23 @@ describe('getMaxEditableTimeInMinutes', () => {
     expect(today).toBe('2026-08-20');
     expect(getMaxEditableTimeInMinutes('2026-08-20', 240)).toBeDefined();
     expect(getMaxEditableTimeInMinutes('2026-08-21', 240)).toBeUndefined();
+  });
+});
+
+describe('parseDayBoundary', () => {
+  it('reads HH:MM as minutes since midnight', () => {
+    expect(parseDayBoundary('04:00')).toBe(240);
+    expect(parseDayBoundary('06:30')).toBe(390);
+  });
+});
+
+describe('formatOffsetAsClockTime', () => {
+  it('uses the running study day boundary by default', () => {
+    expect(formatOffsetAsClockTime(10)).toBe('04:10');
+  });
+
+  it('uses a given day boundary instead, wrapping past midnight', () => {
+    expect(formatOffsetAsClockTime(10, 360)).toBe('06:10');
+    expect(formatOffsetAsClockTime(1440, 240)).toBe('04:00');
   });
 });

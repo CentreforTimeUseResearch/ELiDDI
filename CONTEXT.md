@@ -54,3 +54,14 @@ A sub-Activity nested inside an Activity, for cases where an Activity needs fine
 
 **Mode**:
 A per-Dimension setting controlling whether a Respondent may select exactly one Activity for that Dimension in a given span of time (single-choice), or several at once (multiple-choice).
+
+## Submitting a Diary
+
+**Validation rule**:
+A check a Diary must pass before the Respondent can submit it — for example "no gaps in Primary activity". What counts as a valid Diary depends on what the researcher is studying, so each study chooses which rules apply and how strictly.
+
+**Hard check**:
+A Validation rule that stops the Respondent submitting their Diary until it passes.
+
+**Soft check**:
+A Validation rule that, when it fails, asks the Respondent "are you sure?" but still lets them submit.

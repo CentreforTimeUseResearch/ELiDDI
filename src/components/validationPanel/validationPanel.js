@@ -1,9 +1,12 @@
 import doneIconSource from '../../assets/icons/check-252.svg?raw';
 import crossIconSource from '../../assets/icons/cross-252.svg?raw';
 
+import '../dialogWidget/dialogWidget';
+
 import { TinyBase } from '../base';
 import { HIDE_PANEL } from '../../store/actionTypes';
-import { validateDiary } from '../../validation/validateDiary';
+import { canSubmit, validateDiary } from '../../validation/validateDiary';
+import { submitDiary } from '../../submission/submitDiary';
 import { escapeHtml } from '../../utils/html';
 
 import './validationPanel.css';
@@ -14,22 +17,42 @@ const PANEL_NAME = 'validation';
 // viewed day's Diary, each passed or failed. Opened by the help button in
 // el-contextual-help through the store's `uipanel` ('validation'); closed by
 // the same button, Escape, its close button or a click outside.
+//
+// At the bottom is the "Diary complete" button, when the study has somewhere
+// to submit to. It is disabled while a hard check fails; failing soft checks
+// are listed in a confirm dialog first ("are you sure?").
 export class ValidationPanel extends TinyBase {
   // render() builds the shell once; the list is redrawn as the Diary changes
   static renderOnce = true;
 
   store = super.getStore();
   isOpen = false;
+  confirmDialogActions;
+  isConfirming = false;
   renderedResults;
 
   connectedCallback() {
     super.connectedCallback();
     this.panel = this.querySelector('.validation-panel');
     this.list = this.querySelector('.validation-list');
+    this.completeButton = this.querySelector('.validation-complete');
+    this.completeHint = this.querySelector('.validation-complete-hint');
+    this.softFailures = this.querySelector('.validation-soft-failures');
 
-    this.querySelector('[data-close]').addEventListener('click', () => this.requestClose());
+    this.querySelector('.validation-header [data-close]').addEventListener('click', () =>
+      this.requestClose()
+    );
+    this.completeButton.addEventListener('click', () => this.onCompleteClick());
+    this.querySelector('el-dialog').addEventListener('click', (event) => {
+      if (event.target.closest('[data-confirm-submit]')) {
+        this.confirmDialogActions.close();
+        this.isConfirming = false;
+        this.submit();
+      }
+    });
     this.listen(document, 'keydown', (event) => {
-      if (this.isOpen && event.key === 'Escape') this.requestClose();
+      // Escape in the confirm dialog only cancels that dialog
+      if (this.isOpen && !this.isConfirming && event.key === 'Escape') this.requestClose();
     });
     this.listen(document, 'click', (event) => {
       // the help button toggles the panel itself, so is not an "outside" click
@@ -94,11 +117,50 @@ export class ValidationPanel extends TinyBase {
     const serialized = JSON.stringify(results);
     if (serialized === this.renderedResults) return;
     this.renderedResults = serialized;
+    this.updateCompleteButton(results);
 
     this.list.innerHTML =
       results.length === 0
         ? '<li class="validation-empty">No checks are set for this study.</li>'
         : results.map((result) => this.renderResult(result)).join('');
+  }
+
+  // shown only when the study has a submit URL; the rules above work either way
+  updateCompleteButton(results) {
+    const hasSubmitUrl = Boolean(GLOBALS.DATA.general?.submit_completed_diary_url);
+    const blocked = !canSubmit(results);
+    this.completeButton.hidden = !hasSubmitUrl;
+    this.completeButton.disabled = blocked;
+    this.completeHint.hidden = !hasSubmitUrl || !blocked;
+  }
+
+  onCompleteClick() {
+    const results = this.getResults();
+    if (!canSubmit(results)) return;
+    const failedSoft = results.filter((result) => result.level === 'soft' && !result.passed);
+    if (failedSoft.length === 0) {
+      this.submit();
+      return;
+    }
+    this.softFailures.innerHTML = failedSoft
+      .map(
+        ({ title, message }) =>
+          `<li><strong>${escapeHtml(title)}</strong> ${escapeHtml(message)}</li>`
+      )
+      .join('');
+    this.isConfirming = true;
+    this.confirmDialogActions.open();
+  }
+
+  // the outcome is handled by a later change; for now it is only logged
+  async submit() {
+    const { diaries, currentDate } = this.store.getState();
+    const result = await submitDiary({
+      diary: diaries[currentDate],
+      date: currentDate,
+      config: GLOBALS.DATA,
+    });
+    console.log('Diary submission:', result);
   }
 
   renderResult({ title, level, passed, message }) {
@@ -121,7 +183,28 @@ export class ValidationPanel extends TinyBase {
           <button type="button" class="reset-to-div" data-close aria-label="Close checks">&times;</button>
         </header>
         <ul class="validation-list"></ul>
-        <div class="validation-actions"></div>
+        <div class="validation-actions">
+          <p class="validation-complete-hint" id="validation-complete-hint" hidden>
+            The checks that are not marked as advice must pass before you can complete this Diary.
+          </p>
+          <button type="button" class="validation-complete" aria-describedby="validation-complete-hint" hidden>
+            Diary complete
+          </button>
+        </div>
+        <el-dialog ${this.setProps({
+          registerDialogActions: (actions) => {
+            this.confirmDialogActions = actions;
+          },
+          content: `<h4>Are you sure?</h4>
+            <p>These checks are not met:</p>
+            <ul class="validation-soft-failures"></ul>
+            <button type="button" class="validation-confirm" data-confirm-submit>Submit anyway</button>`,
+          closeLabel: 'Go back',
+          onRequestClose: () => {
+            this.isConfirming = false;
+            this.confirmDialogActions.close();
+          },
+        })}></el-dialog>
       </section>`;
   }
 }

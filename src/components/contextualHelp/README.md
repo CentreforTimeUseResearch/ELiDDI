@@ -6,9 +6,7 @@
 
 ## What it does
 
-Renders a help/done icon button (shown in the [Navbar](../navbar/README.md)) intended to open a full-screen help popover pre-filled with the current onboarding instruction's text.
-
-> **Work in progress.** The source is explicitly marked as a debug/placeholder render, and it depends on an `<el-help-popover>` element (`document.querySelector('el-help-popover')`) that does not currently exist anywhere in `src/`. This component will not function correctly until that element is implemented — a good first-contribution target if you're looking for one.
+The help button in the [Navbar](../navbar/README.md). Clicking it opens the [validation panel](../validationPanel/README.md); clicking it again closes it. The button carries `aria-expanded`, which follows whether that panel is open.
 
 ## Custom element
 
@@ -16,17 +14,19 @@ Renders a help/done icon button (shown in the [Navbar](../navbar/README.md)) int
 
 ## Attributes
 
-| Attribute | Purpose                                                           |
-| --------- | ----------------------------------------------------------------- |
-| `id`      | Used to build the help button's own `id` and its `popovertarget`. |
+| Attribute | Purpose                                   |
+| --------- | ----------------------------------------- |
+| `id`      | Used to build the help button's own `id`. |
 
 ## Store interaction
 
-Reads `onboarding` and `instructionStep` from the app store (see [store README](../../store/README.md)) once `<el-help-popover>` is defined, to decide whether to show the popover and what instruction text to display.
+Dispatches `SHOW_PANEL` with payload `'validation'`, or `HIDE_PANEL` when that panel is already open, and subscribes to the store to keep `aria-expanded` in step (see [store README](../../store/README.md)).
 
-## Test file naming
+The Instructions item in the Navbar menu is the way back to the onboarding text; this button no longer opens it.
 
-`contextualHelp.te-st.js` — deliberately not run by Vitest yet (see the root README's note on `.te-st.js` vs `.test.js`), since there isn't a finished feature to assert against.
+## Tests
+
+`contextualHelp.test.js`.
 
 ---
 

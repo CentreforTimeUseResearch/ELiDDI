@@ -5,6 +5,7 @@ import '../timelineStack/timelineStack';
 import '../horizontalTimelineStack/horizontalTimelineStack';
 import '../onboarding/onboarding';
 import '../datePicker/datePicker';
+import '../validationPanel/validationPanel';
 
 import { TinyBase } from '../base';
 import {
@@ -98,6 +99,7 @@ export class DynamicTimelineUI extends TinyBase {
     this.innerHTML = `
             <el-nav-bar></el-nav-bar>
             <div id="stack-container"></div>
+            <el-validation-panel></el-validation-panel>
             <el-dialog id="dialog" ${this.setProps({
               registerDialogActions: (actions) => {
                 this.onboardingDialogActions = actions;

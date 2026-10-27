@@ -1,0 +1,106 @@
+/* the off-screen menu's drawer (navbar.css), mirrored: slides in from the right */
+.validation-panel {
+  position: fixed;
+  top: 4.9rem;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  max-width: 320px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-md);
+  background-color: var(--color-surface-tile);
+  color: var(--color-on-dark);
+  font-family: var(--font-text);
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+  z-index: 2;
+
+  &.open {
+    transform: translateX(0);
+  }
+
+  /* focus lands on the panel itself when it opens; the ring would only be noise */
+  &:focus {
+    outline: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+
+.validation-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  h2 {
+    margin: 0;
+    color: inherit;
+    font-family: var(--font-display);
+    font-size: var(--text-tagline-size);
+    font-weight: var(--text-tagline-weight);
+    line-height: var(--text-tagline-lh);
+  }
+
+  button {
+    min-width: 44px;
+    min-height: 44px;
+    font-size: 28px;
+    color: inherit;
+  }
+}
+
+.validation-list {
+  flex: 1 1 auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-y: auto;
+}
+
+.validation-result {
+  display: flex;
+  gap: var(--space-xs);
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid #3b3b40;
+  font-size: var(--text-body-size);
+  line-height: var(--text-body-lh);
+
+  .validation-icon svg {
+    width: 24px;
+    height: 24px;
+    fill: currentColor;
+  }
+
+  &.passed .validation-icon {
+    color: #4cd964;
+  }
+
+  &.failed .validation-icon {
+    color: #ff6b6b;
+  }
+}
+
+.validation-advice,
+.validation-message {
+  font-size: var(--text-caption-size);
+  color: var(--color-body-muted);
+}
+
+.validation-message {
+  display: block;
+}
+
+.validation-empty {
+  padding: var(--space-sm) 0;
+  color: var(--color-body-muted);
+}
+
+/* room for the "Diary complete" button, added later */
+.validation-actions {
+  flex: 0 0 auto;
+  min-height: 56px;
+}

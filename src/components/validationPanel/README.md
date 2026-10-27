@@ -1,0 +1,41 @@
+# Validation panel (`el-validation-panel`)
+
+[← Back to root README](../../../README.md)
+
+---
+
+## What it does
+
+A panel that slides in from the right-hand side (the Navbar's off-screen menu, mirrored) and lists the study's active Validation rules for the viewed day's Diary. Each rule shows a tick (passed) or a cross (failed), with visually hidden "passed" / "failed" text, and a failed rule says what is wrong. A **soft** rule is marked "(advice)". Terminology follows [CONTEXT.md](../../../CONTEXT.md).
+
+The results come from `validateDiary()` ([src/validation](../../validation/README.md)) and are redrawn while the panel is open, whenever the Diary changes. Only rules that are `soft` or `hard` in `GLOBALS.DATA.validation` are listed; with none, the panel says no checks are set for this study.
+
+There is empty space at the bottom (`.validation-actions`) for the "Diary complete" button, which a later change adds.
+
+## Custom element
+
+`<el-validation-panel>` — no attributes or props. [DynamicTimelineUI](../dynamicTimelineUI/README.md) mounts one.
+
+## Opening and closing
+
+Through the store's `uipanel` (value `'validation'`), so opening any other panel closes this one. The [help button](../contextualHelp/README.md) toggles it; Escape, the close button and a click outside the panel also close it (a click on the help button is not "outside"). It also closes when the onboarding dialog is shown.
+
+## Accessibility
+
+- A `<section>` labelled by its heading (`aria-labelledby`).
+- Focus moves to the panel on open and back to the help button on close.
+- While closed the panel is `inert`, so it is out of the tab order.
+- Pass and fail are shown by icon and hidden text, not colour alone.
+- Rule messages can contain Activity names typed by the Respondent, so they are escaped.
+
+## Store interaction
+
+Reads `uipanel`, `onboarding`, `currentDate` and `diaries`; dispatches `HIDE_PANEL`.
+
+## Tests
+
+`validationPanel.test.js`.
+
+---
+
+[← Back to root README](../../../README.md)

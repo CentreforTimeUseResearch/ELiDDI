@@ -22,6 +22,7 @@ Subscribes to the store and opens/closes its two dialogs based on:
 
 - `onboarding` (boolean) → the onboarding dialog.
 - `uipanel === 'date'` → the date dialog.
+- `uipanel === 'validation'` → the [validation panel](../validationPanel/README.md), which it mounts but which shows and hides itself.
 - `uipanel === 'reset'` → the reset confirm dialog; its "Clear this day" button dispatches `CLEAR_DIARY` for `currentDate` (empties that day's Timelines and sets its status back to in progress, leaving other days alone), then `HIDE_PANEL`.
 - `isDesktopLayout` (boolean, Phase 10.4) → which stack component is mounted in `#stack-container` (see `renderStack()` below). Only re-rendered on an actual crossing, not on every store update.
 

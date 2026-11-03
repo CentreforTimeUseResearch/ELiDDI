@@ -21,6 +21,13 @@ el-dynamic-timeline {
      the mounted stack fill this space via its own flex-grow: 1
      (TimelineStack already had one, inert until now; HorizontalTimelineStack
      needs its own, see horizontalTimelineStack.css). */
+  /* signed out (server accounts): only the login dialog is shown.
+     !important because #stack-container's own display rule below has an id
+     selector and would otherwise win */
+  &[data-login-required] > :not(el-dialog) {
+    display: none !important;
+  }
+
   #stack-container {
     display: flex;
     flex-direction: column;

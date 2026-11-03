@@ -128,4 +128,55 @@ describe('DialogWidget', () => {
 
     expect(el.querySelector('dialog').hasAttribute('open')).toBe(false);
   });
+
+  it('does not prevent Escape when dismissible is left at its default', () => {
+    const el = createDialog({});
+    const cancel = new Event('cancel', { cancelable: true });
+
+    el.querySelector('dialog').dispatchEvent(cancel);
+
+    expect(cancel.defaultPrevented).toBe(false);
+  });
+
+  // a dialog the Respondent must act on rather than skip, e.g. the login
+  describe('when dismissible is false', () => {
+    it('renders no close button', () => {
+      const el = createDialog({ dismissible: false, content: '<p>log in</p>' });
+
+      expect(el.querySelector('[data-close]')).toBeNull();
+      expect(el.querySelector('.dialog-actions')).toBeNull();
+      expect(el.querySelector('.dialog-content').textContent).toContain('log in');
+    });
+
+    it('ignores Escape: the native cancel is prevented and onRequestClose is not called', () => {
+      const onRequestClose = vi.fn();
+      let dialogActions;
+      const el = createDialog({
+        dismissible: false,
+        onRequestClose,
+        registerDialogActions: (actions) => (dialogActions = actions),
+      });
+      dialogActions.open();
+      const cancel = new Event('cancel', { cancelable: true });
+
+      el.querySelector('dialog').dispatchEvent(cancel);
+
+      expect(cancel.defaultPrevented).toBe(true);
+      expect(onRequestClose).not.toHaveBeenCalled();
+      expect(el.querySelector('dialog').hasAttribute('open')).toBe(true);
+    });
+
+    it('can still be closed by its owner', () => {
+      let dialogActions;
+      const el = createDialog({
+        dismissible: false,
+        registerDialogActions: (actions) => (dialogActions = actions),
+      });
+      dialogActions.open();
+
+      dialogActions.close();
+
+      expect(el.querySelector('dialog').hasAttribute('open')).toBe(false);
+    });
+  });
 });

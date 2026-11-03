@@ -3,6 +3,8 @@ import '../contextualHelp/contextualHelp.js';
 import { TinyBase } from '../base';
 import { RESET_ONBOARDING, SHOW_PANEL } from '../../store/actionTypes';
 import { formatDateKeyAsDDMMYYYY } from '../../utils/time';
+import { getAccounts, signOut } from '../../auth/authClient';
+import { appSession } from '../../auth/session';
 import './navbar.css';
 
 // the sidebar's generic menu options - rendered twice (sidebar drawer below
@@ -13,6 +15,8 @@ const MENU_ITEMS = [
   { label: 'Reset (clears this day)', buttonClass: 'reset-diary-button' },
   { label: 'View stats' },
   { label: 'About this study' },
+  // only with server accounts on (see renderMenuItems)
+  { label: 'Log out (switch person)', buttonClass: 'logout-button', accountsOnly: true },
 ];
 
 export class Navbar extends TinyBase {
@@ -61,6 +65,15 @@ export class Navbar extends TinyBase {
           offScreenMenu.classList.remove('active');
         });
       });
+      // ends this login on this device (and tells the server), so the next
+      // person to use a shared device gets the login dialog, not the diary
+      this.querySelectorAll('.logout-button').forEach((button) => {
+        button.addEventListener('click', () => {
+          hamMenu.classList.remove('active');
+          offScreenMenu.classList.remove('active');
+          signOut({ session: appSession, config: globalThis.GLOBALS?.DATA });
+        });
+      });
       this.querySelector('.change-date-button')?.addEventListener('click', () => {
         this.store.dispatch({ type: SHOW_PANEL, payload: 'date' });
         // hamMenu.classList.toggle('active');
@@ -74,11 +87,14 @@ export class Navbar extends TinyBase {
   // duplicate (see navbar.css) - same items/labels/handlers, only the
   // wrapping classes differ so each copy can be styled for where it lives
   renderMenuItems(itemClass) {
-    return MENU_ITEMS.map((item) =>
-      item.buttonClass
-        ? `<li class="${itemClass}"><button class="reset-to-div ${item.buttonClass}" type="button">${item.label}</button></li>`
-        : `<li class="${itemClass}">${item.label}</li>`
-    ).join('');
+    const accountsOn = getAccounts(globalThis.GLOBALS?.DATA).enabled;
+    return MENU_ITEMS.filter((item) => accountsOn || !item.accountsOnly)
+      .map((item) =>
+        item.buttonClass
+          ? `<li class="${itemClass}"><button class="reset-to-div ${item.buttonClass}" type="button">${item.label}</button></li>`
+          : `<li class="${itemClass}">${item.label}</li>`
+      )
+      .join('');
   }
 
   render() {

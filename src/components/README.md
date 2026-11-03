@@ -18,6 +18,7 @@ Each component subfolder has its own `README.md`:
 | [dialogWidget](dialogWidget/README.md)           | `<el-dialog>`            | Generic native-`<dialog>` modal wrapper.                   |
 | [durationInput](durationInput/README.md)         | `<el-duration-input>`    | Accessible hours + minutes duration field.                 |
 | [dynamicTimelineUI](dynamicTimelineUI/README.md) | `<el-dynamic-timeline>`  | JS-layer root component.                                   |
+| [login](login/README.md)                         | `<el-login>`             | Login-code form, when the study uses server accounts.      |
 | [navbar](navbar/README.md)                       | `<el-nav-bar>`           | Top navigation bar.                                        |
 | [onboarding](onboarding/README.md)               | `<el-onboarding>`        | Guided-tour walkthrough steps.                             |
 | [timeline](timeline/README.md)                   | `<el-timeline>`          | The SVG time axis, one per Dimension.                      |

@@ -31,14 +31,21 @@ export class DialogWidget extends TinyBase {
     this.render();
     this.dialog = this.querySelector('dialog');
 
-    this.querySelector('[data-close]').addEventListener('click', () => this.requestClose());
+    this.querySelector('[data-close]')?.addEventListener('click', () => this.requestClose());
     // Escape fires the native <dialog>'s 'cancel' event, closing it without
     // going through our own close button - without this listener the
     // dialog closes but onRequestClose (e.g. DISMISS_ONBOARDING) never
     // fires, leaving store state stuck as if the dialog were still open
     // (see Onboarding.render(), which reactively re-dispatches HIDE_PANEL
     // for as long as `onboarding` stays true)
-    this.dialog.addEventListener('cancel', () => this.requestClose());
+    this.dialog.addEventListener('cancel', (event) => {
+      if (this.props?.dismissible === false) {
+        // a dialog the Respondent must not skip (e.g. the login): Escape does nothing
+        event.preventDefault();
+        return;
+      }
+      this.requestClose();
+    });
   }
 
   requestClose() {
@@ -92,9 +99,13 @@ export class DialogWidget extends TinyBase {
                 <div class="dialog-content">
                     ${this.props?.content ?? ''}
                 </div>
-                <div class="dialog-actions">
+                ${
+                  this.props?.dismissible === false
+                    ? ''
+                    : `<div class="dialog-actions">
                       <button class="reset-to-div" data-close>${this.props?.closeLabel ?? 'close'}</button>
-                </div>
+                </div>`
+                }
             </div>
         </dialog>
         `;

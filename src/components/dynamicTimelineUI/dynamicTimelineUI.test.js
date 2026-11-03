@@ -1,4 +1,6 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { appSession } from '../../auth/session';
+import { getProps } from '../propsRegistry';
 import { DynamicTimelineUI } from './dynamicTimelineUI.js';
 import { appStore } from '../../store/appStore';
 import {
@@ -203,6 +205,117 @@ describe('DynamicTimelineUI', () => {
       el.onStoreUpdate();
 
       expect(el.stackContainer.querySelector('[data-sentinel]')).not.toBeNull();
+    });
+  });
+
+  // #207: with server accounts on, nothing is shown until the Respondent logs in
+  describe('server accounts', () => {
+    const FUTURE = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    let originalGeneral;
+
+    const withAccounts = (on) => {
+      GLOBALS.DATA.general = on
+        ? { ...originalGeneral, server_accounts: true, backend_url: 'https://diary.example.org' }
+        : { ...originalGeneral };
+    };
+    const create = () => {
+      const el = document.createElement('el-dynamic-timeline');
+      el.render();
+      el.onboardingDialogActions = { open: vi.fn(), close: vi.fn() };
+      el.dateDialogActions = { open: vi.fn(), close: vi.fn() };
+      el.resetDialogActions = { open: vi.fn(), close: vi.fn() };
+      el.loginDialogActions = { open: vi.fn(), close: vi.fn() };
+      el.stackContainer = document.createElement('div');
+      return el;
+    };
+
+    beforeEach(() => {
+      originalGeneral = GLOBALS.DATA.general;
+      appSession.end('logout');
+    });
+
+    afterEach(() => {
+      GLOBALS.DATA.general = originalGeneral;
+      appSession.end('logout');
+    });
+
+    it('adds no login dialog, and nothing else, when accounts are off', () => {
+      withAccounts(false);
+      const el = create();
+
+      expect(el.innerHTML).not.toContain('login-dialog');
+      expect(el.hasAttribute('data-login-required')).toBe(false);
+    });
+
+    it('renders a login dialog when accounts are on', () => {
+      withAccounts(true);
+      const el = create();
+
+      const dialog = el.querySelector('#login-dialog');
+      expect(dialog).not.toBeNull();
+      // the dialog's own markup only exists once it is connected, so check what it was given
+      const props = getProps(dialog.getAttribute('key'));
+      expect(props.content).toBe('<el-login></el-login>');
+      expect(props.dismissible).toBe(false);
+    });
+
+    it('opens the login dialog and hides the diary while nobody is logged in', () => {
+      withAccounts(true);
+      const el = create();
+
+      el.onStoreUpdate();
+
+      expect(el.loginDialogActions.open).toHaveBeenCalled();
+      expect(el.loginDialogActions.close).not.toHaveBeenCalled();
+      expect(el.hasAttribute('data-login-required')).toBe(true);
+    });
+
+    it('holds back the onboarding until the Respondent has logged in', () => {
+      withAccounts(true);
+      appStore.dispatch({ type: RESET_ONBOARDING }); // onboarding: true
+      const el = create();
+
+      el.onStoreUpdate();
+
+      expect(el.onboardingDialogActions.open).not.toHaveBeenCalled();
+      expect(el.onboardingDialogActions.close).toHaveBeenCalled();
+    });
+
+    it('closes the login dialog, shows the diary and then the onboarding once logged in', () => {
+      withAccounts(true);
+      appStore.dispatch({ type: RESET_ONBOARDING });
+      const el = create();
+      appSession.start({ token: 't', respondentId: 'r-1', expiresAt: FUTURE });
+
+      el.onStoreUpdate();
+
+      expect(el.loginDialogActions.close).toHaveBeenCalled();
+      expect(el.loginDialogActions.open).not.toHaveBeenCalled();
+      expect(el.hasAttribute('data-login-required')).toBe(false);
+      expect(el.onboardingDialogActions.open).toHaveBeenCalled();
+    });
+
+    it('goes back to the login dialog when the login ends', () => {
+      withAccounts(true);
+      const el = create();
+      appSession.start({ token: 't', respondentId: 'r-1', expiresAt: FUTURE });
+      el.onStoreUpdate();
+
+      appSession.end('logout');
+      el.onStoreUpdate();
+
+      expect(el.hasAttribute('data-login-required')).toBe(true);
+      expect(el.loginDialogActions.open).toHaveBeenCalled();
+    });
+
+    it('does not touch the login dialog when accounts are off', () => {
+      withAccounts(false);
+      const el = create();
+
+      el.onStoreUpdate();
+
+      expect(el.loginDialogActions.open).not.toHaveBeenCalled();
+      expect(el.loginDialogActions.close).not.toHaveBeenCalled();
     });
   });
 });

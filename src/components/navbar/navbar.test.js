@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { appSession } from '../../auth/session';
 import { Navbar } from './navbar';
 import { appStore } from '../../store/appStore';
 import { SWITCH_DATE, DISMISS_ONBOARDING } from '../../store/actionTypes';
@@ -149,5 +150,80 @@ describe('Navbar', () => {
     document.body.appendChild(el);
 
     expect(el.querySelector('[data-dimension-index]')).toBeNull();
+  });
+
+  // #207: a visible log out / switch person action, only with server accounts
+  describe('server accounts', () => {
+    const FUTURE = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    let originalGeneral;
+
+    beforeEach(() => {
+      originalGeneral = GLOBALS.DATA.general;
+      appSession.end('logout');
+    });
+
+    afterEach(() => {
+      GLOBALS.DATA.general = originalGeneral;
+      appSession.end('logout');
+      vi.unstubAllGlobals();
+    });
+
+    const accountsOn = () => {
+      GLOBALS.DATA.general = {
+        ...originalGeneral,
+        server_accounts: true,
+        backend_url: 'https://diary.example.org',
+      };
+    };
+
+    it('has no log out item when accounts are off', () => {
+      const el = document.createElement('el-nav-bar');
+      document.body.appendChild(el);
+
+      expect(el.querySelector('.logout-button')).toBeNull();
+    });
+
+    it('has a log out item in both copies of the menu when accounts are on', () => {
+      accountsOn();
+      const el = document.createElement('el-nav-bar');
+      document.body.appendChild(el);
+
+      expect(el.querySelector('.menu-list .logout-button').textContent).toBe(
+        'Log out (switch person)'
+      );
+      expect(el.querySelector('.nav-menu-list .logout-button')).not.toBeNull();
+    });
+
+    it('ends the login locally at once and tells the server, from either copy', async () => {
+      accountsOn();
+      const fetchStub = vi.fn().mockResolvedValue({ ok: true, status: 204 });
+      vi.stubGlobal('fetch', fetchStub);
+      const el = document.createElement('el-nav-bar');
+      document.body.appendChild(el);
+
+      for (const selector of ['.nav-menu-list .logout-button', '.menu-list .logout-button']) {
+        appSession.start({ token: 'tok', respondentId: 'r-1', expiresAt: FUTURE });
+
+        el.querySelector(selector).click();
+
+        expect(appSession.get()).toBeNull();
+      }
+      await vi.waitFor(() => expect(fetchStub).toHaveBeenCalledTimes(2));
+      expect(fetchStub.mock.calls[0][0]).toBe('https://diary.example.org/logout');
+      expect(fetchStub.mock.calls[0][1].headers.Authorization).toBe('Bearer tok');
+    });
+
+    it('closes the sidebar drawer when logging out', () => {
+      accountsOn();
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, status: 204 }));
+      const el = document.createElement('el-nav-bar');
+      document.body.appendChild(el);
+      el.querySelector('.ham-menu').click();
+      appSession.start({ token: 'tok', respondentId: 'r-1', expiresAt: FUTURE });
+
+      el.querySelector('.menu-list .logout-button').click();
+
+      expect(el.querySelector('.off-screen-menu').classList.contains('active')).toBe(false);
+    });
   });
 });

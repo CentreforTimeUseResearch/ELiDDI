@@ -217,8 +217,13 @@ export function buildDiaryHtml(configJson) {
   let html = generateGlobalsScript(configJson);
 
   // absent or true = generate the no-JS fallback (progressive enhancement);
-  // only an explicit false skips it, so configs predating this flag are unaffected
-  if (config.general?.accessibility?.generateHtmlFallback === false) {
+  // only an explicit false skips it, so configs predating this flag are unaffected.
+  // With server accounts on it is skipped too: a plain form cannot log in, so
+  // it could only submit a Diary the backend would refuse.
+  if (
+    config.general?.accessibility?.generateHtmlFallback === false ||
+    config.general?.server_accounts === true
+  ) {
     // the JS layer only needs GLOBALS plus an empty mount point to render into
     return `${html}<el-dynamic-timeline></el-dynamic-timeline>`;
   }

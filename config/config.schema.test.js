@@ -67,3 +67,52 @@ describe('config validation setting', () => {
     expect(validate(withValidation(['hard']))).not.toEqual([]);
   });
 });
+
+// #206: optional server-side accounts
+describe('config server accounts setting', () => {
+  const validate = createConfigValidator(schema);
+  const withGeneral = (extra) => ({ ...data, general: { ...data.general, ...extra } });
+  const without = (...keys) => {
+    const general = { ...data.general };
+    keys.forEach((key) => delete general[key]);
+    return { ...data, general };
+  };
+
+  it('is optional: a config without either key is valid', () => {
+    expect(validate(without('server_accounts', 'backend_url'))).toEqual([]);
+  });
+
+  it('accepts accounts off, with or without a backend_url', () => {
+    expect(validate(withGeneral({ server_accounts: false }))).toEqual([]);
+    expect(
+      validate(withGeneral({ server_accounts: false, backend_url: 'http://localhost:5000' }))
+    ).toEqual([]);
+  });
+
+  it.each([
+    'http://localhost:5000',
+    'https://diary.example.org',
+    'https://diary.example.org/',
+    'https://example.org/eliddi/api',
+  ])('accepts accounts on with the backend_url %s', (backend_url) => {
+    expect(validate(withGeneral({ server_accounts: true, backend_url }))).toEqual([]);
+  });
+
+  it('requires backend_url when accounts are on', () => {
+    const problems = validate(withGeneral({ server_accounts: true }));
+
+    expect(problems).not.toEqual([]);
+    expect(problems.join(' ')).toContain('backend_url');
+  });
+
+  it.each(['', 'diary.example.org', 'ftp://example.org', 'https://', 'https://exa mple.org', 5])(
+    'rejects the backend_url %j',
+    (backend_url) => {
+      expect(validate(withGeneral({ backend_url }))).not.toEqual([]);
+    }
+  );
+
+  it.each(['true', 1, null])('rejects server_accounts %j', (server_accounts) => {
+    expect(validate(withGeneral({ server_accounts }))).not.toEqual([]);
+  });
+});

@@ -132,6 +132,28 @@ describe('buildDiaryHtml', () => {
     );
   });
 
+  it('emits no no-JS form when server accounts are on, even if the fallback is asked for', () => {
+    const json = withConfig((config) => {
+      config.general.server_accounts = true;
+      config.general.backend_url = 'https://diary.example.org';
+      config.general.accessibility.generateHtmlFallback = true;
+    });
+
+    expect(buildDiaryHtml(json)).toBe(
+      `<script>GLOBALS = {DATA: ${json.replaceAll('<', BACKSLASH + 'u003c')} }; </script><el-dynamic-timeline></el-dynamic-timeline>`
+    );
+  });
+
+  it('still emits the no-JS form when server accounts are explicitly off', () => {
+    const html = buildDiaryHtml(
+      withConfig((config) => {
+        config.general.server_accounts = false;
+      })
+    );
+
+    expect(parse(html).querySelector('form')).not.toBeNull();
+  });
+
   // a config is researcher-authored and can be injected at deploy time
   it('embeds the config so that a "</script>" in any label cannot end the block', () => {
     const json = withConfig((config) => {

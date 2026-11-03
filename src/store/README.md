@@ -95,7 +95,7 @@ Saved under `localStorage['state']` as `{ version: STATE_VERSION, state }`, wher
 
 Whenever anything is dropped, the raw saved value is first copied to `state.backup.<timestamp>` and a warning is logged — nothing a Respondent saved is ever silently destroyed. Validation checks what would crash the app (e.g. a Diary must have a `timelines` array, since every Timeline reads `diaries[date]?.timelines[i]`), not every oddity.
 
-**Changing what's saved:** bump `STATE_VERSION` and teach `restoreBlob()` to migrate the previous version. There is no server copy of a Respondent's diary.
+**Changing what's saved:** bump `STATE_VERSION` and teach `restoreBlob()` to migrate the previous version. There is no server copy of a Respondent's diary, unless the study turns on server accounts, in which case see [ADR 0007](../../docs/adr/0007-server-sync-model.md).
 
 ---
 

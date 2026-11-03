@@ -7,7 +7,8 @@ export const STORAGE_KEY = 'state';
 
 // Bump when the saved format changes, and teach restoreBlob() to migrate the
 // previous version rather than discarding it - this is a Respondent's diary,
-// with no server-side copy.
+// with no server-side copy (unless the study turns on server accounts; see
+// docs/adr/0007-server-sync-model.md).
 //   (no version) - the raw state object, written before #142
 //   1            - { version, state: { ...PERSISTED_KEYS } }
 export const STATE_VERSION = 1;

@@ -38,6 +38,13 @@
     "general": {
       "type": "object",
       "required": ["experimentID", "primary_redirect_url"],
+      "if": {
+        "properties": { "server_accounts": { "const": true } },
+        "required": ["server_accounts"]
+      },
+      "then": {
+        "required": ["backend_url"]
+      },
       "properties": {
         "experimentID": {
           "type": "string"
@@ -66,6 +73,15 @@
         "submit_completed_diary_url": {
           "type": "string",
           "description": "URL a completed Diary is POSTed to, as JSON, when the Respondent submits it. If empty, ELiDDI shows no submit button."
+        },
+        "server_accounts": {
+          "type": "boolean",
+          "description": "ELiDDI-specific extension. true = Respondents log in to the ELiDDI backend (ELiDDI_backend) and their Diary follows them between devices; requires backend_url. Absent or false = no accounts, the Diary lives only in the browser, exactly as before. With true, the no-JS HTML form is not generated (it cannot log in), whatever accessibility.generateHtmlFallback says."
+        },
+        "backend_url": {
+          "type": "string",
+          "pattern": "^https?://[^\\s/?#]+(/[^\\s?#]*)?$",
+          "description": "ELiDDI-specific extension. Base URL of the ELiDDI backend, e.g. https://diary.example.org (a path prefix is allowed, a trailing slash does not matter). Only used when server_accounts is true."
         },
         "fallbackToCSV": {
           "type": "boolean"

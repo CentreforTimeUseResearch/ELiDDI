@@ -27,3 +27,7 @@ export const DELETE_ENTRY = 'DELETE_ENTRY';
 export const CLEAR_DIARY = 'CLEAR_DIARY';
 export const RESET_STATUS = 'RESET_STATUS';
 export const SET_COMPLETE = 'SET_COMPLETE';
+
+// Replaces the persisted slices wholesale (login, logout, a server snapshot);
+// see eliddiReducer.js
+export const REPLACE_STATE = 'REPLACE_STATE';

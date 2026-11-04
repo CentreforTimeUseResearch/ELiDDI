@@ -1,6 +1,7 @@
 import { combineReducers } from './store';
 import { DIARY_STATUS } from './diaryStatus';
 import { getCurrentDiaryDateKey } from '../utils/time';
+import { PERSISTED_KEYS } from './persistence';
 import {
   RESET_ONBOARDING,
   DISMISS_ONBOARDING,
@@ -20,6 +21,7 @@ import {
   CLEAR_DIARY,
   RESET_STATUS,
   SET_COMPLETE,
+  REPLACE_STATE,
 } from './actionTypes';
 
 const onboardingStep = (state = 0, action) => {
@@ -205,7 +207,7 @@ const currentDate = (state = getCurrentDiaryDateKey(), action) => {
   }
 };
 
-export const eliddiReducer = combineReducers({
+const combined = combineReducers({
   onboarding,
   onboardingStep,
   uipanel,
@@ -215,3 +217,26 @@ export const eliddiReducer = combineReducers({
   currentDate,
   diaries,
 });
+
+// REPLACE_STATE: the persisted slices (PERSISTED_KEYS) become exactly the
+// payload's, and any the payload leaves out go back to their defaults. Used
+// when a Respondent logs in (their own diary replaces whatever was there),
+// logs out (back to empty) and when a server snapshot is merged in. Transient
+// UI state is reset, since what was open referred to the old diary - except
+// the viewport slices, which describe the screen, not the diary.
+// The caller validates the payload (see restoreSyncedState in persistence.js).
+export const eliddiReducer = (state, action) => {
+  if (action?.type !== REPLACE_STATE) {
+    return combined(state, action);
+  }
+  const saved = action.payload ?? {};
+  const next = combined(undefined, {});
+  next.isDesktopLayout = state?.isDesktopLayout ?? next.isDesktopLayout;
+  next.horizontalZoomLevel = state?.horizontalZoomLevel ?? next.horizontalZoomLevel;
+  PERSISTED_KEYS.forEach((key) => {
+    if (key in saved) {
+      next[key] = saved[key];
+    }
+  });
+  return next;
+};

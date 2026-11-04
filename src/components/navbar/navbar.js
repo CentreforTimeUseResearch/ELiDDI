@@ -1,5 +1,6 @@
 import '../timelinePicker/timelinePicker.js';
 import '../contextualHelp/contextualHelp.js';
+import '../syncStatus/syncStatus.js';
 import { TinyBase } from '../base';
 import { RESET_ONBOARDING, SHOW_PANEL } from '../../store/actionTypes';
 import { formatDateKeyAsDDMMYYYY } from '../../utils/time';
@@ -125,6 +126,7 @@ export class Navbar extends TinyBase {
                 <button class="reset-to-div date-indicator change-date-button"></button>
             </div>
             <div class="right-pane">
+                ${getAccounts(globalThis.GLOBALS?.DATA).enabled ? '<el-sync-status></el-sync-status>' : ''}
                 <el-contextual-help></el-contextual-help>
             </div>
         </nav>

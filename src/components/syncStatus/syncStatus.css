@@ -1,0 +1,13 @@
+el-sync-status {
+  align-self: center;
+  margin-right: var(--space-xs);
+  color: var(--color-on-dark);
+  font-family: var(--font-text);
+  font-size: var(--text-fine-print-size);
+  line-height: var(--text-fine-print-lh);
+
+  &[data-status='unsaved'],
+  &[data-status='rejected'] {
+    font-weight: bold;
+  }
+}

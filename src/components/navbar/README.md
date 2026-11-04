@@ -15,6 +15,7 @@ The top navigation bar: a hamburger menu (Instructions / Reset), the [Timeline P
 ## Store interaction
 
 - Subscribes to the store to keep the date indicator text in sync with `currentDate`.
+- With server accounts on (`general.server_accounts`), the menu also has a "Log out (switch person)" item, which ends the login on this device and then on the server (see [Login](../login/README.md)). Without accounts it is not rendered.
 - Dispatches `RESET_ONBOARDING` (Instructions menu item), `SHOW_PANEL` with payload `'date'` (date button) and `SHOW_PANEL` with payload `'reset'` (Reset menu item). Reset clears nothing itself: [DynamicTimelineUI](../dynamicTimelineUI/README.md)'s confirm dialog dispatches `CLEAR_DIARY` for the viewed day.
 
 ## Behaviour notes

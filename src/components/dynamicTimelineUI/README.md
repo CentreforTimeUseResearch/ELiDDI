@@ -10,7 +10,7 @@ The JS-layer root component. `scripts/generate_no_js.js` wraps the entire no-JS 
 
 - [`<el-nav-bar>`](../navbar/README.md)
 - An empty `#stack-container` wrapper, populated by `renderStack()` (see below) with either [`<el-timeline-stack>`](../timelineStack/README.md) or [`<el-horizontal-timeline-stack>`](../horizontalTimelineStack/README.md), depending on the current breakpoint.
-- Three [`<el-dialog>`](../dialogWidget/README.md)s: one hosting [`<el-onboarding>`](../onboarding/README.md), one hosting [`<el-date-picker>`](../datePicker/README.md), and a confirm dialog for the Navbar's Reset.
+- With server accounts on, a fourth, non-dismissible dialog hosting [`<el-login>`](../login/README.md) (absent otherwise): it opens whenever nobody is logged in, the nav bar and timeline are hidden behind it (`data-login-required`), and the onboarding waits until after login. Three [`<el-dialog>`](../dialogWidget/README.md)s: one hosting [`<el-onboarding>`](../onboarding/README.md), one hosting [`<el-date-picker>`](../datePicker/README.md), and a confirm dialog for the Navbar's Reset.
 
 ## Custom element
 

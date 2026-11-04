@@ -6,6 +6,7 @@ import '../horizontalTimelineStack/horizontalTimelineStack';
 import '../onboarding/onboarding';
 import '../datePicker/datePicker';
 import '../validationPanel/validationPanel';
+import '../login/login';
 
 import { TinyBase } from '../base';
 import {
@@ -15,6 +16,8 @@ import {
   SET_DESKTOP_LAYOUT,
 } from '../../store/actionTypes';
 import { watchDesktopBreakpoint } from '../../utils/breakpoint';
+import { getAccounts } from '../../auth/authClient';
+import { appSession } from '../../auth/session';
 
 import './dynamicTimelineUI.css';
 
@@ -23,6 +26,8 @@ export class DynamicTimelineUI extends TinyBase {
   onboardingDialogActions;
   dateDialogActions;
   resetDialogActions;
+  loginDialogActions;
+  accounts = getAccounts(globalThis.GLOBALS?.DATA);
   stackContainer;
   isDesktopLayout;
 
@@ -38,12 +43,34 @@ export class DynamicTimelineUI extends TinyBase {
         this.store.dispatch({ type: SET_DESKTOP_LAYOUT, payload: matches })
       )
     );
+    if (this.accounts.enabled) {
+      this.registerCleanup(appSession.subscribe(() => this.onStoreUpdate()));
+      // a tablet left asleep can wake after its login has run out
+      this.listen(document, 'visibilitychange', () => appSession.check());
+    }
     this.onStoreUpdate();
+  }
+
+  // With server accounts on, nobody sees the diary (or its onboarding) until
+  // they have logged in: on a shared device what is behind the dialog would be
+  // somebody else's
+  isLoginRequired() {
+    return this.accounts.enabled && appSession.get() === null;
   }
 
   onStoreUpdate() {
     const { onboarding, uipanel, isDesktopLayout } = this.store.getState();
-    if (onboarding) {
+    const loginRequired = this.isLoginRequired();
+    this.toggleAttribute('data-login-required', loginRequired);
+    if (this.accounts.enabled) {
+      if (loginRequired) {
+        this.loginDialogActions?.open();
+      } else {
+        this.loginDialogActions?.close();
+      }
+    }
+
+    if (onboarding && !loginRequired) {
       this.onboardingDialogActions.open();
     } else {
       this.onboardingDialogActions.close();
@@ -89,6 +116,21 @@ export class DynamicTimelineUI extends TinyBase {
       : '<el-timeline-stack></el-timeline-stack>';
   }
 
+  // only present when the study turns on server accounts; the Respondent cannot
+  // dismiss it, they have to log in
+  renderLoginDialog() {
+    if (!this.accounts.enabled) {
+      return '';
+    }
+    return `<el-dialog id="login-dialog" ${this.setProps({
+      registerDialogActions: (actions) => {
+        this.loginDialogActions = actions;
+      },
+      content: '<el-login></el-login>',
+      dismissible: false,
+    })}></el-dialog>`;
+  }
+
   render() {
     // this component is a work in progress
     const onboardingMarkup = `<el-onboarding ${this.setProps({
@@ -115,6 +157,7 @@ export class DynamicTimelineUI extends TinyBase {
               content: '<el-date-picker></el-date-picker>',
               onRequestClose: () => this.store.dispatch({ type: HIDE_PANEL }),
             })}></el-dialog>
+            ${this.renderLoginDialog()}
             <el-dialog id="reset-dialog" ${this.setProps({
               registerDialogActions: (actions) => {
                 this.resetDialogActions = actions;

@@ -33,7 +33,9 @@ It sits inside a dialog that [DynamicTimelineUI](../dynamicTimelineUI/README.md)
 
 **Log out / switch person.** The [nav bar](../navbar/README.md) has a "Log out (switch person)" item (only when accounts are on). It ends the login on this device first, then tells the server (`POST /logout`) as a best effort. If the server cannot be reached the token stays valid there until it expires, but the page can no longer use it.
 
-**What this does not do yet.** The diary in the browser is still the single `state` key: keying it by Respondent id, clearing it on logout and syncing it with the server are [#208](https://github.com/CentreforTimeUseResearch/ELiDDI/issues/208) and [#209](https://github.com/CentreforTimeUseResearch/ELiDDI/issues/209). `appSession.get().respondentId` is the id to key it by.
+**While the diary loads.** After login the dialog stays up and the form gives way to a message, because the Respondent's diary has to come from the server before anything is shown (`src/sync/`, [#208](https://github.com/CentreforTimeUseResearch/ELiDDI/issues/208)). It shows "Loading your diary…"; if the diary could not be loaded and there is no copy on the device, a "Try again" button; if the server holds a newer format than this page understands, a "Reload the page" button. Each has "Log out", so someone else can use the device. The status comes from `appSyncStatus` (`src/sync/syncStatus.js`); this component never talks to the sync manager directly.
+
+**What this does not do yet.** What a Respondent is told when another device had a newer version of a day, and the choice at logout when changes could not be sent, are [#209](https://github.com/CentreforTimeUseResearch/ELiDDI/issues/209).
 
 ---
 

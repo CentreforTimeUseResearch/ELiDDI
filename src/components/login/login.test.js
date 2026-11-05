@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { appSession } from '../../auth/session';
+import { appSyncStatus, SYNC_STATUS } from '../../sync/syncStatus';
 import './login';
 
 const BACKEND = 'https://diary.example.org';
@@ -275,6 +276,76 @@ describe('Login', () => {
       await submit(ui, 'ABCD-EFGH');
 
       expect(ui.notice.textContent).toBe('');
+    });
+  });
+
+  // #208: while the diary is being fetched, the form gives way to a message
+  describe('while the diary is not ready', () => {
+    afterEach(() => {
+      appSyncStatus.set(SYNC_STATUS.IDLE);
+      appSyncStatus.setRetryHandler(null);
+    });
+
+    it('shows the form and no gate normally', () => {
+      const ui = mount();
+
+      expect(ui.form.hidden).toBe(false);
+      expect(ui.el.querySelector('[data-login-gate]').hidden).toBe(true);
+    });
+
+    it('says the diary is loading, in place of the form, with a way to log out', () => {
+      const ui = mount();
+
+      appSyncStatus.set(SYNC_STATUS.LOADING);
+
+      expect(ui.form.hidden).toBe(true);
+      expect(ui.el.querySelector('[data-login-gate-text]').textContent).toBe('Loading your diary…');
+      expect(ui.el.querySelector('[data-gate="logout"]')).not.toBeNull();
+      expect(ui.el.querySelector('[data-gate="retry"]')).toBeNull();
+    });
+
+    it('offers to try again when the diary could not be loaded, and asks the manager to', () => {
+      const retry = vi.fn();
+      appSyncStatus.setRetryHandler(retry);
+      const ui = mount();
+      appSyncStatus.set(SYNC_STATUS.LOAD_FAILED);
+
+      ui.el.querySelector('[data-gate="retry"]').click();
+
+      expect(ui.el.querySelector('[data-login-gate-text]').textContent).toContain(
+        'could not be loaded'
+      );
+      expect(retry).toHaveBeenCalledOnce();
+    });
+
+    it('asks for a reload when this page is too old to open the diary', () => {
+      const ui = mount();
+
+      appSyncStatus.set(SYNC_STATUS.OUTDATED);
+
+      expect(ui.el.querySelector('[data-login-gate-text]').textContent).toContain('out of date');
+      expect(ui.el.querySelector('[data-gate="reload"]').textContent).toBe('Reload the page');
+    });
+
+    it('logs out from the gate, so someone else can use the device', () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, status: 204 }));
+      const ui = mount();
+      appSession.start({ token: 't', respondentId: 'r', expiresAt: FUTURE });
+      appSyncStatus.set(SYNC_STATUS.LOAD_FAILED);
+
+      ui.el.querySelector('[data-gate="logout"]').click();
+
+      expect(appSession.get()).toBeNull();
+    });
+
+    it('goes back to the form when the diary is ready', () => {
+      const ui = mount();
+      appSyncStatus.set(SYNC_STATUS.LOADING);
+
+      appSyncStatus.set(SYNC_STATUS.SAVED);
+
+      expect(ui.form.hidden).toBe(false);
+      expect(ui.el.querySelector('[data-login-gate]').hidden).toBe(true);
     });
   });
 

@@ -5,10 +5,13 @@ import {
   loadPersistedState,
   persistStore,
   getBrowserStorage,
+  stateKeyFor,
+  clearPersistedState,
+  restoreSyncedState,
 } from './persistence';
 import { createStore } from './store';
 import { eliddiReducer } from './eliddiReducer';
-import { ADD_ENTRY, SHOW_PANEL, SWITCH_DIMENSION, SWITCH_DATE } from './actionTypes';
+import { ADD_ENTRY, SHOW_PANEL, SWITCH_DIMENSION, SWITCH_DATE, REPLACE_STATE } from './actionTypes';
 
 // a minimal in-memory Web Storage (getItem/setItem) - the test environment's
 // own localStorage isn't usable (see getBrowserStorage)
@@ -287,5 +290,113 @@ describe('getBrowserStorage', () => {
   it('returns localStorage when it is usable', () => {
     const storage = memoryStorage();
     expect(getBrowserStorage({ localStorage: storage })).toBe(storage);
+  });
+});
+
+// #208: with server accounts each Respondent's copy has its own key
+describe('per-Respondent copies', () => {
+  const withRemove = () => {
+    const storage = memoryStorage();
+    storage.removeItem = vi.fn((key) => void storage.data.delete(key));
+    return storage;
+  };
+
+  it('keys a copy by Respondent id', () => {
+    expect(stateKeyFor('r-1')).toBe('state.r-1');
+  });
+
+  it('saves to and loads from the key it is given, leaving the single key alone', () => {
+    const storage = withRemove();
+    const store = createStore(eliddiReducer, PERSISTED);
+
+    persistStore(store, storage, { key: stateKeyFor('r-1'), schedule: (flush) => flush() });
+
+    expect(storage.data.has(STORAGE_KEY)).toBe(false);
+    expect(loadPersistedState(storage, stateKeyFor('r-1'))).toEqual(PERSISTED);
+    expect(loadPersistedState(storage)).toBeUndefined();
+  });
+
+  it('backs a damaged copy up under a key of its own Respondent', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const storage = memoryStorage({ 'state.r-1': 'not json' });
+
+    loadPersistedState(storage, 'state.r-1');
+
+    expect([...storage.data.keys()].some((key) => key.startsWith('state.r-1.backup.'))).toBe(true);
+  });
+
+  it('on unsubscribe, first saves a change that was still waiting for its write', () => {
+    const storage = withRemove();
+    const store = createStore(eliddiReducer, PERSISTED);
+    const queue = [];
+    const unsubscribe = persistStore(store, storage, {
+      key: 'state.r-1',
+      schedule: (flush) => queue.push(flush),
+    });
+
+    store.dispatch({ type: SWITCH_DATE, payload: '2026-08-22' });
+    unsubscribe();
+
+    expect(JSON.parse(storage.data.get('state.r-1')).state.currentDate).toBe('2026-08-22');
+  });
+
+  it('writes nothing after unsubscribe, even from a write that was already scheduled', () => {
+    const storage = withRemove();
+    const store = createStore(eliddiReducer, PERSISTED);
+    const queue = [];
+    const unsubscribe = persistStore(store, storage, {
+      key: 'state.r-1',
+      schedule: (flush) => queue.push(flush),
+    });
+    store.dispatch({ type: SWITCH_DATE, payload: '2026-08-22' });
+    unsubscribe();
+    storage.setItem.mockClear();
+
+    store.dispatch({ type: REPLACE_STATE, payload: {} }); // e.g. a logout emptying the store
+    queue.splice(0).forEach((flush) => flush());
+
+    expect(storage.setItem).not.toHaveBeenCalled();
+    expect(JSON.parse(storage.data.get('state.r-1')).state.diaries).toEqual(DIARIES);
+  });
+
+  it('removes a copy', () => {
+    const storage = withRemove();
+    storage.setItem('state.r-1', '{}');
+
+    expect(clearPersistedState(storage, 'state.r-1')).toBe(true);
+    expect(storage.data.has('state.r-1')).toBe(false);
+  });
+
+  it('does not throw when removing fails', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const storage = {
+      removeItem: () => {
+        throw new Error('blocked');
+      },
+    };
+
+    expect(clearPersistedState(storage, 'state.r-1')).toBe(false);
+  });
+});
+
+describe('restoreSyncedState', () => {
+  it('validates a server snapshot like a saved copy, returning only the keys it carries', () => {
+    const { state, problems } = restoreSyncedState(STATE_VERSION, {
+      onboarding: false,
+      diaries: DIARIES,
+    });
+
+    expect(state).toEqual({ onboarding: false, diaries: DIARIES });
+    expect(problems).toEqual([]);
+  });
+
+  it('reports what is wrong with one that is damaged', () => {
+    const { problems } = restoreSyncedState(STATE_VERSION, { onboarding: 'maybe' });
+
+    expect(problems).toEqual(['invalid onboarding']);
+  });
+
+  it('accepts an empty snapshot', () => {
+    expect(restoreSyncedState(STATE_VERSION, {})).toEqual({ state: undefined, problems: [] });
   });
 });

@@ -48,6 +48,8 @@ if (storage) persistStore(appStore, storage);
 
 Every component gets this same instance via `TinyBase.getStore()` — there is exactly one store for the whole app, created once at module load. Without usable `localStorage` (blocked by browser settings, or under vitest, where Node's own method-less `localStorage` shadows jsdom's) the diary still works, but nothing survives a reload.
 
+**With server accounts on** (`general.server_accounts`) the store starts empty and this file saves nothing: whose diary it holds is only known after login. [`src/sync/`](../sync/README.md) then fills it with that Respondent's diary (`REPLACE_STATE`) and saves it under that Respondent's own key. The single `state` key is not read, written or deleted, since on a shared device it may belong to anyone.
+
 ## `eliddiReducer.js`
 
 Combines these top-level reducers:
@@ -74,6 +76,8 @@ Nested reducers, innermost first:
 
 `startOffsetMins`/`endOffsetMins` are always relative to the config's Day boundary, not midnight — see [ADR-0001](../../docs/adr/0001-day-boundary-not-midnight.md) and [CONTEXT.md](../../CONTEXT.md)'s "Day boundary" entry.
 
+`REPLACE_STATE` (handled by the wrapper around the combined reducer at the bottom of `eliddiReducer.js`, not by a slice) makes the persisted slices exactly the payload's — any left out go back to their defaults — and resets transient UI state (open panel, active Dimension), since those referred to the old diary. The viewport slices (`isDesktopLayout`, `horizontalZoomLevel`) are kept. It is how a login puts a Respondent's diary in, a logout empties it, and a merge with the server's copy lands. The caller validates the payload (`restoreSyncedState`).
+
 ## `actionTypes.js`
 
 Every action type is exported as a named string constant and imported at both the dispatch call site and the reducer's `case` branch, rather than hand-typing the string in two places — a typo or rename in one spot used to silently desync from the other with no error, just a state update that quietly never happened.
@@ -82,7 +86,7 @@ Every action type is exported as a named string constant and imported at both th
 
 Saved under `localStorage['state']` as `{ version: STATE_VERSION, state }`, where `state` holds only the **allowlisted** `PERSISTED_KEYS`: `onboarding`, `onboardingStep`, `currentDate`, `diaries`. Every other slice is transient UI state; a newly added slice stays transient unless it's added to the list.
 
-**Saving** (`persistStore`): writes once at startup, then after any dispatch that changed a persisted slice — UI-only dispatches never write. A burst of dispatches is coalesced into one write on the next microtask. A failed write (quota exceeded) is logged and retried on the next change.
+**Saving** (`persistStore`): writes once at startup, then after any dispatch that changed a persisted slice — UI-only dispatches never write. A burst of dispatches is coalesced into one write on the next microtask. A failed write (quota exceeded) is logged and retried on the next change. The returned unsubscribe first writes a change still waiting for its microtask, then stops for good, so a logout can empty the store without the empty state landing in the copy it has just finished with. The `key` option chooses where it saves: the single `state` key, or `stateKeyFor(respondentId)` (`state.<respondentId>`) with server accounts.
 
 **Loading** (`loadPersistedState`):
 
@@ -94,6 +98,8 @@ Saved under `localStorage['state']` as `{ version: STATE_VERSION, state }`, wher
 | corrupt JSON, unknown version, not an object | defaults                                                          |
 
 Whenever anything is dropped, the raw saved value is first copied to `state.backup.<timestamp>` and a warning is logged — nothing a Respondent saved is ever silently destroyed. Validation checks what would crash the app (e.g. a Diary must have a `timelines` array, since every Timeline reads `diaries[date]?.timelines[i]`), not every oddity.
+
+**Also exported for server accounts:** `stateKeyFor`, `SYNCED_KEYS` (the part of `PERSISTED_KEYS` that follows a Respondent between devices: `onboarding` and `diaries`; the other two stay on the device), `restoreSyncedState` (validates and migrates a snapshot from the server exactly like a saved copy) and `clearPersistedState`. Backups of a damaged copy are `<key>.backup.<timestamp>`.
 
 **Changing what's saved:** bump `STATE_VERSION` and teach `restoreBlob()` to migrate the previous version. There is no server copy of a Respondent's diary, unless the study turns on server accounts, in which case see [ADR 0007](../../docs/adr/0007-server-sync-model.md).
 

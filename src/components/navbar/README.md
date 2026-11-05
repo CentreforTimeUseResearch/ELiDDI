@@ -15,7 +15,7 @@ The top navigation bar: a hamburger menu (Instructions / Reset), the [Timeline P
 ## Store interaction
 
 - Subscribes to the store to keep the date indicator text in sync with `currentDate`.
-- With server accounts on (`general.server_accounts`), the menu also has a "Log out (switch person)" item, which ends the login on this device and then on the server (see [Login](../login/README.md)). Without accounts it is not rendered.
+- With server accounts on (`general.server_accounts`), the menu also has a "Log out (switch person)" item, which ends the login on this device and then on the server (see [Login](../login/README.md)). Without accounts it is not rendered. With accounts on, the right of the nav bar also has `<el-sync-status>`, a polite live region reading "Saved", "Saving…", "Not saved yet - will retry" or "Could not save to the server - your diary is kept on this device" (from `src/sync/syncStatus.js`; see the [sync README](../../sync/README.md)).
 - Dispatches `RESET_ONBOARDING` (Instructions menu item), `SHOW_PANEL` with payload `'date'` (date button) and `SHOW_PANEL` with payload `'reset'` (Reset menu item). Reset clears nothing itself: [DynamicTimelineUI](../dynamicTimelineUI/README.md)'s confirm dialog dispatches `CLEAR_DIARY` for the viewed day.
 
 ## Behaviour notes

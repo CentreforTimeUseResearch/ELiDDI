@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { appSession } from '../../auth/session';
+import { appSyncStatus, SYNC_STATUS } from '../../sync/syncStatus';
 import { getProps } from '../propsRegistry';
 import { DynamicTimelineUI } from './dynamicTimelineUI.js';
 import { appStore } from '../../store/appStore';
@@ -306,6 +307,40 @@ describe('DynamicTimelineUI', () => {
 
       expect(el.hasAttribute('data-login-required')).toBe(true);
       expect(el.loginDialogActions.open).toHaveBeenCalled();
+    });
+
+    // #208: the diary is not shown until the Respondent's own copy has arrived
+    it.each([SYNC_STATUS.LOADING, SYNC_STATUS.LOAD_FAILED, SYNC_STATUS.OUTDATED])(
+      'keeps the diary hidden and the dialog up while the diary is %s, though logged in',
+      (status) => {
+        withAccounts(true);
+        appStore.dispatch({ type: RESET_ONBOARDING });
+        const el = create();
+        appSession.start({ token: 't', respondentId: 'r-1', expiresAt: FUTURE });
+        appSyncStatus.set(status);
+
+        el.onStoreUpdate();
+
+        expect(el.hasAttribute('data-login-required')).toBe(true);
+        expect(el.loginDialogActions.open).toHaveBeenCalled();
+        expect(el.onboardingDialogActions.open).not.toHaveBeenCalled();
+        appSyncStatus.set(SYNC_STATUS.IDLE);
+      }
+    );
+
+    it('shows the diary once it has loaded, whether it is saved or still sending', () => {
+      withAccounts(true);
+      const el = create();
+      appSession.start({ token: 't', respondentId: 'r-1', expiresAt: FUTURE });
+
+      [SYNC_STATUS.SAVED, SYNC_STATUS.SAVING, SYNC_STATUS.UNSAVED, SYNC_STATUS.REJECTED].forEach(
+        (status) => {
+          appSyncStatus.set(status);
+          el.onStoreUpdate();
+          expect(el.hasAttribute('data-login-required')).toBe(false);
+        }
+      );
+      appSyncStatus.set(SYNC_STATUS.IDLE);
     });
 
     it('does not touch the login dialog when accounts are off', () => {

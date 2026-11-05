@@ -5,6 +5,11 @@
 
 export const STORAGE_KEY = 'state';
 
+// With server accounts on, each Respondent's local copy has its own key, so
+// several people can use one device without overwriting each other
+// (docs/adr/0007-server-sync-model.md). The id is the opaque one the server
+// returns at login, never the login code.
+export const stateKeyFor = (respondentId) => `${STORAGE_KEY}.${respondentId}`;
 // Bump when the saved format changes, and teach restoreBlob() to migrate the
 // previous version rather than discarding it - this is a Respondent's diary,
 // with no server-side copy (unless the study turns on server accounts; see
@@ -17,6 +22,11 @@ export const STATE_VERSION = 1;
 // Anything else (which panel is open, the active Dimension, layout, zoom) is
 // transient UI state, and a newly added slice stays transient by default.
 export const PERSISTED_KEYS = ['onboarding', 'onboardingStep', 'currentDate', 'diaries'];
+
+// The part of PERSISTED_KEYS that follows a Respondent between devices when
+// server accounts are on. The rest (which day is showing, which onboarding
+// screen) stays on the device.
+export const SYNCED_KEYS = ['onboarding', 'diaries'];
 
 const isPlainObject = (value) =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -73,11 +83,17 @@ function restoreBlob(blob) {
   return { state: Object.keys(state).length > 0 ? state : undefined, problems };
 }
 
-function readRaw(storage) {
+// A snapshot received from the server -> { state, problems }, validated and
+// migrated exactly like a saved copy. Only the keys it carries are returned.
+export function restoreSyncedState(stateVersion, state) {
+  return restoreBlob({ version: stateVersion, state });
+}
+
+function readRaw(storage, key) {
   try {
-    return storage.getItem(STORAGE_KEY);
+    return storage.getItem(key);
   } catch (error) {
-    console.error(`Could not read saved diary data from "${STORAGE_KEY}":`, error);
+    console.error(`Could not read saved diary data from "${key}":`, error);
     return null;
   }
 }
@@ -97,8 +113,8 @@ function write(storage, key, value) {
 // defaults. Never destroys anything it can't read: the raw saved value is
 // copied to a timestamped backup key first, since the next save would
 // otherwise overwrite it.
-export function loadPersistedState(storage) {
-  const raw = readRaw(storage);
+export function loadPersistedState(storage, key = STORAGE_KEY) {
+  const raw = readRaw(storage, key);
   if (raw === null) {
     return undefined;
   }
@@ -111,7 +127,7 @@ export function loadPersistedState(storage) {
   }
 
   if (result.problems.length > 0) {
-    const backupKey = `${STORAGE_KEY}.backup.${Date.now()}`;
+    const backupKey = `${key}.backup.${Date.now()}`;
     const backedUp = write(storage, backupKey, raw);
     console.warn(
       `Saved diary data could not be fully restored (${result.problems.join(', ')}).` +
@@ -130,28 +146,59 @@ export function loadPersistedState(storage) {
 //   - coalesces a burst of dispatches into one write; a microtask (the
 //     default) runs before the browser can unload the page, so no change can
 //     be lost to the delay
-export function persistStore(store, storage, { schedule = queueMicrotask } = {}) {
+//   - the returned unsubscribe first saves a change that is still waiting for
+//     its write, then stops for good: nothing is written afterwards, so a
+//     logout can empty the store without the empty state landing in the copy
+//     it has just finished with
+// key is where it is saved: the single shared one, or one per Respondent.
+export function persistStore(
+  store,
+  storage,
+  { schedule = queueMicrotask, key = STORAGE_KEY } = {}
+) {
   let lastSaved;
   let flushPending = false;
+  let stopped = false;
 
   const flush = () => {
     flushPending = false;
-    const next = pickPersisted(store.getState());
-    if (lastSaved && PERSISTED_KEYS.every((key) => next[key] === lastSaved[key])) {
+    if (stopped) {
       return;
     }
-    if (write(storage, STORAGE_KEY, JSON.stringify({ version: STATE_VERSION, state: next }))) {
+    const next = pickPersisted(store.getState());
+    if (lastSaved && PERSISTED_KEYS.every((name) => next[name] === lastSaved[name])) {
+      return;
+    }
+    if (write(storage, key, JSON.stringify({ version: STATE_VERSION, state: next }))) {
       lastSaved = next; // a failed write leaves lastSaved stale, so the next change retries
     }
   };
 
   flush();
-  return store.subscribe(() => {
+  const unsubscribe = store.subscribe(() => {
     if (!flushPending) {
       flushPending = true;
       schedule(flush);
     }
   });
+  return () => {
+    unsubscribe();
+    if (flushPending) {
+      flush();
+    }
+    stopped = true;
+  };
+}
+
+// Removes a saved copy (used when a Respondent logs out and the server has it)
+export function clearPersistedState(storage, key = STORAGE_KEY) {
+  try {
+    storage.removeItem(key);
+    return true;
+  } catch (error) {
+    console.error(`Could not remove saved diary data "${key}":`, error);
+    return false;
+  }
 }
 
 // window.localStorage if it's usable, otherwise undefined, in which case the

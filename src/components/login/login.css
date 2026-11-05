@@ -8,6 +8,41 @@ el-login {
     gap: var(--space-xs);
   }
 
+  /* the form and the gate swap with [hidden]; their own display rules would
+     otherwise win over the browser's hidden style */
+  [hidden] {
+    display: none;
+  }
+
+  .login-gate {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+  }
+
+  .login-gate-text {
+    font-family: var(--font-text);
+    font-size: var(--text-button-utility-size);
+    color: var(--color-ink);
+  }
+
+  .login-gate-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+  }
+
+  .login-secondary {
+    min-height: 44px;
+    padding: var(--space-xxs) var(--space-md);
+    font-family: var(--font-text);
+    font-size: var(--text-button-utility-size);
+    color: var(--color-primary);
+    background: transparent;
+    border: 2px solid var(--color-primary);
+    border-radius: var(--radius-xs);
+  }
+
   h4 {
     margin: 0;
   }

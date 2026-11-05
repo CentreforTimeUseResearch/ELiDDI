@@ -213,6 +213,17 @@ describe('Navbar', () => {
       expect(fetchStub.mock.calls[0][1].headers.Authorization).toBe('Bearer tok');
     });
 
+    it('has no sync status when accounts are off, and one when they are on', () => {
+      const off = document.createElement('el-nav-bar');
+      document.body.appendChild(off);
+      expect(off.querySelector('el-sync-status')).toBeNull();
+
+      accountsOn();
+      const on = document.createElement('el-nav-bar');
+      document.body.appendChild(on);
+      expect(on.querySelector('el-sync-status')).not.toBeNull();
+    });
+
     it('closes the sidebar drawer when logging out', () => {
       accountsOn();
       vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, status: 204 }));

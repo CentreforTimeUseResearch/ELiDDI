@@ -18,6 +18,7 @@ import {
 import { watchDesktopBreakpoint } from '../../utils/breakpoint';
 import { getAccounts } from '../../auth/authClient';
 import { appSession } from '../../auth/session';
+import { appSyncStatus, BLOCKS_DIARY } from '../../sync/syncStatus';
 
 import './dynamicTimelineUI.css';
 
@@ -45,6 +46,7 @@ export class DynamicTimelineUI extends TinyBase {
     );
     if (this.accounts.enabled) {
       this.registerCleanup(appSession.subscribe(() => this.onStoreUpdate()));
+      this.registerCleanup(appSyncStatus.subscribe(() => this.onStoreUpdate()));
       // a tablet left asleep can wake after its login has run out
       this.listen(document, 'visibilitychange', () => appSession.check());
     }
@@ -53,9 +55,13 @@ export class DynamicTimelineUI extends TinyBase {
 
   // With server accounts on, nobody sees the diary (or its onboarding) until
   // they have logged in: on a shared device what is behind the dialog would be
-  // somebody else's
+  // somebody else's. The dialog also stays up while their own diary is being
+  // fetched from the server (or cannot be used), so a Respondent never sees an
+  // empty diary that is about to be replaced.
   isLoginRequired() {
-    return this.accounts.enabled && appSession.get() === null;
+    return (
+      this.accounts.enabled && (appSession.get() === null || BLOCKS_DIARY.has(appSyncStatus.get()))
+    );
   }
 
   onStoreUpdate() {

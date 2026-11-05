@@ -11,6 +11,10 @@ import {
   UPDATE_ENTRY,
   DELETE_ENTRY,
   CLEAR_DIARY,
+  REPLACE_STATE,
+  SHOW_PANEL,
+  SWITCH_DIMENSION,
+  SET_DESKTOP_LAYOUT,
 } from './actionTypes';
 
 const DATE = '2026-08-21';
@@ -243,5 +247,68 @@ describe('eliddiReducer - horizontalZoomLevel', () => {
   it('sets the zoom level on SET_HORIZONTAL_ZOOM', () => {
     const state = eliddiReducer(undefined, { type: SET_HORIZONTAL_ZOOM, payload: 2.5 });
     expect(state.horizontalZoomLevel).toBe(2.5);
+  });
+});
+
+// #208: a Respondent's diary replaces whatever was in the store (login,
+// logout, a merge with the server's copy)
+describe('eliddiReducer - REPLACE_STATE', () => {
+  const diary = {
+    timelines: [[{ id: 0, startOffsetMins: 0, endOffsetMins: 10, activity: 'x' }]],
+    status: 0,
+  };
+
+  it('takes the persisted slices from the payload', () => {
+    const state = eliddiReducer(undefined, {
+      type: REPLACE_STATE,
+      payload: {
+        onboarding: false,
+        onboardingStep: 2,
+        currentDate: DATE,
+        diaries: { [DATE]: diary },
+      },
+    });
+
+    expect(state.onboarding).toBe(false);
+    expect(state.onboardingStep).toBe(2);
+    expect(state.currentDate).toBe(DATE);
+    expect(state.diaries[DATE]).toBe(diary);
+  });
+
+  it('puts any slice the payload leaves out back to its default', () => {
+    const before = eliddiReducer(undefined, {
+      type: REPLACE_STATE,
+      payload: { onboarding: false, onboardingStep: 2, diaries: { [DATE]: diary } },
+    });
+
+    const after = eliddiReducer(before, { type: REPLACE_STATE, payload: {} });
+
+    expect(after.onboarding).toBe(true);
+    expect(after.onboardingStep).toBe(0);
+    expect(after.diaries).toEqual({});
+  });
+
+  it('closes whatever was open, which referred to the old diary', () => {
+    let state = eliddiReducer(undefined, { type: SHOW_PANEL, payload: 'details' });
+    state = eliddiReducer(state, { type: SWITCH_DIMENSION, payload: 3 });
+
+    state = eliddiReducer(state, { type: REPLACE_STATE, payload: {} });
+
+    expect(state.uipanel).toBeUndefined();
+    expect(state.currentDimensionIndex).toBe(0);
+  });
+
+  it('keeps the viewport slices, which describe the screen and not the diary', () => {
+    let state = eliddiReducer(undefined, { type: SET_DESKTOP_LAYOUT, payload: true });
+    state = eliddiReducer(state, { type: SET_HORIZONTAL_ZOOM, payload: 2.5 });
+
+    state = eliddiReducer(state, { type: REPLACE_STATE, payload: {} });
+
+    expect(state.isDesktopLayout).toBe(true);
+    expect(state.horizontalZoomLevel).toBe(2.5);
+  });
+
+  it('copes with no payload at all', () => {
+    expect(() => eliddiReducer(undefined, { type: REPLACE_STATE })).not.toThrow();
   });
 });

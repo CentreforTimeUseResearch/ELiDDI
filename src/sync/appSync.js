@@ -4,10 +4,10 @@
 
 import { appStore } from '../store/appStore';
 import { getBrowserStorage } from '../store/persistence';
-import { getAccounts } from '../auth/authClient';
+import { getAccounts, signOut } from '../auth/authClient';
 import { appSession } from '../auth/session';
 import { createSync } from './syncManager';
-import { appSyncStatus } from './syncStatus';
+import { appSyncStatus, NOTICE_KIND } from './syncStatus';
 
 const accounts = getAccounts(globalThis.GLOBALS?.DATA);
 
@@ -30,4 +30,23 @@ if (appSync) {
     appSync.flush();
   });
   window.addEventListener('online', () => appSync.flush());
+}
+
+// Logging out from the page. With server accounts on, first gets what the
+// server lacks onto it; if that is not possible, says so and lets the
+// Respondent choose (the "unsent" notice: try again, log out anyway, or stay).
+// Nothing a Respondent entered is discarded unasked.
+export async function requestLogout() {
+  if (appSync && !(await appSync.settle())) {
+    appSyncStatus.setNotice({ kind: NOTICE_KIND.UNSENT });
+    return;
+  }
+  await signOut({ session: appSession, config: globalThis.GLOBALS?.DATA });
+}
+
+// the Respondent chose to leave although changes could not be sent: they stay
+// on this device, hidden, and go to the server at their next login
+export async function logoutAnyway() {
+  appSyncStatus.dismissNotice();
+  await signOut({ session: appSession, config: globalThis.GLOBALS?.DATA });
 }

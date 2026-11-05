@@ -23,13 +23,20 @@ import {
 import { baseOf, mergeStates } from './reconcile';
 import { fetchState, pushState } from './syncClient';
 import { clearLocalCopy, readLocalCopy, saveBackup, writeSyncMeta } from './localCopy';
-import { SYNC_STATUS } from './syncStatus';
+import { NOTICE_KIND, SYNC_STATUS } from './syncStatus';
 
 // slices that travel with a Respondent's copy on this device but are never sent
 const DEVICE_KEYS = ['onboardingStep', 'currentDate'];
 // conflicts in a row before we stop hammering the server and back off
 const MAX_CONFLICTS_IN_A_ROW = 5;
 
+// the dates a merge took from the server over this device's version
+const noticeAbout = (replacedLocal, earlier) => {
+  const dates = new Set([...(earlier?.dates ?? []), ...Object.keys(replacedLocal)]);
+  return { kind: NOTICE_KIND.REPLACED, dates: [...dates].sort() };
+};
+
+const hasAny = (object) => Object.keys(object).length > 0;
 const pick = (source, keys) =>
   Object.fromEntries(keys.filter((key) => source?.[key] !== undefined).map((k) => [k, source[k]]));
 const syncedWithDefaults = (source) => ({
@@ -86,6 +93,7 @@ export function createSync({
       retryTimer: null,
       needsLoad: false,
       pushing: false,
+      inflight: null,
       blocked: false,
       conflicts: 0,
     };
@@ -153,7 +161,11 @@ export function createSync({
     }
     clearTimer(entry.pushTimer);
     entry.pushTimer = null;
+    let releaseInflight;
     entry.pushing = true;
+    entry.inflight = new Promise((resolve) => {
+      releaseInflight = resolve;
+    });
     status.set(SYNC_STATUS.SAVING);
 
     const sent = syncedRefs();
@@ -164,6 +176,7 @@ export function createSync({
       state: sent,
     });
     entry.pushing = false;
+    releaseInflight();
     if (active !== entry) {
       return;
     }
@@ -212,6 +225,9 @@ export function createSync({
       }
       const { state: merged, replacedLocal } = mergeStates(syncedRefs(), server.synced, entry.base);
       saveBackup(storage, entry.id, replacedLocal);
+      if (hasAny(replacedLocal)) {
+        status.setNotice(noticeAbout(replacedLocal, status.getNotice()));
+      }
       entry.base = baseOf(server.synced.diaries);
       const { currentDate, onboardingStep } = store.getState();
       store.dispatch({ type: REPLACE_STATE, payload: { ...merged, currentDate, onboardingStep } });
@@ -279,6 +295,7 @@ export function createSync({
       if (active) {
         dismissActive();
       }
+      status.dismissNotice();
       local = readLocalCopy(storage, id);
     }
     status.set(SYNC_STATUS.LOADING);
@@ -367,6 +384,9 @@ export function createSync({
       local.base
     );
     saveBackup(storage, id, replacedLocal);
+    if (hasAny(replacedLocal)) {
+      status.setNotice(noticeAbout(replacedLocal, status.getNotice()));
+    }
     const state = { ...pick(local.state, DEVICE_KEYS), ...merged };
     push(
       attach(id, token, {
@@ -385,6 +405,7 @@ export function createSync({
   async function beginLogout() {
     epoch += 1;
     failedLoad = null;
+    status.dismissNotice();
     status.set(SYNC_STATUS.IDLE);
     const leaving = active;
     if (!leaving) {
@@ -467,6 +488,32 @@ export function createSync({
       } else {
         push(active);
       }
+    },
+    // Before logging out: get what the server lacks onto it, so the Respondent
+    // can be told if that is not possible. Resolves true when there is nothing
+    // unsent (so logging out loses nothing and keeps nothing hidden on this
+    // device); false when something could not be sent.
+    async settle() {
+      const entry = active;
+      if (!entry || !entry.dirty || !entry.token) {
+        return true;
+      }
+      for (let attempt = 0; attempt < MAX_CONFLICTS_IN_A_ROW && entry.dirty; attempt += 1) {
+        if (entry.blocked || active !== entry || !entry.token) {
+          break;
+        }
+        clearTimer(entry.retryTimer);
+        entry.retryTimer = null;
+        if (entry.pushing) {
+          await entry.inflight;
+        } else {
+          await push(entry);
+        }
+        if (entry.retryTimer !== null) {
+          break; // the request failed; it was not just that more was typed meanwhile
+        }
+      }
+      return active === entry && !entry.dirty;
     },
     // "Try again" when the diary could not be loaded at all
     retryLoad() {

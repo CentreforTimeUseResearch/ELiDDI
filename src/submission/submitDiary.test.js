@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { submitDiary } from './submitDiary';
+import { getSubmitTarget, submitDiary } from './submitDiary';
 
 const URL = 'https://example.org/api/diaries';
 const config = {
@@ -95,5 +95,128 @@ describe('submitDiary', () => {
       reason: 'no-diary',
     });
     expect(fetchStub).not.toHaveBeenCalled();
+  });
+});
+
+describe('with server accounts on', () => {
+  const BACKEND = 'https://diary.example.org';
+  const accountsConfig = {
+    ...config,
+    general: { ...config.general, server_accounts: true, backend_url: BACKEND + '/' },
+  };
+  const send = (session) =>
+    submitDiary({ diary, date: '2025-01-01', config: accountsConfig, session });
+  let session;
+
+  beforeEach(() => {
+    fetchStub = vi.fn().mockResolvedValue({ ok: true, status: 201 });
+    vi.stubGlobal('fetch', fetchStub);
+    session = { getToken: vi.fn(() => 'secret-token'), end: vi.fn() };
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('POSTs to the backend /submit with the token', async () => {
+    expect(await send(session)).toEqual({ ok: true });
+
+    const [url, init] = fetchStub.mock.calls[0];
+    expect(url).toBe(BACKEND + '/submit');
+    expect(init.headers).toEqual({
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer secret-token',
+    });
+    expect(JSON.parse(init.body).date).toBe('2025-01-01');
+  });
+
+  it('sends the token to no other URL, even when submit_completed_diary_url is set', async () => {
+    await send(session);
+
+    expect(fetchStub.mock.calls.map(([url]) => url)).toEqual([BACKEND + '/submit']);
+  });
+
+  it('submits even when the study has no submit_completed_diary_url', async () => {
+    const noUrl = { ...accountsConfig, general: { ...accountsConfig.general } };
+    delete noUrl.general.submit_completed_diary_url;
+
+    expect(await submitDiary({ diary, date: '2025-01-01', config: noUrl, session })).toEqual({
+      ok: true,
+    });
+  });
+
+  it('treats a 401 as "log in again": ends the login and keeps the Diary', async () => {
+    fetchStub.mockResolvedValue({ ok: false, status: 401 });
+
+    expect(await send(session)).toEqual({ ok: false, reason: 'unauthorized' });
+
+    expect(session.end).toHaveBeenCalledWith('expired');
+    expect(diary.timelines[0]).toEqual([entry]);
+  });
+
+  it('makes no request when nobody is logged in', async () => {
+    session.getToken.mockReturnValue(null);
+
+    expect(await send(session)).toEqual({ ok: false, reason: 'unauthorized' });
+    expect(fetchStub).not.toHaveBeenCalled();
+  });
+
+  it('reports other failures as before, without ending the login', async () => {
+    fetchStub.mockResolvedValue({ ok: false, status: 500 });
+    expect(await send(session)).toEqual({ ok: false, reason: 'http', status: 500 });
+    expect(session.end).not.toHaveBeenCalled();
+
+    fetchStub.mockRejectedValue(new TypeError('Failed to fetch'));
+    expect(await send(session)).toEqual({ ok: false, reason: 'network' });
+  });
+});
+
+describe('with server accounts off', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('never sends an Authorization header, whatever the session holds', async () => {
+    fetchStub = vi.fn().mockResolvedValue({ ok: true, status: 200 });
+    vi.stubGlobal('fetch', fetchStub);
+    const session = { getToken: vi.fn(() => 'secret-token'), end: vi.fn() };
+
+    await submitDiary({ diary, date: '2025-01-01', config, session });
+
+    expect(fetchStub.mock.calls[0][1].headers).toEqual({ 'Content-Type': 'application/json' });
+    expect(session.getToken).not.toHaveBeenCalled();
+  });
+
+  it('does not end the login on a 401 (the URL is not ours)', async () => {
+    fetchStub = vi.fn().mockResolvedValue({ ok: false, status: 401 });
+    vi.stubGlobal('fetch', fetchStub);
+    const session = { getToken: vi.fn(), end: vi.fn() };
+
+    expect(await submitDiary({ diary, date: '2025-01-01', config, session })).toEqual({
+      ok: false,
+      reason: 'http',
+      status: 401,
+    });
+    expect(session.end).not.toHaveBeenCalled();
+  });
+});
+
+describe('getSubmitTarget', () => {
+  it('is the configured URL, unauthenticated, without accounts', () => {
+    expect(getSubmitTarget(config)).toEqual({ url: URL, authenticated: false });
+  });
+
+  it('is nothing without accounts and without a URL', () => {
+    expect(getSubmitTarget({ general: {} })).toBeNull();
+  });
+
+  it('is the backend /submit, authenticated, with accounts', () => {
+    expect(
+      getSubmitTarget({ general: { server_accounts: true, backend_url: 'https://b.example/api/' } })
+    ).toEqual({ url: 'https://b.example/api/submit', authenticated: true });
+  });
+
+  it('ignores server_accounts without a backend_url', () => {
+    expect(getSubmitTarget({ general: { server_accounts: true } })).toBeNull();
   });
 });

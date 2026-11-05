@@ -15,6 +15,10 @@ One request carries **one Diary**: the day the Respondent is viewing, not everyt
 
 An Entry is `{ id, startOffsetMins, endOffsetMins, activity }`: the span in minutes from the Day boundary (end exclusive, so a whole day is `0` to `1440`), and the Activity's display name (`activity` is a list of names in a multiple-choice Dimension). The name is what the Respondent saw, or what they typed for free text; it is not the Activity `code`, which the receiver can look up in the study config.
 
+## With server accounts
+
+When the study has `general.server_accounts` on ([0007](0007-server-sync-model.md)), the same payload is POSTed to `<backend_url>/submit` with `Authorization: Bearer <login token>`, and the backend stores it under that Respondent. `general.submit_completed_diary_url` is **ignored** in that case: sending a login token to whatever URL a config names would hand it to a third party, so the token only ever goes to `backend_url`. The submit button is shown whether or not that URL is set. A `401` means the login has run out: the login is ended (the login dialog appears), nothing is marked complete, and the Respondent is told to log in again and press the button again; their Diary is kept as it was. Everything else, including the failures below, is as without accounts. The CORS preflight must allow the `Authorization` header (the backend does).
+
 ## The server
 
 The page is served from one origin and posts to another, so the receiving server must answer the CORS preflight for `application/json` (`Access-Control-Allow-Origin`, and `Access-Control-Allow-Headers: Content-Type`). A server that only accepts form encodings will see the preflight fail, and the submission fail with it.

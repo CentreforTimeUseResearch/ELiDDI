@@ -72,7 +72,7 @@
         },
         "submit_completed_diary_url": {
           "type": "string",
-          "description": "URL a completed Diary is POSTed to, as JSON, when the Respondent submits it. If empty, ELiDDI shows no submit button."
+          "description": "URL a completed Diary is POSTed to, as JSON, when the Respondent submits it. If empty, ELiDDI shows no submit button. Ignored when server_accounts is true: the Diary then goes to backend_url + /submit with the Respondent's login token."
         },
         "server_accounts": {
           "type": "boolean",

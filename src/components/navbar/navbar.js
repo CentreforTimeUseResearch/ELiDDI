@@ -4,8 +4,8 @@ import '../syncStatus/syncStatus.js';
 import { TinyBase } from '../base';
 import { RESET_ONBOARDING, SHOW_PANEL } from '../../store/actionTypes';
 import { formatDateKeyAsDDMMYYYY } from '../../utils/time';
-import { getAccounts, signOut } from '../../auth/authClient';
-import { appSession } from '../../auth/session';
+import { getAccounts } from '../../auth/authClient';
+import { requestLogout } from '../../sync/appSync';
 import './navbar.css';
 
 // the sidebar's generic menu options - rendered twice (sidebar drawer below
@@ -72,7 +72,7 @@ export class Navbar extends TinyBase {
         button.addEventListener('click', () => {
           hamMenu.classList.remove('active');
           offScreenMenu.classList.remove('active');
-          signOut({ session: appSession, config: globalThis.GLOBALS?.DATA });
+          requestLogout();
         });
       });
       this.querySelector('.change-date-button')?.addEventListener('click', () => {

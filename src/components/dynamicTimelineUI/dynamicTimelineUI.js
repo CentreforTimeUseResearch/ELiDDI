@@ -7,6 +7,7 @@ import '../onboarding/onboarding';
 import '../datePicker/datePicker';
 import '../validationPanel/validationPanel';
 import '../login/login';
+import '../syncNotice/syncNotice';
 
 import { TinyBase } from '../base';
 import {
@@ -146,6 +147,7 @@ export class DynamicTimelineUI extends TinyBase {
 
     this.innerHTML = `
             <el-nav-bar></el-nav-bar>
+            ${this.accounts.enabled ? '<el-sync-notice></el-sync-notice>' : ''}
             <div id="stack-container"></div>
             <el-validation-panel></el-validation-panel>
             <el-dialog id="dialog" ${this.setProps({

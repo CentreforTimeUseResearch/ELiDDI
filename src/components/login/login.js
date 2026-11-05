@@ -1,6 +1,7 @@
 import { TinyBase } from '../base';
 import { appSession } from '../../auth/session';
-import { describeLoginFailure, getAccounts, login, signOut } from '../../auth/authClient';
+import { describeLoginFailure, getAccounts, login } from '../../auth/authClient';
+import { requestLogout } from '../../sync/appSync';
 import { appSyncStatus, SYNC_STATUS } from '../../sync/syncStatus';
 import './login.css';
 
@@ -76,7 +77,7 @@ export class Login extends TinyBase {
     } else if (action === 'reload') {
       globalThis.location.reload();
     } else if (action === 'logout') {
-      signOut({ session: appSession, config: globalThis.GLOBALS?.DATA });
+      requestLogout();
     }
   }
 

@@ -1057,3 +1057,167 @@ describe('marking a Diary complete', () => {
     expect(w.server.snapshots.get('A').state.diaries[DAY].status).toBe(100);
   });
 });
+
+describe('telling the Respondent when another device’s version replaced theirs', () => {
+  const seedClash = () => {
+    w.seedCopy(
+      'A',
+      { onboarding: false, diaries: { [DAY]: diaryWith('Edited here') } },
+      { revision: 1, dirty: true }
+    );
+    w.server.set(
+      'A',
+      { onboarding: false, diaries: { [DAY]: diaryWith('Edited elsewhere') } },
+      { revision: 5 }
+    );
+  };
+
+  it('says which days at login, when both sides changed a day and the server’s won', async () => {
+    seedClash();
+
+    await w.login('A');
+
+    expect(w.status.getNotice()).toEqual({ kind: 'replaced', dates: [DAY] });
+  });
+
+  it('says nothing when the merge kept everything this device had', async () => {
+    w.seedCopy(
+      'A',
+      { onboarding: false, diaries: { [DAY]: diaryWith('Only here') } },
+      { revision: 1, dirty: true }
+    );
+    w.server.set(
+      'A',
+      { onboarding: false, diaries: { [OTHER_DAY]: diaryWith('Only there') } },
+      { revision: 5 }
+    );
+
+    await w.login('A');
+
+    expect(w.status.getNotice()).toBeNull();
+  });
+
+  it('says nothing when only the server changed a day since they last agreed', async () => {
+    const base = baseOf({ [DAY]: diaryWith('Original') });
+    w.seedCopy(
+      'A',
+      { onboarding: false, diaries: { [DAY]: diaryWith('Original') } },
+      { revision: 1, dirty: true, base }
+    );
+    w.server.set(
+      'A',
+      { onboarding: false, diaries: { [DAY]: diaryWith('Edited elsewhere') } },
+      { revision: 5 }
+    );
+
+    await w.login('A');
+
+    expect(w.status.getNotice()).toBeNull();
+  });
+
+  it('says which day when a save is turned down because another device saved first', async () => {
+    w.server.set('A', { onboarding: false, diaries: {} }, { revision: 1 });
+    await w.login('A');
+    addEntry(w.store, DAY, 'Edited here');
+    // another device saves a different version of the same day first
+    w.server.set(
+      'A',
+      { onboarding: false, diaries: { [DAY]: diaryWith('Edited elsewhere') } },
+      { revision: 2 }
+    );
+
+    await w.timers.advance(2000);
+
+    expect(activityOn(w.store, DAY)).toEqual(['Edited elsewhere']);
+    expect(w.status.getNotice()).toEqual({ kind: 'replaced', dates: [DAY] });
+  });
+
+  it('can be dismissed', async () => {
+    seedClash();
+    await w.login('A');
+    w.status.dismissNotice();
+    expect(w.status.getNotice()).toBeNull();
+  });
+
+  it('is gone after logging out, and for the next person', async () => {
+    seedClash();
+    await w.login('A');
+
+    await w.logout();
+    expect(w.status.getNotice()).toBeNull();
+
+    seedClash();
+    await w.login('A');
+    await w.logout();
+    w.server.set('B', { onboarding: true, diaries: {} }, { revision: 1 });
+    await w.login('B');
+    expect(w.status.getNotice()).toBeNull();
+  });
+});
+
+describe('settle (before logging out)', () => {
+  beforeEach(async () => {
+    w.server.set('A', { onboarding: true, diaries: {} }, { revision: 1 });
+    await w.login('A');
+  });
+
+  it('is true at once when everything is already on the server', async () => {
+    expect(await w.sync.settle()).toBe(true);
+    expect(w.server.puts()).toHaveLength(0);
+  });
+
+  it('sends what is waiting for its quiet period, then says it is safe', async () => {
+    addEntry(w.store, DAY, 'Just typed');
+
+    expect(await w.sync.settle()).toBe(true);
+
+    expect(w.server.snapshots.get('A').state.diaries[DAY].timelines[0][0].activity).toBe(
+      'Just typed'
+    );
+  });
+
+  it('waits for a request already on its way', async () => {
+    addEntry(w.store, DAY, 'First');
+    const sending = w.timers.advance(2000); // the request is now out
+    const result = await w.sync.settle();
+    await sending;
+
+    expect(result).toBe(true);
+    expect(w.server.puts().length).toBeGreaterThan(0);
+  });
+
+  it('is false when the server cannot be reached, and the changes stay on this device', async () => {
+    addEntry(w.store, DAY, 'Not sendable');
+    w.server.down = true;
+
+    expect(await w.sync.settle()).toBe(false);
+
+    expect(w.meta('A').dirty).toBe(true);
+    expect(activityOn(w.store, DAY)).toEqual(['Not sendable']);
+  });
+
+  it('is false when the server refuses the diary', async () => {
+    addEntry(w.store, DAY, 'Too big');
+    w.server.failWith = 413;
+
+    expect(await w.sync.settle()).toBe(false);
+  });
+
+  it('can be tried again once the server is back', async () => {
+    addEntry(w.store, DAY, 'Not sendable');
+    w.server.down = true;
+    await w.sync.settle();
+    w.server.down = false;
+
+    expect(await w.sync.settle()).toBe(true);
+    expect(w.server.snapshots.get('A').state.diaries[DAY].timelines[0][0].activity).toBe(
+      'Not sendable'
+    );
+  });
+
+  it('is true when nobody is logged in', async () => {
+    await w.logout();
+
+    expect(await w.sync.settle()).toBe(true);
+  });
+});

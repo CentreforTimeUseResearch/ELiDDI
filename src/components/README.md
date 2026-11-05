@@ -8,26 +8,27 @@ This folder holds every custom element in the app, one per subfolder, plus two s
 
 Each component subfolder has its own `README.md`:
 
-| Component                                        | Custom element           | Description                                                     |
-| ------------------------------------------------ | ------------------------ | --------------------------------------------------------------- |
-| [accordion](accordion/README.md)                 | `<el-accordion>`         | Category/Activity list rendered inside a picker's popover.      |
-| [activityPicker](activityPicker/README.md)       | `<el-activity-picker>`   | Searchable Activity picker (ARIA combobox + grid).              |
-| [contextualHelp](contextualHelp/README.md)       | `<el-contextual-help>`   | Help button that toggles the validation panel.                  |
-| [datePicker](datePicker/README.md)               | `<el-date-picker>`       | Switches the currently-viewed Diary date.                       |
-| [detailsPanel](detailsPanel/README.md)           | `<el-details-panel>`     | Create/edit panel for one Entry.                                |
-| [dialogWidget](dialogWidget/README.md)           | `<el-dialog>`            | Generic native-`<dialog>` modal wrapper.                        |
-| [durationInput](durationInput/README.md)         | `<el-duration-input>`    | Accessible hours + minutes duration field.                      |
-| [dynamicTimelineUI](dynamicTimelineUI/README.md) | `<el-dynamic-timeline>`  | JS-layer root component.                                        |
-| [login](login/README.md)                         | `<el-login>`             | Login-code form, when the study uses server accounts.           |
-| [syncStatus](syncStatus/syncStatus.js)           | `<el-sync-status>`       | "Saved / Saving / Not saved yet" in the nav bar, accounts only. |
-| [navbar](navbar/README.md)                       | `<el-nav-bar>`           | Top navigation bar.                                             |
-| [onboarding](onboarding/README.md)               | `<el-onboarding>`        | Guided-tour walkthrough steps.                                  |
-| [timeline](timeline/README.md)                   | `<el-timeline>`          | The SVG time axis, one per Dimension.                           |
-| [timelinePicker](timelinePicker/README.md)       | `<el-timeline-picker>`   | Dropdown to switch the current Dimension.                       |
-| [timelineStack](timelineStack/README.md)         | `<el-timeline-stack>`    | Horizontally-scrolling stack of all Timelines.                  |
-| [timePicker](timePicker/README.md)               | `<el-time-picker>`       | Single 24-hour time field.                                      |
-| [timePickerPanel](timePickerPanel/README.md)     | `<el-time-picker-panel>` | Start/end/duration group for one Entry.                         |
-| [validationPanel](validationPanel/README.md)     | `<el-validation-panel>`  | Right-hand panel listing the Validation rule results.           |
+| Component                                        | Custom element           | Description                                                                              |
+| ------------------------------------------------ | ------------------------ | ---------------------------------------------------------------------------------------- |
+| [accordion](accordion/README.md)                 | `<el-accordion>`         | Category/Activity list rendered inside a picker's popover.                               |
+| [activityPicker](activityPicker/README.md)       | `<el-activity-picker>`   | Searchable Activity picker (ARIA combobox + grid).                                       |
+| [contextualHelp](contextualHelp/README.md)       | `<el-contextual-help>`   | Help button that toggles the validation panel.                                           |
+| [datePicker](datePicker/README.md)               | `<el-date-picker>`       | Switches the currently-viewed Diary date.                                                |
+| [detailsPanel](detailsPanel/README.md)           | `<el-details-panel>`     | Create/edit panel for one Entry.                                                         |
+| [dialogWidget](dialogWidget/README.md)           | `<el-dialog>`            | Generic native-`<dialog>` modal wrapper.                                                 |
+| [durationInput](durationInput/README.md)         | `<el-duration-input>`    | Accessible hours + minutes duration field.                                               |
+| [dynamicTimelineUI](dynamicTimelineUI/README.md) | `<el-dynamic-timeline>`  | JS-layer root component.                                                                 |
+| [login](login/README.md)                         | `<el-login>`             | Login-code form, when the study uses server accounts.                                    |
+| [syncStatus](syncStatus/syncStatus.js)           | `<el-sync-status>`       | "Saved / Saving / Not saved yet" in the nav bar, accounts only.                          |
+| [syncNotice](syncNotice/syncNotice.js)           | `<el-sync-notice>`       | Banner: "another device had a newer version of..." and the logout choice, accounts only. |
+| [navbar](navbar/README.md)                       | `<el-nav-bar>`           | Top navigation bar.                                                                      |
+| [onboarding](onboarding/README.md)               | `<el-onboarding>`        | Guided-tour walkthrough steps.                                                           |
+| [timeline](timeline/README.md)                   | `<el-timeline>`          | The SVG time axis, one per Dimension.                                                    |
+| [timelinePicker](timelinePicker/README.md)       | `<el-timeline-picker>`   | Dropdown to switch the current Dimension.                                                |
+| [timelineStack](timelineStack/README.md)         | `<el-timeline-stack>`    | Horizontally-scrolling stack of all Timelines.                                           |
+| [timePicker](timePicker/README.md)               | `<el-time-picker>`       | Single 24-hour time field.                                                               |
+| [timePickerPanel](timePickerPanel/README.md)     | `<el-time-picker-panel>` | Start/end/duration group for one Entry.                                                  |
+| [validationPanel](validationPanel/README.md)     | `<el-validation-panel>`  | Right-hand panel listing the Validation rule results.                                    |
 
 See also: [Class Diagram](CLASS_DIAGRAM.md) — every class in `src/`, how they inherit from `TinyBase`, and how they're actually wired together (real object composition vs. rendered-as-a-custom-element dependency).
 

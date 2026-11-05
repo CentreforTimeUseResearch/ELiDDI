@@ -35,7 +35,7 @@ It sits inside a dialog that [DynamicTimelineUI](../dynamicTimelineUI/README.md)
 
 **While the diary loads.** After login the dialog stays up and the form gives way to a message, because the Respondent's diary has to come from the server before anything is shown (`src/sync/`, [#208](https://github.com/CentreforTimeUseResearch/ELiDDI/issues/208)). It shows "Loading your diary…"; if the diary could not be loaded and there is no copy on the device, a "Try again" button; if the server holds a newer format than this page understands, a "Reload the page" button. Each has "Log out", so someone else can use the device. The status comes from `appSyncStatus` (`src/sync/syncStatus.js`); this component never talks to the sync manager directly.
 
-**What this does not do yet.** What a Respondent is told when another device had a newer version of a day, and the choice at logout when changes could not be sent, are [#209](https://github.com/CentreforTimeUseResearch/ELiDDI/issues/209).
+**Logging out** from the gate (and from the nav bar) goes through `requestLogout()` in `src/sync/appSync.js`: with accounts on it first sends anything the server lacks, and only then ends the login. If that cannot be done the Respondent is asked what to do (see [`<el-sync-notice>`](../syncNotice/syncNotice.js)).
 
 ---
 

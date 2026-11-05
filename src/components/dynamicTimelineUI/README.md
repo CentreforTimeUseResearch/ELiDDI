@@ -10,7 +10,7 @@ The JS-layer root component. `scripts/generate_no_js.js` wraps the entire no-JS 
 
 - [`<el-nav-bar>`](../navbar/README.md)
 - An empty `#stack-container` wrapper, populated by `renderStack()` (see below) with either [`<el-timeline-stack>`](../timelineStack/README.md) or [`<el-horizontal-timeline-stack>`](../horizontalTimelineStack/README.md), depending on the current breakpoint.
-- With server accounts on, a fourth, non-dismissible dialog hosting [`<el-login>`](../login/README.md) (absent otherwise): it opens whenever nobody is logged in, and stays open while the Respondent's diary is being fetched from the server or cannot be used (`BLOCKS_DIARY` in `src/sync/syncStatus.js`), the nav bar and timeline are hidden behind it (`data-login-required`), and the onboarding waits until after login. Three [`<el-dialog>`](../dialogWidget/README.md)s: one hosting [`<el-onboarding>`](../onboarding/README.md), one hosting [`<el-date-picker>`](../datePicker/README.md), and a confirm dialog for the Navbar's Reset.
+- With server accounts on, an `<el-sync-notice>` banner under the nav bar (see [`syncNotice`](../syncNotice/syncNotice.js)), and a fourth, non-dismissible dialog hosting [`<el-login>`](../login/README.md) (absent otherwise): it opens whenever nobody is logged in, and stays open while the Respondent's diary is being fetched from the server or cannot be used (`BLOCKS_DIARY` in `src/sync/syncStatus.js`), the nav bar and timeline are hidden behind it (`data-login-required`), and the onboarding waits until after login. Three [`<el-dialog>`](../dialogWidget/README.md)s: one hosting [`<el-onboarding>`](../onboarding/README.md), one hosting [`<el-date-picker>`](../datePicker/README.md), and a confirm dialog for the Navbar's Reset.
 
 ## Custom element
 

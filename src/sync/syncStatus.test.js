@@ -50,3 +50,30 @@ describe('BLOCKS_DIARY', () => {
     );
   });
 });
+
+describe('notices', () => {
+  it('starts with none, and tells subscribers when one is set or dismissed', () => {
+    const status = createSyncStatus();
+    const seen = vi.fn();
+    status.subscribe(seen);
+    expect(status.getNotice()).toBeNull();
+
+    status.setNotice({ kind: 'unsent' });
+    expect(status.getNotice()).toEqual({ kind: 'unsent' });
+    expect(seen).toHaveBeenCalledTimes(1);
+
+    status.dismissNotice();
+    expect(status.getNotice()).toBeNull();
+    expect(seen).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not tell anyone when dismissing a notice that is not there', () => {
+    const status = createSyncStatus();
+    const seen = vi.fn();
+    status.subscribe(seen);
+
+    status.dismissNotice();
+
+    expect(seen).not.toHaveBeenCalled();
+  });
+});

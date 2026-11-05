@@ -30,8 +30,18 @@ export const BLOCKS_DIARY = new Set([
   SYNC_STATUS.OUTDATED,
 ]);
 
+// Things the Respondent must be told that are not a status of their own:
+//   { kind: 'replaced', dates: ['2026-11-03', ...] }
+//       another device had newer versions of these days, so they now show those
+//       (the versions that were on this device are kept as a backup)
+//   { kind: 'unsent' }
+//       they chose to log out but the changes not yet on the server could not be
+//       sent; they choose between trying again, logging out anyway, or staying
+export const NOTICE_KIND = { REPLACED: 'replaced', UNSENT: 'unsent' };
+
 export function createSyncStatus() {
   let current = SYNC_STATUS.IDLE;
+  let notice = null;
   let retryHandler = null;
   const subscribers = new Set();
 
@@ -43,6 +53,16 @@ export function createSyncStatus() {
       }
       current = next;
       [...subscribers].forEach((fn) => fn(current));
+    },
+    getNotice: () => notice,
+    setNotice(next) {
+      notice = next;
+      [...subscribers].forEach((fn) => fn(current));
+    },
+    dismissNotice() {
+      if (notice !== null) {
+        this.setNotice(null);
+      }
     },
     subscribe(fn) {
       subscribers.add(fn);

@@ -24,6 +24,30 @@ _Avoid_: Shadow (the internal code name for this — fine in implementation, but
 **Respondent**:
 The person filling in the diary. Every other term here is defined from their point of view — they're the implicit actor behind every Entry.
 
+## Server accounts
+
+Optional, per study (`general.server_accounts`; see [ADR 0007](docs/adr/0007-server-sync-model.md)). Without it a Respondent's Diary lives only in their browser.
+
+**Server accounts**:
+A study setting under which Respondents log in to an ELiDDI backend, so one Respondent's Diaries follow them between devices. Nothing else about the diary changes.
+_Avoid_: "user accounts", "profile" (a Respondent has no profile, only a login code and a Diary)
+
+**Login code**:
+The secret a Respondent types to log in, issued by the study (not chosen by them). It identifies them to the backend; the page only ever keeps the non-secret Respondent id derived from it.
+_Avoid_: password, username
+
+**Login**:
+One Respondent's signed-in sitting on one device, ended by logging out or by running out. Distinct from the login _code_, which is what starts one; a Respondent can be logged in on several devices at once.
+
+**Sync**:
+Keeping a Respondent's Diaries on this device and on the backend the same, in the background. The diary never waits for it: every change is saved on the device first and sent to the backend a moment later.
+
+**Local copy**:
+What this device holds of a Respondent's Diaries while accounts are on, kept per Respondent so one person never sees another's. Removed at logout once everything has been sent.
+
+**Backup**:
+The version of a Diary that another device's newer version replaced during a merge. Kept on the device, never shown, and never deleted automatically.
+
 ## Recording a span of time
 
 **Entry**:

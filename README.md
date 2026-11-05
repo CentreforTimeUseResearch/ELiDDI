@@ -49,6 +49,10 @@ npm run format        # Prettier over src/ and scripts/
 
 The diary's content (Dimensions, Activities, wording, onboarding) comes from `config/config.json` — see [json_schema.md](json_schema.md) for the schema.
 
+### Optional server accounts
+
+By default a Respondent's diary lives only in their browser. A study can instead turn on **server accounts** (`general.server_accounts` and `general.backend_url`; set them in the [deployer](https://github.com/CentreforTimeUseResearch/ELiDDI_deployer)): Respondents log in with a code, and their diary follows them between devices through the [ELiDDI_backend](https://github.com/CentreforTimeUseResearch/ELiDDI_backend) server. The design is [ADR 0007](docs/adr/0007-server-sync-model.md); the code is in [`src/auth/`](src/auth) and [`src/sync/`](src/sync/README.md); the final submission goes to the backend ([ADR 0006](docs/adr/0006-diary-submission-payload.md)). To check the whole thing by hand against a local backend, follow [docs/server-accounts-test.md](docs/server-accounts-test.md). With the setting off nothing changes.
+
 ---
 
 ## Architecture

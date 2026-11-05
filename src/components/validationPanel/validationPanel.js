@@ -7,7 +7,7 @@ import { TinyBase } from '../base';
 import { HIDE_PANEL, SET_COMPLETE } from '../../store/actionTypes';
 import { DIARY_STATUS } from '../../store/diaryStatus';
 import { canSubmit, validateDiary } from '../../validation/validateDiary';
-import { submitDiary } from '../../submission/submitDiary';
+import { getSubmitTarget, submitDiary } from '../../submission/submitDiary';
 import { escapeHtml } from '../../utils/html';
 
 import './validationPanel.css';
@@ -17,6 +17,8 @@ const PANEL_NAME = 'validation';
 // what the Respondent is told when a submission fails
 function describeFailure({ reason, status }) {
   switch (reason) {
+    case 'unauthorized':
+      return 'Your login has run out. Log in again, then press Diary complete again. Your Diary has not been lost.';
     case 'network':
       return 'The Diary could not be sent. Check your connection and try again.';
     case 'http':
@@ -149,7 +151,7 @@ export class ValidationPanel extends TinyBase {
   // is in flight. Below it, what happened to the viewed day's submission.
   updateActions(results) {
     const { diaries, currentDate } = this.store.getState();
-    const hasSubmitUrl = Boolean(GLOBALS.DATA.general?.submit_completed_diary_url);
+    const hasSubmitUrl = getSubmitTarget(GLOBALS.DATA) !== null;
     const blocked = !canSubmit(results);
     this.completeButton.hidden = !hasSubmitUrl;
     this.completeButton.disabled = blocked || this.isSending;

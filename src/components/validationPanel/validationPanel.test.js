@@ -249,6 +249,41 @@ describe('ValidationPanel', () => {
       GLOBALS.DATA.general.submit_completed_diary_url = 'https://example.org/submit';
     });
 
+    describe('with server accounts on', () => {
+      const general = GLOBALS.DATA.general;
+      const settle = () => new Promise((resolve) => setTimeout(resolve));
+      beforeEach(() => {
+        general.server_accounts = true;
+        general.backend_url = 'https://diary.example.org';
+        general.submit_completed_diary_url = '';
+      });
+      afterEach(() => {
+        delete general.server_accounts;
+        delete general.backend_url;
+      });
+
+      it('is shown even without a submit URL, since the backend is where it goes', () => {
+        open();
+
+        expect(button().hidden).toBe(false);
+      });
+
+      it('says the login has run out, and keeps the Diary, when nobody is logged in', async () => {
+        setValidation({});
+        addEntry(DATE, 0, 'Sleeping');
+        open();
+
+        button().click();
+        await settle();
+
+        expect(fetchStub).not.toHaveBeenCalled();
+        expect(panelEl.querySelector('.validation-submit-status').textContent).toContain(
+          'Log in again'
+        );
+        expect(appStore.getState().diaries[DATE].status).toBe(DIARY_STATUS.IN_PROGRESS);
+      });
+    });
+
     it('is not shown when the study has no submit URL', () => {
       GLOBALS.DATA.general.submit_completed_diary_url = '';
 

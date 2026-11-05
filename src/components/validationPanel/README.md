@@ -12,7 +12,7 @@ The results come from `validateDiary()` ([src/validation](../../validation/READM
 
 ## Diary complete
 
-At the bottom is the "Diary complete" button. It is shown only when the study has `general.submit_completed_diary_url` (the rules above work either way).
+At the bottom is the "Diary complete" button. It is shown only when the study has somewhere to submit to: `general.submit_completed_diary_url`, or, with server accounts on, always (the ELiDDI backend; see [src/submission](../../submission/README.md)). The rules above work either way. If the login has run out, the message says to log in again and press the button again; the Diary is untouched.
 
 - It is **disabled** while a **hard** check fails, and the panel says why (the button's `aria-describedby`). A failing soft check does not disable it.
 - Clicking it with every check passing calls `submitDiary()` ([src/submission](../../submission/README.md)) for the viewed day.

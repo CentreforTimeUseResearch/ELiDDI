@@ -109,7 +109,7 @@ The Respondent can always keep working; what they see is whether their work is s
 
 A small status indicator shows one of **Saved**, **Saving**, **Not saved yet (will retry)** or **Log in to save**. Wording and placement are for #208.
 
-Final submission (`POST /submit`, `ELiDDI_backend#7`) does not depend on the sync state: it sends the Diary itself with the token, as `submitDiary()` does now, and an unsynced snapshot does not block it.
+Final submission (`POST /submit`, `ELiDDI_backend#7`) does not depend on the sync state: it sends the Diary itself with the token (done in #210: `submitDiary()` posts to `<backend_url>/submit` and ignores `submit_completed_diary_url` when accounts are on, see [0006](0006-diary-submission-payload.md)), and an unsynced snapshot does not block it.
 
 ## Consequences for the code
 

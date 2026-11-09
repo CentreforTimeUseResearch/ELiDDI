@@ -55,6 +55,20 @@ describe.each([
     expect(panel().state.endOffsetMins).toBe(150);
   });
 
+  // #228: Enter on a Timeline opens the panel and then takes focus into it
+  it('lets a Timeline move keyboard focus into the panel, from any Dimension', () => {
+    HTMLElement.prototype.showPopover = vi.fn(); // jsdom has no Popover API
+    try {
+      timelines()[1].panelActions.openNewEntry(60, 90);
+
+      timelines()[1].panelActions.focus();
+
+      expect(document.activeElement).toBe(panel().querySelector('[role="combobox"]'));
+    } finally {
+      delete HTMLElement.prototype.showPopover;
+    }
+  });
+
   it('serves every Dimension with one panel, retargeted to the current one', () => {
     expect(document.querySelectorAll('el-details-panel')).toHaveLength(1);
 

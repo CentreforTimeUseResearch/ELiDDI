@@ -24,6 +24,8 @@ export const Y_AXIS = {
   crossCoordAttr: 'cx',
   readoutCrossOffset: HANDLE_HIT_RADIUS + 6,
   readoutAnchor: 'start',
+  previousKey: 'ArrowUp', // keyboard: back along the time axis
+  nextKey: 'ArrowDown',
 };
 export const X_AXIS = {
   positionAttr: 'x',
@@ -33,6 +35,8 @@ export const X_AXIS = {
   crossCoordAttr: 'cy',
   readoutCrossOffset: -(HANDLE_GRIP_RADIUS + 9),
   readoutAnchor: 'middle',
+  previousKey: 'ArrowLeft',
+  nextKey: 'ArrowRight',
 };
 
 const LONG_PRESS_MS = 500;

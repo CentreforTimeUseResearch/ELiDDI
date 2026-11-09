@@ -104,3 +104,26 @@ el-timeline {
   user-select: none;
   -webkit-user-select: none;
 }
+
+/* keyboard focus on a Timeline: a ring in its own layer above every block (see
+   focusRing.js), so a neighbouring block can't hide it. The white band keeps
+   the blue line visible on any block colour. The focusable block and slot
+   themselves show no outline of their own: the ring is the indicator */
+.focus-ring-halo {
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 7;
+  pointer-events: none;
+}
+
+.focus-ring-line {
+  fill: none;
+  stroke: var(--color-primary-focus);
+  stroke-width: 3.5;
+  pointer-events: none;
+}
+
+[data-part='events'] rect[role='button']:focus,
+[data-part='slot']:focus {
+  outline: none;
+}

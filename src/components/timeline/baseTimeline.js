@@ -3,6 +3,7 @@ import { ADD_TIMELINE, HIDE_PANEL } from '../../store/actionTypes';
 import { EntryResizeController } from './entryResizeController';
 import { EntryCreateController } from './entryCreateController';
 import { CreatePreview } from './createPreview';
+import { TimelineKeyboard } from './timelineKeyboard';
 import { clampCreateSpan, getNowLimitOffsetMins } from './createSpan';
 import { EntryCommands, formatOverlapMessage } from './entryCommands';
 import { SVGNS } from './timelineConstants';
@@ -24,7 +25,8 @@ export const EMPTY_ENTRIES = [];
 //   static crossAxisCenter  where resize handles sit across the time axis
 //   static crossAxisBox     { start, size }: where an Entry block sits across it
 //   getPxPerMinute()        time-axis scale
-//   renderEntries()         draws this.entries (see entryBlocks.js)
+//   drawEntries()           draws this.entries (see entryBlocks.js); callers use
+//                           renderEntries(), which keeps keyboard focus across it
 //   updateState()           what a store update redraws
 // and may extend connectedCallback and getChildElementReferences. Its
 // panelActions are always injected as props by the stack that owns the one
@@ -48,6 +50,7 @@ export class BaseTimeline extends TinyBase {
   resizeController; // owns the long-press/drag/resize-handle pipeline
   createController; // owns the press-and-drag-to-create gesture
   createPreview; // the provisional block shown while a new Entry is open
+  keyboard; // keyboard access: roving focus, names, Enter (timelineKeyboard.js)
   entryCommands;
 
   constructor() {
@@ -79,6 +82,7 @@ export class BaseTimeline extends TinyBase {
     this.panelActions = this.props;
     this.registerCleanup(this.store.subscribe(() => this.updateState()));
     this.registerCleanup(this.store.subscribe(() => this.syncCreatePreview()));
+    this.registerCleanup(this.store.subscribe(() => this.syncKeyboardFocus()));
     this.getChildElementReferences();
 
     this.listen(document, 'keydown', (e) => this.onGlobalKeyDown(e));
@@ -92,6 +96,8 @@ export class BaseTimeline extends TinyBase {
     });
     this.createController = this.createCreateController();
     this.registerCleanup(() => this.createController.destroy());
+    this.keyboard = this.createKeyboard();
+    this.registerCleanup(() => this.keyboard.destroy());
     this.assignEventHandlers();
     this.renderEntries();
   }
@@ -191,6 +197,63 @@ export class BaseTimeline extends TinyBase {
     });
   }
 
+  createKeyboard() {
+    const keyboard = new TimelineKeyboard({
+      svg: this.timeLineElement,
+      entriesLayer: this.entriesLayer,
+      slotContainer: this.entriesLayer?.parentNode ?? this.timeLineElement,
+      axis: this.constructor.axis,
+      getPxPerMinute: () => this.getPxPerMinute(),
+      crossBox: this.constructor.crossAxisBox,
+      getEntries: () => this.entries,
+      getDimensionName: () => GLOBALS.DATA.timeline[this.dimensionIndex]?.name ?? '',
+      isPanelOpen: () => this.store.getState().uipanel === 'details',
+      onOpenEntry: (entry) => this.openEntryFromKeyboard(entry),
+      onCreateAt: (anchorMins) => this.createAtFromKeyboard(anchorMins),
+    });
+    keyboard.connect();
+    return keyboard;
+  }
+
+  // Enter on an Entry: the same as clicking it, then focus goes into the panel
+  openEntryFromKeyboard(entry) {
+    this.createPreview.hide(); // opening an Entry ends any new-Entry block
+    this.selectedID = entry.id;
+    this.panelActions.openEntry(entry);
+    this.panelActions.focus?.();
+  }
+
+  // Enter on an empty slot: the same as clicking it -> whether anything opened
+  createAtFromKeyboard(anchorMins) {
+    const span = this.defaultSpanAt(anchorMins);
+    if (!span) {
+      this.createPreview.flashNoRoom(anchorMins);
+      return false;
+    }
+    this.startNewEntry(span);
+    this.panelActions.focus?.();
+    return true;
+  }
+
+  // the block a plain click or Enter makes at a slot: the default length, as
+  // much of it as fits -> a span, or null when there is no room at all
+  defaultSpanAt(anchorMins) {
+    return clampCreateSpan({
+      anchorMins,
+      entries: this.entries,
+      singleChoice: this.isSingleChoiceDimension,
+      nowLimitMins: getNowLimitOffsetMins(this.currentDate),
+    });
+  }
+
+  // the panel closing hands keyboard focus back to the Timeline (if it was a
+  // keyboard that opened it)
+  syncKeyboardFocus() {
+    if (this.store.getState().uipanel !== 'details') {
+      this.keyboard?.panelClosed();
+    }
+  }
+
   // opens the details panel for a new Entry spanning `span`, and keeps a
   // provisional block on the Timeline until the panel closes (saved or not)
   startNewEntry({ startOffsetMins, endOffsetMins, atLimit }) {
@@ -217,6 +280,14 @@ export class BaseTimeline extends TinyBase {
     if (!stillOpen) {
       this.createPreview.hide();
     }
+  }
+
+  // redraws the Entries, keeping keyboard focus where it was (a redraw
+  // replaces every block, and focus on a removed element is lost)
+  renderEntries() {
+    this.keyboard?.beforeRender();
+    this.drawEntries();
+    this.keyboard?.afterRender();
   }
 
   // reads this Timeline's Entries for the current Diary date from the store
@@ -272,6 +343,13 @@ export class BaseTimeline extends TinyBase {
   assignEventHandlers() {
     const svg = this.timeLineElement;
     this.listen(svg, 'click', (e) => this.onTimelineClick(e));
+    this.listen(svg, 'keydown', (e) => this.keyboard.onKeyDown(e));
+    this.listen(svg, 'focusin', (e) => this.keyboard.onFocusIn(e));
+    this.listen(svg, 'focusout', (e) => this.keyboard.onFocusOut(e));
+    // the focus ring is for keyboard users: any key says that's who this is,
+    // any press says it is a pointer (capture: before anything else reacts)
+    this.listen(document, 'keydown', () => this.keyboard.noteInput(true), true);
+    this.listen(document, 'pointerdown', () => this.keyboard.noteInput(false), true);
     // each controller acts only on its own kind of press (an Entry or a
     // handle -> resize; empty time -> create)
     this.listen(svg, 'pointerdown', (e) => {
@@ -383,12 +461,7 @@ export class BaseTimeline extends TinyBase {
       // as much of it as fits
       const svgCoord = this.clientToSvgCoord(e.clientX, e.clientY);
       const anchorMins = this.calculateTheTimeSlotClicked(svgCoord >= 0 ? svgCoord : 0);
-      const span = clampCreateSpan({
-        anchorMins,
-        entries: this.entries,
-        singleChoice: this.isSingleChoiceDimension,
-        nowLimitMins: getNowLimitOffsetMins(this.currentDate),
-      });
+      const span = this.defaultSpanAt(anchorMins);
       if (!span) {
         this.createPreview.flashNoRoom(anchorMins);
         return;

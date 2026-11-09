@@ -61,6 +61,7 @@ export class DetailsPanelCoordinator {
           actions.openNewEntry(startOffsetMins, endOffsetMins)
         ),
       close: () => this.panelActions?.close(),
+      focus: () => this.panelActions?.focus?.(),
       reportSaveConflict: (message) => this.panelActions?.reportSaveConflict(message),
     };
   }

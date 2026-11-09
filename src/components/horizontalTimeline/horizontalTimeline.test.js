@@ -462,5 +462,57 @@ describe('HorizontalTimeline mounted', () => {
       expect(updatedEntry.endOffsetMins).toBe(50);
       vi.useRealTimers();
     });
+
+    it('shows the drag readout above the handle, centred on it, so the row does not clip it', () => {
+      vi.useFakeTimers();
+      appStore.dispatch({ type: HIDE_PANEL });
+      const date = getCurrentDiaryDateKey();
+      appStore.dispatch({ type: SWITCH_DATE, payload: date });
+      appStore.dispatch({
+        type: ADD_ENTRY,
+        payload: {
+          dimensionIndex: 2,
+          date,
+          startOffsetMins: 0,
+          endOffsetMins: 30,
+          activity: 'Home',
+          id: 1,
+        },
+      });
+      const { el } = createHorizontalTimeline(2);
+      const rect = el.querySelector('[data-part="events"] rect[data-id="1"]');
+      el.onEntryPointerDown({
+        target: rect,
+        pointerId: 1,
+        pointerType: 'touch',
+        clientX: 0,
+        clientY: 0,
+      });
+      vi.advanceTimersByTime(500);
+      const hitArea = el.querySelector(
+        '[data-part="drag-handles"] .resize-handle[data-handle-edge="end"] .resize-handle-hit-area'
+      );
+      el.onEntryPointerDown({
+        target: hitArea,
+        pointerId: 2,
+        pointerType: 'touch',
+        clientX: 0,
+        clientY: 0,
+      });
+      el.onEntryPointerMove({ target: hitArea, pointerId: 2, clientX: 100, clientY: 0 });
+
+      const readout = el.querySelector('[data-part="drag-handles"] .resize-handle-readout');
+      const grip = el.querySelector(
+        '[data-part="drag-handles"] .resize-handle[data-handle-edge="end"] .resize-handle-grip'
+      );
+      expect(readout).not.toBeNull();
+      expect(readout.getAttribute('text-anchor')).toBe('middle');
+      // above the grip (smaller y) and still inside the row
+      const readoutY = Number(readout.getAttribute('y'));
+      expect(readoutY).toBeLessThan(Number(grip.getAttribute('cy')));
+      expect(readoutY).toBeGreaterThan(0);
+      expect(readout.getAttribute('x')).toBe(grip.getAttribute('cx'));
+      vi.useRealTimers();
+    });
   });
 });

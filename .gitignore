@@ -24,7 +24,6 @@ dist-ssr
 *.sw?
 
 # Claude stuff
-CLAUDE.md
 plans
 prd
 settings.local.json

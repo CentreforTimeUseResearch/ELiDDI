@@ -54,6 +54,27 @@ export function getCurrentDiaryDateKey() {
   return `${year}-${month}-${day}`;
 }
 
+// the Diary date key `days` calendar days after (or before, if negative) the
+// given one. Works on the date parts, in UTC, rather than adding 24 hours of
+// milliseconds, which lands on the wrong date (or repeats one) when the clocks
+// change
+export function addDaysToDateKey(dateKey, days) {
+  const [year, month, day] = dateKey.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, day + days)).toISOString().slice(0, 10);
+}
+
+// a Diary date key for reading aloud or in a label: "Saturday 7 November".
+// Like the above, from the date parts, so the time zone cannot move it
+export function formatDateKeyAsLongDate(dateKey) {
+  const [year, month, day] = dateKey.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString('en-GB', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    timeZone: 'UTC',
+  });
+}
+
 // formats a diary date key ("YYYY-MM-DD") for display as "DD/MM/YYYY" - a
 // plain string reformat rather than parsing through new Date(dateKey),
 // which reads the key as UTC midnight and can shift the displayed date by

@@ -4,6 +4,8 @@ import {
   getCurrentDiaryDateKey,
   formatOffsetAsClockTime,
   parseDayBoundary,
+  addDaysToDateKey,
+  formatDateKeyAsLongDate,
 } from './time';
 
 // GLOBALS.DATA.day_boundary is "04:00" (240 minutes) in the real config
@@ -62,5 +64,48 @@ describe('formatOffsetAsClockTime', () => {
   it('uses a given day boundary instead, wrapping past midnight', () => {
     expect(formatOffsetAsClockTime(10, 360)).toBe('06:10');
     expect(formatOffsetAsClockTime(1440, 240)).toBe('04:00');
+  });
+});
+
+describe('addDaysToDateKey', () => {
+  it('moves a Diary date key by whole days, either way', () => {
+    expect(addDaysToDateKey('2026-11-09', 1)).toBe('2026-11-10');
+    expect(addDaysToDateKey('2026-11-09', -1)).toBe('2026-11-08');
+    expect(addDaysToDateKey('2026-11-09', 0)).toBe('2026-11-09');
+  });
+
+  it('crosses month and year ends', () => {
+    expect(addDaysToDateKey('2026-11-30', 1)).toBe('2026-12-01');
+    expect(addDaysToDateKey('2026-12-31', 1)).toBe('2027-01-01');
+    expect(addDaysToDateKey('2027-01-01', -1)).toBe('2026-12-31');
+    expect(addDaysToDateKey('2026-03-01', -1)).toBe('2026-02-28');
+  });
+
+  it('knows leap years', () => {
+    expect(addDaysToDateKey('2028-02-28', 1)).toBe('2028-02-29');
+    expect(addDaysToDateKey('2028-03-01', -1)).toBe('2028-02-29');
+    expect(addDaysToDateKey('2027-02-28', 1)).toBe('2027-03-01');
+  });
+
+  // a day is not always 24 hours: stepping by milliseconds goes wrong (or
+  // repeats a date) when the clocks change
+  it('is exactly one date per step across clock changes', () => {
+    expect(addDaysToDateKey('2026-03-28', 1)).toBe('2026-03-29');
+    expect(addDaysToDateKey('2026-03-29', 1)).toBe('2026-03-30');
+    expect(addDaysToDateKey('2026-10-24', 1)).toBe('2026-10-25');
+    expect(addDaysToDateKey('2026-10-25', 1)).toBe('2026-10-26');
+    expect(addDaysToDateKey('2026-03-30', -1)).toBe('2026-03-29');
+  });
+});
+
+describe('formatDateKeyAsLongDate', () => {
+  it('reads like "Saturday 7 November"', () => {
+    expect(formatDateKeyAsLongDate('2026-11-07')).toBe('Saturday 7 November');
+    expect(formatDateKeyAsLongDate('2026-11-09')).toBe('Monday 9 November');
+  });
+
+  it('does not shift a day with the time zone', () => {
+    expect(formatDateKeyAsLongDate('2026-01-01')).toBe('Thursday 1 January');
+    expect(formatDateKeyAsLongDate('2026-12-31')).toBe('Thursday 31 December');
   });
 });

@@ -105,6 +105,79 @@ nav {
   }
 }
 
+/* Previous day / the date button / Next day / Today, in one row. The date
+   button takes the room left, and shows the day's status under the date */
+.day-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  /* not stretched across a wide bar, which would leave the arrows far from the date */
+  max-width: 28rem;
+  margin: 0 auto;
+}
+
+.day-controls .date-indicator {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0;
+  line-height: 1.35;
+}
+
+.day-status {
+  color: var(--color-body-muted);
+}
+
+/* "Selected day:" is dropped from view on narrow screens, where the date, the
+   word "change" and the status would otherwise wrap to three lines. It stays
+   for screen readers. Keep in sync with --medium-width in style.css's :root -
+   media queries can't read custom properties, so this is a hand-kept literal */
+@media (max-width: 629px) {
+  .day-controls .date-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+  }
+}
+
+/* a quiet outlined button on the black bar. min 40px: comfortably over the 24px
+   WCAG 2.2 target minimum */
+.day-button {
+  flex: 0 0 auto;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0 var(--space-sm);
+  border: 1px solid var(--color-body-muted);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-on-dark);
+  font: inherit;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.today-button {
+  font-size: inherit;
+}
+
+.day-button:focus-visible,
+.day-controls .date-indicator:focus-visible {
+  outline: 2px solid var(--color-primary-on-dark);
+  outline-offset: 2px;
+}
+
+/* off, but still focusable (aria-disabled), with its reason in the title and
+   the description; dimmed and not clickable-looking */
+.day-button[aria-disabled='true'] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .right-pane {
   display: flex;
   flex: 0 0 auto;

@@ -2,8 +2,14 @@ import '../timelinePicker/timelinePicker.js';
 import '../contextualHelp/contextualHelp.js';
 import '../syncStatus/syncStatus.js';
 import { TinyBase } from '../base';
-import { RESET_ONBOARDING, SHOW_PANEL } from '../../store/actionTypes';
-import { formatDateKeyAsDDMMYYYY } from '../../utils/time';
+import { RESET_ONBOARDING, SHOW_PANEL, HIDE_PANEL, SWITCH_DATE } from '../../store/actionTypes';
+import { DIARY_STATUS } from '../../store/diaryStatus';
+import {
+  formatDateKeyAsDDMMYYYY,
+  formatDateKeyAsLongDate,
+  addDaysToDateKey,
+  getCurrentDiaryDateKey,
+} from '../../utils/time';
 import { getAccounts } from '../../auth/authClient';
 import { requestLogout } from '../../sync/appSync';
 import './navbar.css';
@@ -20,8 +26,30 @@ const MENU_ITEMS = [
   { label: 'Log out (switch person)', buttonClass: 'logout-button', accountsOnly: true },
 ];
 
+// why Next day / Today can't be used right now - shown as text (the title,
+// and a description the screen reader reads), not just by dimming the button
+const NEXT_DAY_REASON = "You can't fill in days that haven't happened";
+const TODAY_REASON = 'Already showing today';
+
+// a Diary's progress for the date button: nothing entered yet, some entered,
+// or submitted
+export function getDayStatus(diary) {
+  if (diary?.status === DIARY_STATUS.COMPLETE) {
+    return 'Complete';
+  }
+  const started = diary?.timelines?.some(
+    (timeline) => Array.isArray(timeline) && timeline.length > 0
+  );
+  return started ? 'In progress' : 'Not started';
+}
+
+// each Navbar's description elements get their own ids (aria-describedby needs
+// ids, and a page - or a test - may hold more than one Navbar)
+let instanceCount = 0;
+
 export class Navbar extends TinyBase {
   ready = false;
+  instanceId = ++instanceCount;
   store = super.getStore();
   dateIndicator;
 
@@ -33,12 +61,70 @@ export class Navbar extends TinyBase {
     this.updateDateIndicator();
   }
 
+  // the date button (the day, and its status) and the day buttons around it
   updateDateIndicator() {
     if (!this.dateIndicator) {
       return;
     }
+    const { currentDate, diaries } = this.store.getState();
+    this.querySelector('.date-text').innerHTML =
+      `<span class="date-label">Selected day: </span>${formatDateKeyAsDDMMYYYY(currentDate)} <u>change</u>`;
+    this.querySelector('.day-status').textContent = getDayStatus(diaries[currentDate]);
+    this.updateDayButtons(currentDate, getCurrentDiaryDateKey());
+  }
+
+  // the day Previous goes to: one back, but never to a day that has not begun
+  // (a stored day in the future, which no control can reach, steps down to today)
+  dayBefore(currentDate, today) {
+    const before = addDaysToDateKey(currentDate, -1);
+    return before > today ? today : before;
+  }
+
+  // names each button for where it goes, and says why Next / Today are off
+  updateDayButtons(currentDate, today) {
+    this.querySelector('.previous-day-button').setAttribute(
+      'aria-label',
+      `Previous day, ${formatDateKeyAsLongDate(this.dayBefore(currentDate, today))}`
+    );
+    const nextDisabled = currentDate >= today;
+    this.setDayButton('.next-day-button', '.next-day-reason', nextDisabled, NEXT_DAY_REASON);
+    this.querySelector('.next-day-button').setAttribute(
+      'aria-label',
+      nextDisabled
+        ? 'Next day'
+        : `Next day, ${formatDateKeyAsLongDate(addDaysToDateKey(currentDate, 1))}`
+    );
+    this.setDayButton('.today-button', '.today-reason', currentDate === today, TODAY_REASON);
+    this.querySelector('.today-button').setAttribute(
+      'aria-label',
+      `Today, ${formatDateKeyAsLongDate(today)}`
+    );
+  }
+
+  // aria-disabled, not disabled: a disabled button can't be focused, so a
+  // keyboard user could never reach its reason
+  setDayButton(buttonSelector, reasonSelector, disabled, reason) {
+    const button = this.querySelector(buttonSelector);
+    if (disabled) {
+      button.setAttribute('aria-disabled', 'true');
+      button.setAttribute('title', reason);
+    } else {
+      button.removeAttribute('aria-disabled');
+      button.removeAttribute('title');
+    }
+    this.querySelector(reasonSelector).textContent = disabled ? reason : '';
+  }
+
+  // one day per press, from where the store says it is now. Closes the panel
+  // first, as the date picker does (unsaved edits go with it, see
+  // DetailsPanelCoordinator's date handling)
+  goToDate(dateKey) {
     const { currentDate } = this.store.getState();
-    this.dateIndicator.innerHTML = `Selected day: ${formatDateKeyAsDDMMYYYY(currentDate)} <u>change</u>`;
+    if (dateKey === currentDate || dateKey > getCurrentDiaryDateKey()) {
+      return; // no change, or a day that has not begun
+    }
+    this.store.dispatch({ type: HIDE_PANEL });
+    this.store.dispatch({ type: SWITCH_DATE, payload: dateKey });
   }
 
   assignEventHandlers() {
@@ -74,6 +160,17 @@ export class Navbar extends TinyBase {
           offScreenMenu.classList.remove('active');
           requestLogout();
         });
+      });
+      this.querySelector('.previous-day-button')?.addEventListener('click', () => {
+        const { currentDate } = this.store.getState();
+        this.goToDate(this.dayBefore(currentDate, getCurrentDiaryDateKey()));
+      });
+      this.querySelector('.next-day-button')?.addEventListener('click', () => {
+        const { currentDate } = this.store.getState();
+        this.goToDate(addDaysToDateKey(currentDate, 1)); // goToDate refuses a day that has not begun
+      });
+      this.querySelector('.today-button')?.addEventListener('click', () => {
+        this.goToDate(getCurrentDiaryDateKey());
       });
       this.querySelector('.change-date-button')?.addEventListener('click', () => {
         this.store.dispatch({ type: SHOW_PANEL, payload: 'date' });
@@ -123,7 +220,17 @@ export class Navbar extends TinyBase {
             </div>
             <div class="middle-pane">
                 <el-timeline-picker></el-timeline-picker>
-                <button class="reset-to-div date-indicator change-date-button"></button>
+                <div class="day-controls" role="group" aria-label="Change day">
+                    <button class="day-button previous-day-button" type="button"><span aria-hidden="true">&lsaquo;</span></button>
+                    <button class="reset-to-div date-indicator change-date-button" type="button">
+                        <span class="date-text"></span>
+                        <span class="day-status"></span>
+                    </button>
+                    <button class="day-button next-day-button" type="button" aria-describedby="next-day-reason-${this.instanceId}"><span aria-hidden="true">&rsaquo;</span></button>
+                    <button class="day-button today-button" type="button" aria-describedby="today-reason-${this.instanceId}">Today</button>
+                    <span id="next-day-reason-${this.instanceId}" class="next-day-reason sr-only"></span>
+                    <span id="today-reason-${this.instanceId}" class="today-reason sr-only"></span>
+                </div>
             </div>
             <div class="right-pane">
                 ${getAccounts(globalThis.GLOBALS?.DATA).enabled ? '<el-sync-status></el-sync-status>' : ''}

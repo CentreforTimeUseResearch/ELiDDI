@@ -13,7 +13,8 @@ import './timeline.css';
 export class Timeline extends BaseTimeline {
   static templateId = 'svg-timeline';
   static axis = Y_AXIS;
-  static crossAxisCenter = 100 + 220 / 2; // matches the entriesLayer block's x="100" width="220"
+  static crossAxisBox = { start: 100, size: 220 }; // the entriesLayer block's x="100" width="220"
+  static crossAxisCenter = this.crossAxisBox.start + this.crossAxisBox.size / 2;
 
   shadowIndex = 0; // the Dimension mirrored onto every other one: Primary activity
   shadowEntriesLayer;

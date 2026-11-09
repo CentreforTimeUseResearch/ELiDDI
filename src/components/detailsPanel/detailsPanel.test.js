@@ -173,6 +173,18 @@ describe('DetailsPanel', () => {
       expect(saveEnabled(el)).toBe(enabled);
     });
 
+    it('opens a new Entry with the given start and end times, or one slot long without an end', () => {
+      const el = createPanel();
+
+      el.openNewEntry(60, 90);
+      expect(el.state.startOffsetMins).toBe(60);
+      expect(el.state.endOffsetMins).toBe(90);
+
+      el.openNewEntry(120);
+      expect(el.state.startOffsetMins).toBe(120);
+      expect(el.state.endOffsetMins).toBe(130);
+    });
+
     // found checking #162 in a real browser: Save was only ever enabled,
     // never disabled again, so shortening a valid Entry left it looking
     // clickable

@@ -1,6 +1,9 @@
 import { TinyBase } from '../base';
 import { ADD_TIMELINE, HIDE_PANEL } from '../../store/actionTypes';
 import { EntryResizeController } from './entryResizeController';
+import { EntryCreateController } from './entryCreateController';
+import { CreatePreview } from './createPreview';
+import { clampCreateSpan, getNowLimitOffsetMins } from './createSpan';
 import { EntryCommands, formatOverlapMessage } from './entryCommands';
 import { SVGNS } from './timelineConstants';
 
@@ -12,13 +15,14 @@ export const EMPTY_ENTRIES = [];
 
 // Everything one Dimension's Timeline does regardless of layout: reading its
 // Entries from the store, click routing (select an Entry / start a new one),
-// long-press-to-resize via EntryResizeController, and saving/deleting via
-// EntryCommands. See docs/adr/0003-one-timeline-base-for-both-layouts.md.
+// long-press-to-resize via EntryResizeController, press-and-drag to create via
+// EntryCreateController, and saving/deleting via EntryCommands. See docs/adr/0003-one-timeline-base-for-both-layouts.md.
 //
 // A subclass supplies the layout:
 //   static templateId       the <template> its SVG is cloned from
 //   static axis             Y_AXIS or X_AXIS (entryResizeController.js)
 //   static crossAxisCenter  where resize handles sit across the time axis
+//   static crossAxisBox     { start, size }: where an Entry block sits across it
 //   getPxPerMinute()        time-axis scale
 //   renderEntries()         draws this.entries (see entryBlocks.js)
 //   updateState()           what a store update redraws
@@ -42,6 +46,8 @@ export class BaseTimeline extends TinyBase {
   dimensionIndex;
   currentDate;
   resizeController; // owns the long-press/drag/resize-handle pipeline
+  createController; // owns the press-and-drag-to-create gesture
+  createPreview; // the provisional block shown while a new Entry is open
   entryCommands;
 
   constructor() {
@@ -72,11 +78,20 @@ export class BaseTimeline extends TinyBase {
     // injected by the stack, whose one shared panel (ADR 0005) it opens
     this.panelActions = this.props;
     this.registerCleanup(this.store.subscribe(() => this.updateState()));
+    this.registerCleanup(this.store.subscribe(() => this.syncCreatePreview()));
     this.getChildElementReferences();
 
     this.listen(document, 'keydown', (e) => this.onGlobalKeyDown(e));
     this.resizeController = this.createResizeController();
     this.registerCleanup(() => this.resizeController.destroy());
+    this.createPreview = new CreatePreview({
+      container: this.entriesLayer?.parentNode ?? this.timeLineElement,
+      axis: this.constructor.axis,
+      getPxPerMinute: () => this.getPxPerMinute(),
+      crossBox: this.constructor.crossAxisBox,
+    });
+    this.createController = this.createCreateController();
+    this.registerCleanup(() => this.createController.destroy());
     this.assignEventHandlers();
     this.renderEntries();
   }
@@ -140,6 +155,47 @@ export class BaseTimeline extends TinyBase {
     });
   }
 
+  createCreateController() {
+    return new EntryCreateController({
+      svg: this.timeLineElement,
+      preview: this.createPreview,
+      getEntries: () => this.entries,
+      isSingleChoiceDimension: () => this.isSingleChoiceDimension,
+      getCurrentDate: () => this.currentDate,
+      clientToSvgCoord: (clientX, clientY) => this.clientToSvgCoord(clientX, clientY),
+      calculateTheTimeSlotClicked: (coord) => this.calculateTheTimeSlotClicked(coord),
+      onCreate: (span) => this.startNewEntry(span),
+    });
+  }
+
+  // opens the details panel for a new Entry spanning `span`, and keeps a
+  // provisional block on the Timeline until the panel closes (saved or not)
+  startNewEntry({ startOffsetMins, endOffsetMins, atLimit }) {
+    // clear anything left over from an edit opened but never saved/deleted
+    this.selectedID = undefined;
+    this.panelActions.openNewEntry(startOffsetMins, endOffsetMins);
+    // after opening: the panel's own store updates run first, and
+    // syncCreatePreview hides the block unless the panel is showing
+    this.createPreview.show({ startOffsetMins, endOffsetMins, atLimit });
+  }
+
+  // the provisional block belongs to the new-Entry panel session: it goes
+  // when the panel closes, moves to another Dimension or Diary date, or
+  // opens something else. Never while the Respondent is still painting it.
+  syncCreatePreview() {
+    if (!this.createPreview?.isShowing || this.createController?.activeDrag) {
+      return;
+    }
+    const state = this.store.getState();
+    const stillOpen =
+      state.uipanel === 'details' &&
+      state.currentDimensionIndex === this.dimensionIndex &&
+      state.currentDate === this.currentDate;
+    if (!stillOpen) {
+      this.createPreview.hide();
+    }
+  }
+
   // reads this Timeline's Entries for the current Diary date from the store
   // -> whether the date changed since the last read
   syncEntriesFromStore(state) {
@@ -193,10 +249,24 @@ export class BaseTimeline extends TinyBase {
   assignEventHandlers() {
     const svg = this.timeLineElement;
     this.listen(svg, 'click', (e) => this.onTimelineClick(e));
-    this.listen(svg, 'pointerdown', (e) => this.resizeController.onEntryPointerDown(e));
-    this.listen(svg, 'pointermove', (e) => this.resizeController.onEntryPointerMove(e));
-    this.listen(svg, 'pointerup', (e) => this.resizeController.handlePointerUp(e));
-    this.listen(svg, 'pointercancel', (e) => this.resizeController.handlePointerCancel(e));
+    // each controller acts only on its own kind of press (an Entry or a
+    // handle -> resize; empty time -> create)
+    this.listen(svg, 'pointerdown', (e) => {
+      this.resizeController.onEntryPointerDown(e);
+      this.createController.onPointerDown(e);
+    });
+    this.listen(svg, 'pointermove', (e) => {
+      this.resizeController.onEntryPointerMove(e);
+      this.createController.onPointerMove(e);
+    });
+    this.listen(svg, 'pointerup', (e) => {
+      this.resizeController.handlePointerUp(e);
+      this.createController.handlePointerUp(e);
+    });
+    this.listen(svg, 'pointercancel', (e) => {
+      this.resizeController.handlePointerCancel(e);
+      this.createController.handlePointerCancel(e);
+    });
     // belt-and-braces against the scrollable stack panning during a touch
     // drag. touch-action:none (on the handle, and for the drag's duration
     // the whole SVG - see startHandleDrag/timeline.css) is the primary
@@ -209,9 +279,15 @@ export class BaseTimeline extends TinyBase {
     this.listen(svg, 'touchstart', (e) => this.resizeController.handleTouchStart(e), {
       passive: false,
     });
-    this.listen(svg, 'touchmove', (e) => this.resizeController.handleTouchMove(e), {
-      passive: false,
-    });
+    this.listen(
+      svg,
+      'touchmove',
+      (e) => {
+        this.resizeController.handleTouchMove(e);
+        this.createController.handleTouchMove(e);
+      },
+      { passive: false }
+    );
   }
 
   // thin delegating wrappers onto EntryResizeController, kept so the
@@ -242,6 +318,7 @@ export class BaseTimeline extends TinyBase {
 
   onGlobalKeyDown(e) {
     this.resizeController.handleGlobalKeyDown(e);
+    this.createController.handleGlobalKeyDown(e);
   }
 
   onTimelineClick(e) {
@@ -251,6 +328,9 @@ export class BaseTimeline extends TinyBase {
     }
     if (this.resizeController.consumeSuppressedClick()) {
       return;
+    }
+    if (this.createController.consumeSuppressedClick()) {
+      return; // the click that ended a drag-to-create
     }
     if (this.resizeController.activeHandleEntryId !== undefined) {
       // any real click - elsewhere on the timeline, or on a different entry -
@@ -268,6 +348,7 @@ export class BaseTimeline extends TinyBase {
         console.error('Problem with identifying entry from click', e.target);
         return;
       }
+      this.createPreview.hide(); // opening an Entry ends any new-Entry block
       this.selectedID = entryId;
       this.panelActions.openEntry(entry);
     } else {
@@ -275,12 +356,21 @@ export class BaseTimeline extends TinyBase {
       if (e.target.dataset?.part !== 'gridline-zone') {
         return;
       }
-      // clear anything left over from an edit opened but never saved/deleted
-      this.selectedID = undefined;
+      // a plain click or tap: a default-length block from the clicked slot,
+      // as much of it as fits
       const svgCoord = this.clientToSvgCoord(e.clientX, e.clientY);
-      this.panelActions.openNewEntry(
-        this.calculateTheTimeSlotClicked(svgCoord >= 0 ? svgCoord : 0)
-      );
+      const anchorMins = this.calculateTheTimeSlotClicked(svgCoord >= 0 ? svgCoord : 0);
+      const span = clampCreateSpan({
+        anchorMins,
+        entries: this.entries,
+        singleChoice: this.isSingleChoiceDimension,
+        nowLimitMins: getNowLimitOffsetMins(this.currentDate),
+      });
+      if (!span) {
+        this.createPreview.flashNoRoom(anchorMins);
+        return;
+      }
+      this.startNewEntry(span);
     }
   }
 

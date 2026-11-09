@@ -24,12 +24,12 @@ Terminology (Dimension, Timeline, Entry, Activity, Day boundary) follows [CONTEX
 
 Nothing calls DetailsPanel's methods directly. Instead, on connect, DetailsPanel calls a `registerPanelActions` prop it receives, handing the coordinator a small named set of callbacks; the coordinator gives each Timeline its own `panelActions` with the same names, which route through it (switching Dimension and opening the panel first):
 
-| Action                          | Purpose                                                                |
-| ------------------------------- | ---------------------------------------------------------------------- |
-| `openEntry(entry)`              | Pre-fill the panel to edit an existing Entry.                          |
-| `openNewEntry(startOffsetMins)` | Reset the panel and pre-fill just a start time, for a brand new Entry. |
-| `close()`                       | Reset the panel's state.                                               |
-| `reportSaveConflict(message)`   | Show a save-time validation error (e.g. an overlapping Entry).         |
+| Action                                          | Purpose                                                                                                                                 |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `openEntry(entry)`                              | Pre-fill the panel to edit an existing Entry.                                                                                           |
+| `openNewEntry(startOffsetMins, endOffsetMins?)` | Reset the panel and pre-fill the start and end times, for a brand new Entry. The end defaults to one slot (10 minutes) after the start. |
+| `close()`                                       | Reset the panel's state.                                                                                                                |
+| `reportSaveConflict(message)`                   | Show a save-time validation error (e.g. an overlapping Entry).                                                                          |
 
 This keeps the Timelines decoupled from DetailsPanel's actual method names — a rename on either side can't silently desync the other.
 

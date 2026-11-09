@@ -40,7 +40,8 @@ export class DetailsPanel extends TinyBase {
     // directly - keeps Timeline decoupled from our actual method names
     this.props.registerPanelActions?.({
       openEntry: (entry) => this.openEntry(entry),
-      openNewEntry: (startOffsetMins) => this.openNewEntry(startOffsetMins),
+      openNewEntry: (startOffsetMins, endOffsetMins) =>
+        this.openNewEntry(startOffsetMins, endOffsetMins),
       close: () => this.reset(),
       reportSaveConflict: (message) => this.showError(message),
     });
@@ -137,11 +138,11 @@ export class DetailsPanel extends TinyBase {
 
   // part of the panelActions contract handed to Timeline via
   // registerPanelActions - clears any leftover state and pre-fills the
-  // start time for a brand new entry
-  openNewEntry(startOffsetMins) {
+  // start and end times for a brand new entry (one slot long if no end is given)
+  openNewEntry(startOffsetMins, endOffsetMins = startOffsetMins + 10) {
     this.reset();
     this.setStartTime(startOffsetMins);
-    this.setEndTime(startOffsetMins + 10);
+    this.setEndTime(endOffsetMins);
   }
 
   setStartTime(starttime) {

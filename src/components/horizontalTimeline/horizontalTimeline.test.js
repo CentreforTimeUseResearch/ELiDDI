@@ -336,6 +336,9 @@ describe('HorizontalTimeline mounted', () => {
   describe('interactions', () => {
     beforeEach(() => {
       appStore.dispatch({ type: SET_HORIZONTAL_ZOOM, payload: 1 });
+      // a fixed past date, so the "now" limit on a new Entry can't make a
+      // click's result depend on the time of day the tests run
+      appStore.dispatch({ type: SWITCH_DATE, payload: '2020-01-01' });
     });
 
     it('calls panelActions.openNewEntry with the clicked time slot on a gridline-zone click', () => {
@@ -349,7 +352,8 @@ describe('HorizontalTimeline mounted', () => {
         clientY: 0,
       });
 
-      expect(panelActions.openNewEntry).toHaveBeenCalledWith(20); // calculateTheTimeSlotClicked(40) -> 20
+      // calculateTheTimeSlotClicked(40) -> 20, and a plain click makes a 30-minute block
+      expect(panelActions.openNewEntry).toHaveBeenCalledWith(20, 50);
     });
 
     it('calls panelActions.openEntry with the clicked entry', () => {

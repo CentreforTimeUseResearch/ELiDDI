@@ -30,6 +30,7 @@ const ROW_HEIGHT = 60;
 export class HorizontalTimeline extends BaseTimeline {
   static templateId = 'svg-horizontal-timeline-row';
   static axis = X_AXIS;
+  static crossAxisBox = { start: 0, size: ROW_HEIGHT };
   static crossAxisCenter = ROW_HEIGHT / 2;
 
   gridlineZoneElement;

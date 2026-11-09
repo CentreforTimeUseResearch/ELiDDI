@@ -79,3 +79,28 @@ el-timeline {
   -webkit-user-select: none;
   -webkit-touch-callout: none;
 }
+
+/* the provisional block shown while a new Entry is being created: dashed
+   outline and translucent fill, so it reads as "not saved yet". When a limit
+   cut it short the outline turns to the danger colour as well as the readout
+   saying "limit", so the signal is never colour alone */
+.create-preview {
+  fill: var(--color-primary);
+  fill-opacity: 0.18;
+  stroke: var(--color-primary);
+  stroke-width: 2;
+  stroke-dasharray: 6 4;
+  pointer-events: none;
+}
+
+.create-preview--at-limit {
+  stroke: var(--color-danger);
+}
+
+.create-preview-readout {
+  font-size: 14px;
+  fill: var(--color-ink);
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+}

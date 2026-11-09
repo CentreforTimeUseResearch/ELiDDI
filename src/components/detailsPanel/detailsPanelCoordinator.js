@@ -56,8 +56,10 @@ export class DetailsPanelCoordinator {
   timelineProps(dimensionIndex) {
     return {
       openEntry: (entry) => this.openFor(dimensionIndex, (actions) => actions.openEntry(entry)),
-      openNewEntry: (startOffsetMins) =>
-        this.openFor(dimensionIndex, (actions) => actions.openNewEntry(startOffsetMins)),
+      openNewEntry: (startOffsetMins, endOffsetMins) =>
+        this.openFor(dimensionIndex, (actions) =>
+          actions.openNewEntry(startOffsetMins, endOffsetMins)
+        ),
       close: () => this.panelActions?.close(),
       reportSaveConflict: (message) => this.panelActions?.reportSaveConflict(message),
     };

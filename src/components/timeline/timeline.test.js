@@ -130,6 +130,9 @@ describe('Timeline panelActions contract', () => {
     }
     installSvgTemplates();
     document.body.innerHTML = '';
+    // a fixed past date, so the "now" limit on a new Entry can't make a
+    // click's result depend on the time of day the tests run
+    appStore.dispatch({ type: SWITCH_DATE, payload: '2020-01-01' });
   });
 
   function createTimeline(dimensionIndex) {
@@ -158,7 +161,8 @@ describe('Timeline panelActions contract', () => {
     // resolve to for a click 40px into an unscaled SVG
     el.onTimelineClick({ target: { dataset: { part: 'gridline-zone' } }, clientX: 0, clientY: 40 });
 
-    expect(openNewEntry).toHaveBeenCalledWith(20); // calculateTheTimeSlotClicked(40) -> 20
+    // calculateTheTimeSlotClicked(40) -> 20, and a plain click makes a 30-minute block
+    expect(openNewEntry).toHaveBeenCalledWith(20, 50);
   });
 
   // regression coverage: found on a real device (Chrome, not Firefox, same
@@ -195,7 +199,7 @@ describe('Timeline panelActions contract', () => {
 
     // 850 rendered px, unscaled to ~971 viewBox units -> 12:00 (480min).
     // Raw offsetY would have given floor(850/20)*10 = 420min -> 11:00.
-    expect(openNewEntry).toHaveBeenCalledWith(480);
+    expect(openNewEntry).toHaveBeenCalledWith(480, 510);
   });
 
   // regression coverage: only a click that actually lands on the gridline

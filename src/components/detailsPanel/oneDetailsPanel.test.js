@@ -46,6 +46,15 @@ describe.each([
   const startNewEntry = (dimensionIndex, startOffsetMins) =>
     timelines()[dimensionIndex].panelActions.openNewEntry(startOffsetMins);
 
+  // regression coverage (#226): the panel's registerPanelActions wrapper dropped
+  // the end time, so a dragged-out block opened the panel one slot long
+  it('opens a new Entry with the end time it is given, from a Timeline panelActions', () => {
+    timelines()[0].panelActions.openNewEntry(60, 150);
+
+    expect(panel().state.startOffsetMins).toBe(60);
+    expect(panel().state.endOffsetMins).toBe(150);
+  });
+
   it('serves every Dimension with one panel, retargeted to the current one', () => {
     expect(document.querySelectorAll('el-details-panel')).toHaveLength(1);
 

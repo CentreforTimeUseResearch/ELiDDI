@@ -6,14 +6,15 @@ const LABEL_FONT_SIZE = 14; // DESIGN.md caption token
 // Draws one block per Entry into an SVG layer, replacing what was there.
 // Shared by both layouts; only where a block sits differs, so the caller
 // passes placeEntry(entry) -> { block, label }, each an { x, y, width,
-// height } box in the SVG's user units.
+// height } box in the SVG's user units. `options.decorate(rect, entry, group)`
+// is called for each finished block, e.g. to make it reachable by keyboard.
 //
 // entry element looks like this:
 // <g>
 //   <rect x="100" y="120" width="220" height="60" fill="#9aa0c3" fill-opacity="0.45" data-id="1" />
 //   <foreignObject x="110" y="120" width="200" height="60"><div class="event-label">Sleep</div></foreignObject>
 // </g>
-export function renderEntryBlocks(layer, entries, dimensionIndex, placeEntry) {
+export function renderEntryBlocks(layer, entries, dimensionIndex, placeEntry, options = {}) {
   layer.innerHTML = '';
   const dimensionData = GLOBALS.DATA.timeline[dimensionIndex];
 
@@ -30,6 +31,8 @@ export function renderEntryBlocks(layer, entries, dimensionIndex, placeEntry) {
 
     const text = Array.isArray(entry.activity) ? entry.activity.join(', ') : entry.activity;
     entryGroup.appendChild(createLabelForeignObject(label, text, entry.id));
+
+    options.decorate?.(rect, entry, entryGroup);
 
     layer.appendChild(entryGroup);
   });

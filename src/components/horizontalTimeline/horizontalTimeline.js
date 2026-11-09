@@ -102,21 +102,30 @@ export class HorizontalTimeline extends BaseTimeline {
     entries,
     dimensionIndex,
     effectivePxPerMinute = getEffectivePxPerMinute(NATIVE_ZOOM),
+    decorate,
   }) {
-    renderEntryBlocks(layer, entries, dimensionIndex, (entry) => {
-      const x = (entry.startOffsetMins || 0) * effectivePxPerMinute;
-      const width = visibleLength((entry.endOffsetMins || 0) * effectivePxPerMinute - x);
-      const box = { x, y: 0, width, height: ROW_HEIGHT };
-      return { block: box, label: box };
-    });
+    renderEntryBlocks(
+      layer,
+      entries,
+      dimensionIndex,
+      (entry) => {
+        const x = (entry.startOffsetMins || 0) * effectivePxPerMinute;
+        const width = visibleLength((entry.endOffsetMins || 0) * effectivePxPerMinute - x);
+        const box = { x, y: 0, width, height: ROW_HEIGHT };
+        return { block: box, label: box };
+      },
+      { decorate }
+    );
   }
 
-  renderEntries() {
+  // what renderEntries() (BaseTimeline) draws between its keyboard focus bookkeeping
+  drawEntries() {
     this.renderEntriesInto({
       layer: this.entriesLayer,
       entries: this.entries,
       dimensionIndex: this.dimensionIndex,
       effectivePxPerMinute: this.getPxPerMinute(),
+      decorate: (rect, entry, group) => this.keyboard.decorateEntry(rect, entry, group),
     });
   }
 }

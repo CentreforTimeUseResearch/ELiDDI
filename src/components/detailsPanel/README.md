@@ -29,11 +29,16 @@ Nothing calls DetailsPanel's methods directly. Instead, on connect, DetailsPanel
 | `openEntry(entry)`                              | Pre-fill the panel to edit an existing Entry.                                                                                           |
 | `openNewEntry(startOffsetMins, endOffsetMins?)` | Reset the panel and pre-fill the start and end times, for a brand new Entry. The end defaults to one slot (10 minutes) after the start. |
 | `close()`                                       | Reset the panel's state.                                                                                                                |
+| `focus()`                                       | Move keyboard focus into the panel (the activity field). A Timeline calls it after Enter opens an Entry or a new block.                 |
 | `reportSaveConflict(message)`                   | Show a save-time validation error (e.g. an overlapping Entry).                                                                          |
 
 This keeps the Timelines decoupled from DetailsPanel's actual method names — a rename on either side can't silently desync the other.
 
 DetailsPanel, in turn, receives (via props) `saveEntry(entry)`, `deleteEntry(id)`, and `findNextEntryAfter(offsetMins)`, which the coordinator routes to the current Dimension's Timeline, plus the `registerPanelActions` callback that completes the handshake.
+
+## Keyboard
+
+Escape closes the panel, like its close button (`HIDE_PANEL`), except that when the activity list is open that Escape is for closing the list: the next one closes the panel. The list is only known to be open from its popover (`:popover-open`), because the combobox's `aria-expanded` is never set to true, and the list opens as soon as the field is focused, so the panel notes in the capture phase whether it was open, lets the list's own handling run, and closes the list itself if that left it open.
 
 ## Store interaction
 

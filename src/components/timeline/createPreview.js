@@ -91,6 +91,10 @@ export class CreatePreview {
   // and the resize handles
   ensureLayer() {
     if (this.layer?.parentNode !== this.container) {
+      // reuse the layer a previous connection of this Timeline left behind
+      this.layer = this.container.querySelector(':scope > [data-part="create-preview"]');
+    }
+    if (!this.layer) {
       this.layer = document.createElementNS(SVGNS, 'g');
       this.layer.setAttribute('data-part', 'create-preview');
       this.layer.setAttribute('pointer-events', 'none');

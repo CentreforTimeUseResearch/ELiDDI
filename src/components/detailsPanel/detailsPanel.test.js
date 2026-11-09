@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { DetailsPanel } from './detailsPanel';
 import { TinyBase } from '../base';
+import { appStore } from '../../store/appStore';
+import { SHOW_PANEL, HIDE_PANEL } from '../../store/actionTypes';
 
 class TestHarness extends TinyBase {}
 if (!customElements.get('test-harness-detailspanel')) {
@@ -34,6 +36,133 @@ describe('DetailsPanel', () => {
     document.body.appendChild(el);
     return el;
   }
+
+  describe('keyboard', () => {
+    const escape = (target) =>
+      target.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+
+    beforeEach(() => {
+      appStore.dispatch({ type: HIDE_PANEL });
+      // jsdom has no Popover API; focusing the activity field opens the list
+      HTMLElement.prototype.showPopover = vi.fn();
+    });
+
+    afterEach(() => {
+      appStore.dispatch({ type: HIDE_PANEL });
+      delete HTMLElement.prototype.showPopover;
+    });
+
+    it('closes on Escape, like its close button', () => {
+      const el = createPanel();
+      appStore.dispatch({ type: SHOW_PANEL, payload: 'details' });
+      expect(el.open).toBe(true);
+
+      escape(el.querySelector('input'));
+
+      expect(appStore.getState().uipanel).not.toBe('details');
+      expect(el.open).toBe(false);
+    });
+
+    describe('with the activity list open', () => {
+      // jsdom has no Popover API, so the list is reported open by stubbing,
+      // and closes when asked to
+      function openList(el) {
+        const popover = el.querySelector('[popover]');
+        let open = true;
+        vi.spyOn(popover, 'matches').mockImplementation(
+          (selector) => selector === ':popover-open' && open
+        );
+        popover.hidePopover = vi.fn(() => {
+          open = false;
+        });
+        return popover;
+      }
+
+      it('closes the list, not the panel, on the first Escape', () => {
+        const el = createPanel();
+        appStore.dispatch({ type: SHOW_PANEL, payload: 'details' });
+        const popover = openList(el);
+
+        escape(el.querySelector('[role="combobox"]'));
+
+        expect(popover.hidePopover).toHaveBeenCalled();
+        expect(appStore.getState().uipanel).toBe('details');
+        expect(el.open).toBe(true);
+      });
+
+      it('closes the panel on the next Escape', () => {
+        const el = createPanel();
+        appStore.dispatch({ type: SHOW_PANEL, payload: 'details' });
+        openList(el);
+
+        escape(el.querySelector('[role="combobox"]'));
+        escape(el.querySelector('[role="combobox"]'));
+
+        expect(appStore.getState().uipanel).not.toBe('details');
+      });
+
+      it('leaves a list that closed itself alone, and still keeps the panel', () => {
+        const el = createPanel();
+        appStore.dispatch({ type: SHOW_PANEL, payload: 'details' });
+        const popover = openList(el);
+        // the list's own Escape handling (typed search) closes it first
+        el.querySelector('[role="combobox"]').addEventListener('keydown', () => {
+          popover.hidePopover();
+          popover.hidePopover.mockClear();
+        });
+
+        escape(el.querySelector('[role="combobox"]'));
+
+        expect(popover.hidePopover).not.toHaveBeenCalled();
+        expect(appStore.getState().uipanel).toBe('details');
+      });
+    });
+
+    it('ignores Escape when it is not open, and other keys when it is', () => {
+      const el = createPanel();
+      const dispatch = vi.spyOn(appStore, 'dispatch');
+
+      escape(el);
+      expect(dispatch).not.toHaveBeenCalled();
+
+      appStore.dispatch({ type: SHOW_PANEL, payload: 'details' });
+      dispatch.mockClear();
+      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true }));
+      expect(dispatch).not.toHaveBeenCalled();
+    });
+
+    it('takes focus into the activity field when asked', () => {
+      const el = createPanel();
+
+      el.focusActivity();
+
+      expect(document.activeElement).toBe(el.querySelector('[role="combobox"]'));
+    });
+
+    it('offers that to a Timeline as a panel action', () => {
+      let actions;
+      const harness = document.createElement('test-harness-detailspanel');
+      const key = harness.setProps(
+        {
+          findNextEntryAfter: () => undefined,
+          saveEntry: vi.fn(),
+          deleteEntry: vi.fn(),
+          registerPanelActions: (registered) => {
+            actions = registered;
+          },
+        },
+        true
+      );
+      const el = document.createElement('el-details-panel');
+      el.setAttribute('key', key);
+      el.setAttribute('dimensionindex', '0');
+      document.body.appendChild(el);
+
+      actions.focus();
+
+      expect(document.activeElement).toBe(el.querySelector('[role="combobox"]'));
+    });
+  });
 
   // the listeners currently attached to document for `type` - counted
   // through add/removeEventListener, since the DOM can't list them

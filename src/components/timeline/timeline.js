@@ -81,18 +81,25 @@ export class Timeline extends BaseTimeline {
   // (shadow) layer - they only differ in which entries/layer they draw into
   // and how wide each block is, since the mirror is a narrower strip
   // alongside the full-width entries. Doesn't touch `this`.
-  renderEntriesInto({ layer, entries, dimensionIndex, blockWidth, labelX, labelWidth }) {
-    renderEntryBlocks(layer, entries, dimensionIndex, (entry) => {
-      const y = (entry.startOffsetMins || 0) * PX_PER_MINUTE;
-      const height = visibleLength((entry.endOffsetMins || 0) * PX_PER_MINUTE - y);
-      return {
-        block: { x: '100', y, width: blockWidth, height },
-        label: { x: labelX, y, width: labelWidth, height },
-      };
-    });
+  renderEntriesInto({ layer, entries, dimensionIndex, blockWidth, labelX, labelWidth, decorate }) {
+    renderEntryBlocks(
+      layer,
+      entries,
+      dimensionIndex,
+      (entry) => {
+        const y = (entry.startOffsetMins || 0) * PX_PER_MINUTE;
+        const height = visibleLength((entry.endOffsetMins || 0) * PX_PER_MINUTE - y);
+        return {
+          block: { x: '100', y, width: blockWidth, height },
+          label: { x: labelX, y, width: labelWidth, height },
+        };
+      },
+      { decorate }
+    );
   }
 
-  renderEntries() {
+  // what renderEntries() (BaseTimeline) draws between its keyboard focus bookkeeping
+  drawEntries() {
     this.renderEntriesInto({
       layer: this.entriesLayer,
       entries: this.entries,
@@ -100,6 +107,7 @@ export class Timeline extends BaseTimeline {
       blockWidth: '220',
       labelX: 110,
       labelWidth: 200,
+      decorate: (rect, entry, group) => this.keyboard.decorateEntry(rect, entry, group),
     });
   }
 

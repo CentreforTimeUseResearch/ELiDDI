@@ -44,7 +44,13 @@ export class DetailsPanel extends TinyBase {
         this.openNewEntry(startOffsetMins, endOffsetMins),
       close: () => this.reset(),
       reportSaveConflict: (message) => this.showError(message),
+      focus: () => this.focusActivity(),
     });
+    // Escape closes the activity list if that is open, else the panel. The
+    // capture listener notes whether the list was open before the list's
+    // own Escape handling runs; the bubble one then acts
+    this.listen(this, 'keydown', (e) => this.noteListOpen(e), true);
+    this.listen(this, 'keydown', (e) => this.onKeyDown(e));
     this.registerCleanup(this.store.subscribe(this.onStoreUpdate.bind(this)));
     this.getChildElementReferences();
     this.assignEventHandlers();
@@ -125,6 +131,49 @@ export class DetailsPanel extends TinyBase {
   hidePanel() {
     this.open = false;
     this.classList.remove('active');
+  }
+
+  // keyboard: the way in after opening an Entry from a Timeline
+  focusActivity() {
+    this.querySelector('[role="combobox"]')?.focus();
+  }
+
+  noteListOpen(e) {
+    if (e.key === 'Escape') {
+      this.listWasOpenOnEscape = this.isActivityListOpen();
+    }
+  }
+
+  // Escape closes the panel, like its close button - unless the activity list
+  // was open, when that Escape is for closing the list (which the list does
+  // for itself when it was opened by typing, but not when opened by focus)
+  onKeyDown(e) {
+    if (e.key !== 'Escape' || !this.open) {
+      return;
+    }
+    if (this.listWasOpenOnEscape) {
+      if (this.isActivityListOpen()) {
+        this.closeActivityList();
+      }
+      return;
+    }
+    this.store.dispatch({ type: HIDE_PANEL });
+  }
+
+  closeActivityList() {
+    try {
+      this.activityPicker?.hidePopover();
+    } catch {
+      // no Popover API (e.g. jsdom): nothing to close
+    }
+  }
+
+  isActivityListOpen() {
+    try {
+      return Boolean(this.querySelector('[popover]')?.matches(':popover-open'));
+    } catch {
+      return false; // no Popover API (e.g. jsdom): never open
+    }
   }
 
   // part of the panelActions contract handed to Timeline via

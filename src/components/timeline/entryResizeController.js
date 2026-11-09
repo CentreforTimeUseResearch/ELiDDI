@@ -10,12 +10,22 @@ import { SVGNS, MINUTES_PER_DAY, MIN_ENTRY_DURATION_MINS } from './timelineConst
 // operates in minutes, not pixels, so this is the only axis-specific
 // knowledge it needs. Timeline (vertical) injects Y_AXIS, HorizontalTimeline
 // injects X_AXIS.
+const HANDLE_HIT_RADIUS = 22; // ~44px hit target (WCAG target-size guidance), independent of the visible grip size
+const HANDLE_GRIP_RADIUS = 6;
+
+// readoutCrossOffset: where the clock-time readout sits across the axis,
+// relative to the handle's centre. The vertical Timeline has free space beside
+// the handle, so the text starts there. A horizontal row is only ~60px tall,
+// so below the handle it would be clipped by the row's SVG: it goes above,
+// centred on the handle (text-anchor middle).
 export const Y_AXIS = {
   positionAttr: 'y', // rect/foreignObject
   crossAttr: 'x', // rect/foreignObject readout
   sizeAttr: 'height',
   positionCoordAttr: 'cy', // handle circles
   crossCoordAttr: 'cx',
+  readoutCrossOffset: HANDLE_HIT_RADIUS + 6,
+  readoutAnchor: 'start',
 };
 export const X_AXIS = {
   positionAttr: 'x',
@@ -23,12 +33,12 @@ export const X_AXIS = {
   sizeAttr: 'width',
   positionCoordAttr: 'cx',
   crossCoordAttr: 'cy',
+  readoutCrossOffset: -(HANDLE_GRIP_RADIUS + 9),
+  readoutAnchor: 'middle',
 };
 
 const LONG_PRESS_MS = 500;
 const LONG_PRESS_CANCEL_DISTANCE_PX = 10; // pointer movement past this before the timer fires reads as a scroll/mis-tap, not a long-press
-const HANDLE_HIT_RADIUS = 22; // ~44px hit target (WCAG target-size guidance), independent of the visible grip size
-const HANDLE_GRIP_RADIUS = 6;
 const LIMIT_FLASH_MS = 300;
 
 // Owns the long-press -> reveal handles -> drag -> live-resize -> commit/cancel
@@ -391,14 +401,22 @@ export class EntryResizeController {
       const crossValue = group
         .querySelector('.resize-handle-hit-area')
         ?.getAttribute(this.axis.crossCoordAttr);
-      readout = document.createElementNS(SVGNS, 'text');
-      readout.setAttribute('class', 'resize-handle-readout');
-      readout.setAttributeNS(null, this.axis.crossAttr, Number(crossValue) + HANDLE_HIT_RADIUS + 6);
-      readout.setAttribute('dominant-baseline', 'middle');
+      readout = this.createReadout(Number(crossValue));
       group.appendChild(readout);
     }
     readout.setAttributeNS(null, this.axis.positionAttr, position);
     readout.textContent = formatOffsetAsClockTime(offsetMins);
+  }
+
+  // the clock-time text beside a handle; the caller sets its position along
+  // the axis and its text
+  createReadout(crossCenter) {
+    const readout = document.createElementNS(SVGNS, 'text');
+    readout.setAttribute('class', 'resize-handle-readout');
+    readout.setAttributeNS(null, this.axis.crossAttr, crossCenter + this.axis.readoutCrossOffset);
+    readout.setAttribute('text-anchor', this.axis.readoutAnchor);
+    readout.setAttribute('dominant-baseline', 'middle');
+    return readout;
   }
 
   updateEntryRectLive({ entryId, currentStart, currentEnd }) {
@@ -540,15 +558,8 @@ export class EntryResizeController {
     group.appendChild(grip);
 
     if (showReadout) {
-      const readout = document.createElementNS(SVGNS, 'text');
-      readout.setAttribute('class', 'resize-handle-readout');
-      readout.setAttributeNS(
-        null,
-        this.axis.crossAttr,
-        this.crossAxisCenter + HANDLE_HIT_RADIUS + 6
-      );
+      const readout = this.createReadout(this.crossAxisCenter);
       readout.setAttributeNS(null, this.axis.positionAttr, position);
-      readout.setAttribute('dominant-baseline', 'middle');
       readout.textContent = formatOffsetAsClockTime(offsetMins);
       group.appendChild(readout);
     }

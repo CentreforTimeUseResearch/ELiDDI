@@ -123,6 +123,87 @@ describe('createStore', () => {
   });
 });
 
+describe('store.batch', () => {
+  const adder = (state = 0, action) => (action.type === 'ADD' ? state + action.n : state);
+  const throwing = (state = 0, action) => {
+    if (action.type === 'BOOM') throw new Error('reducer failed');
+    return adder(state, action);
+  };
+
+  it('ends in the same state as dispatching the actions one by one', () => {
+    const actions = [
+      { type: 'ADD', n: 2 },
+      { type: 'ADD', n: 5 },
+      { type: 'ADD', n: 1 },
+    ];
+    const batched = createStore(adder);
+    const sequential = createStore(adder);
+
+    batched.batch(actions);
+    actions.forEach((action) => sequential.dispatch(action));
+
+    expect(batched.getState()).toBe(sequential.getState());
+    expect(batched.getState()).toBe(8);
+  });
+
+  it('notifies each subscriber exactly once, with the final state already set', () => {
+    const store = createStore(adder);
+    const seen = [];
+    store.subscribe(() => seen.push(store.getState()));
+    const second = vi.fn();
+    store.subscribe(second);
+
+    store.batch([
+      { type: 'ADD', n: 1 },
+      { type: 'ADD', n: 1 },
+      { type: 'ADD', n: 1 },
+    ]);
+
+    expect(seen).toEqual([3]);
+    expect(second).toHaveBeenCalledTimes(1);
+  });
+
+  it('commits nothing and notifies nobody if an action throws', () => {
+    const store = createStore(throwing);
+    store.dispatch({ type: 'ADD', n: 4 });
+    const listener = vi.fn();
+    store.subscribe(listener);
+
+    expect(() =>
+      store.batch([{ type: 'ADD', n: 1 }, { type: 'BOOM' }, { type: 'ADD', n: 1 }])
+    ).toThrow('reducer failed');
+
+    expect(store.getState()).toBe(4);
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it('notifies nobody for an empty batch', () => {
+    const store = createStore(adder);
+    const listener = vi.fn();
+    store.subscribe(listener);
+
+    store.batch([]);
+
+    expect(listener).not.toHaveBeenCalled();
+    expect(store.getState()).toBe(0);
+  });
+
+  it('keeps the notification rules: a throwing listener is logged and the rest are still called', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const store = createStore(adder);
+    const after = vi.fn();
+    store.subscribe(() => {
+      throw new Error('listener failed');
+    });
+    store.subscribe(after);
+
+    expect(() => store.batch([{ type: 'ADD', n: 1 }])).not.toThrow();
+
+    expect(after).toHaveBeenCalledTimes(1);
+    expect(console.error).toHaveBeenCalled();
+  });
+});
+
 describe('combineReducers', () => {
   it('delegates each key of state to its own reducer', () => {
     const reducer = combineReducers({ a: counter, b: counter });

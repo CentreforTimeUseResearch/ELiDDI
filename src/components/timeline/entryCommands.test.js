@@ -102,6 +102,71 @@ describe('EntryCommands', () => {
   });
 
   // #162: the same 10-minute minimum the details panel and drag handles use
+  describe('updateMany', () => {
+    const before = { id: 1, startOffsetMins: 0, endOffsetMins: 30, activity: 'Reading' };
+    const after = { id: 2, startOffsetMins: 30, endOffsetMins: 60, activity: 'Walking' };
+
+    it('changes every Entry given, in this date and Dimension', () => {
+      const { commands, entriesIn } = setup(LOCATION, [before, after]);
+
+      commands.updateMany([
+        { id: 1, entry: { ...before, endOffsetMins: 40 } },
+        { id: 2, entry: { ...after, startOffsetMins: 40 } },
+      ]);
+
+      expect(entriesIn()).toEqual([
+        { ...before, endOffsetMins: 40 },
+        { ...after, startOffsetMins: 40 },
+      ]);
+    });
+
+    it('notifies subscribers once, with both changes already made', () => {
+      const { store, commands, entriesIn } = setup(LOCATION, [before, after]);
+      const seen = [];
+      store.subscribe(() =>
+        seen.push(entriesIn().map((e) => [e.startOffsetMins, e.endOffsetMins]))
+      );
+
+      commands.updateMany([
+        { id: 1, entry: { ...before, endOffsetMins: 40 } },
+        { id: 2, entry: { ...after, startOffsetMins: 40 } },
+      ]);
+
+      expect(seen).toEqual([
+        [
+          [0, 40],
+          [40, 60],
+        ],
+      ]);
+    });
+
+    it('does nothing for an empty list', () => {
+      const { store, commands } = setup(LOCATION, [before]);
+      const listener = vi.fn();
+      store.subscribe(listener);
+
+      commands.updateMany([]);
+
+      expect(listener).not.toHaveBeenCalled();
+    });
+
+    it('does nothing when the Dimension cannot be identified', () => {
+      const store = createStore(eliddiReducer);
+      const commands = new EntryCommands({
+        store,
+        getDimensionIndex: () => undefined,
+        getCurrentDate: () => DATE,
+        getEntries: () => [],
+      });
+      const listener = vi.fn();
+      store.subscribe(listener);
+
+      commands.updateMany([{ id: 1, entry: before }]);
+
+      expect(listener).not.toHaveBeenCalled();
+    });
+  });
+
   describe('findDurationProblem', () => {
     it.each([
       [0, 'An activity needs to last at least 10 minutes.'],

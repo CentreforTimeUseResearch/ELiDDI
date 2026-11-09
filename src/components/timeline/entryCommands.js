@@ -73,6 +73,23 @@ export class EntryCommands {
     });
   }
 
+  // changes several Entries as one: a single store change, so nothing ever
+  // sees them half-updated (e.g. two neighbours overlapping mid-resize).
+  // `updates` is [{ id, entry }], `entry` being the whole new Entry.
+  updateMany(updates) {
+    const dimensionIndex = this.validDimensionIndex();
+    if (dimensionIndex === undefined || updates.length === 0) {
+      return;
+    }
+    const date = this.getCurrentDate();
+    this.store.batch(
+      updates.map(({ id, entry }) => ({
+        type: UPDATE_ENTRY,
+        payload: { id, dimensionIndex, date, ...entry },
+      }))
+    );
+  }
+
   // -> whether an Entry was removed; an id that's already gone (e.g. a
   // stray double-click) is a no-op
   remove(id) {

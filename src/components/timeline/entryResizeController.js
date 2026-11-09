@@ -49,7 +49,7 @@ const LIMIT_FLASH_MS = 300;
 // update - see onCommitResize.
 export class EntryResizeController {
   activeHandleEntryId;
-  activeDrag; // { entryId, edge, pointerId, currentStart, currentEnd, captureElement, previousNeighborEnd, nextNeighborStart, wasAtLimit } while a handle is being dragged
+  activeDrag; // { entryId, edge, pointerId, currentStart, currentEnd, captureElement, previousNeighborEnd, nextNeighborStart, adjacent, wasAtLimit, atLimit } while a handle is being dragged
   longPressTimer;
   longPressCandidate; // { entryId, pointerId, startX, startY } while a press is pending
   suppressNextClick = false; // set when a long-press fires, so the click it also triggers doesn't open the panel
@@ -284,8 +284,40 @@ export class EntryResizeController {
       captureElement: e.target,
       previousNeighborEnd: neighborBounds.previousEnd,
       nextNeighborStart: neighborBounds.nextStart,
+      adjacent: this.isSingleChoiceDimension() ? this.findAdjacent(entry, edge) : undefined,
       wasAtLimit: false,
+      atLimit: false,
     };
+  }
+
+  // the Entry that shares this edge, if any: it ends where this one starts
+  // (start edge) or starts where this one ends (end edge). Dragging a shared
+  // edge moves the neighbour's facing boundary too, so the Timeline stays
+  // contiguous; an edge with a gap beside it has no such neighbour, and only
+  // ever moves itself. -> { entryId, originalStart, originalEnd } or undefined
+  findAdjacent(entry, edge) {
+    const neighbour = this.getEntries().find(
+      (other) =>
+        other.id !== entry.id &&
+        (edge === 'start'
+          ? other.endOffsetMins === entry.startOffsetMins
+          : other.startOffsetMins === entry.endOffsetMins)
+    );
+    return neighbour
+      ? {
+          entryId: neighbour.id,
+          originalStart: neighbour.startOffsetMins,
+          originalEnd: neighbour.endOffsetMins,
+        }
+      : undefined;
+  }
+
+  // where the adjacent Entry's facing boundary is for the drag as it stands
+  adjacentSpan(drag) {
+    const { adjacent } = drag;
+    return drag.edge === 'start'
+      ? { startOffsetMins: adjacent.originalStart, endOffsetMins: drag.currentStart }
+      : { startOffsetMins: drag.currentEnd, endOffsetMins: adjacent.originalEnd };
   }
 
   // among this entry's timeline siblings, the latest end time at or before
@@ -316,6 +348,7 @@ export class EntryResizeController {
     } else {
       this.activeDrag.currentEnd = clampedOffsetMins;
     }
+    this.activeDrag.atLimit = hitLimit;
     this.renderDragFeedback();
     // flash once per approach, not on every tick still pressed against the
     // same wall - otherwise holding at a limit reads as a constant strobe
@@ -341,13 +374,20 @@ export class EntryResizeController {
       this.getCurrentDate() === getCurrentDiaryDateKey()
         ? Math.floor(getCurrentOffsetMins() / 10) * 10
         : MINUTES_PER_DAY;
+    // an adjacent Entry gives way, down to its own minimum duration; with a
+    // gap beside the edge, the Entry beyond the gap is a wall instead
     if (drag.edge === 'start') {
-      const min = drag.previousNeighborEnd;
+      const min = drag.adjacent
+        ? drag.adjacent.originalStart + MIN_ENTRY_DURATION_MINS
+        : drag.previousNeighborEnd;
       const max = Math.min(drag.currentEnd - MIN_ENTRY_DURATION_MINS, nowLimit);
       return { min, max: Math.max(max, min) }; // never let max fall below min if there's no room left
     }
     const min = drag.currentStart + MIN_ENTRY_DURATION_MINS;
-    const max = Math.min(drag.nextNeighborStart, MINUTES_PER_DAY, nowLimit);
+    const wall = drag.adjacent
+      ? drag.adjacent.originalEnd - MIN_ENTRY_DURATION_MINS
+      : drag.nextNeighborStart;
+    const max = Math.min(wall, MINUTES_PER_DAY, nowLimit);
     return { min, max: Math.max(max, min) };
   }
 
@@ -379,11 +419,21 @@ export class EntryResizeController {
       return;
     }
     this.updateEntryRectLive(drag);
-    this.updateHandlePosition('start', drag.currentStart, drag.edge === 'start');
-    this.updateHandlePosition('end', drag.currentEnd, drag.edge === 'end');
+    if (drag.adjacent) {
+      const { startOffsetMins, endOffsetMins } = this.adjacentSpan(drag);
+      this.updateEntryRectLive({
+        entryId: drag.adjacent.entryId,
+        currentStart: startOffsetMins,
+        currentEnd: endOffsetMins,
+      });
+    }
+    this.updateHandlePosition('start', drag.currentStart, drag.edge === 'start', drag.atLimit);
+    this.updateHandlePosition('end', drag.currentEnd, drag.edge === 'end', drag.atLimit);
   }
 
-  updateHandlePosition(edge, offsetMins, showReadout) {
+  // `atLimit` adds "limit" to the dragged handle's readout, so a limit is
+  // never signalled only by the flash
+  updateHandlePosition(edge, offsetMins, showReadout, atLimit = false) {
     const group = this.handlesLayer?.querySelector(`.resize-handle[data-handle-edge="${edge}"]`);
     if (!group) {
       return;
@@ -405,7 +455,7 @@ export class EntryResizeController {
       group.appendChild(readout);
     }
     readout.setAttributeNS(null, this.axis.positionAttr, position);
-    readout.textContent = formatOffsetAsClockTime(offsetMins);
+    readout.textContent = formatOffsetAsClockTime(offsetMins) + (atLimit ? ' · limit' : '');
   }
 
   // the clock-time text beside a handle; the caller sets its position along
@@ -449,10 +499,20 @@ export class EntryResizeController {
     }
     this.releaseDragCapture(drag);
     this.svg?.classList.remove('dragging-handle');
-    const updatedEntry = this.onCommitResize(drag.entryId, {
-      startOffsetMins: drag.currentStart,
-      endOffsetMins: drag.currentEnd,
-    });
+    // the adjacent Entry is only passed on if the drag actually moved it
+    let neighbourChange;
+    if (drag.adjacent) {
+      const span = this.adjacentSpan(drag);
+      const moved =
+        span.startOffsetMins !== drag.adjacent.originalStart ||
+        span.endOffsetMins !== drag.adjacent.originalEnd;
+      neighbourChange = moved ? { entryId: drag.adjacent.entryId, ...span } : undefined;
+    }
+    const updatedEntry = this.onCommitResize(
+      drag.entryId,
+      { startOffsetMins: drag.currentStart, endOffsetMins: drag.currentEnd },
+      neighbourChange
+    );
     if (updatedEntry) {
       // handles stay up, re-draggable, at the just-committed position -
       // no need to re-trigger long-press for a follow-up adjustment
@@ -482,6 +542,13 @@ export class EntryResizeController {
       currentStart: entry.startOffsetMins,
       currentEnd: entry.endOffsetMins,
     });
+    if (drag.adjacent) {
+      this.updateEntryRectLive({
+        entryId: drag.adjacent.entryId,
+        currentStart: drag.adjacent.originalStart,
+        currentEnd: drag.adjacent.originalEnd,
+      });
+    }
     this.showHandles(entry);
   }
 

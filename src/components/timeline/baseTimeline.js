@@ -142,13 +142,32 @@ export class BaseTimeline extends TinyBase {
       axis: this.constructor.axis,
       getPxPerMinute: () => this.getPxPerMinute(),
       crossAxisCenter: this.constructor.crossAxisCenter,
-      onCommitResize: (entryId, { startOffsetMins, endOffsetMins }) => {
+      onCommitResize: (entryId, { startOffsetMins, endOffsetMins }, neighbourChange) => {
         const entry = this.entries.find((entry) => entry.id === entryId);
         if (!entry) {
           return undefined;
         }
+        const neighbour = neighbourChange
+          ? this.entries.find((other) => other.id === neighbourChange.entryId)
+          : undefined;
         this.selectedID = entryId;
-        this.updateEntry({ ...entry, startOffsetMins, endOffsetMins });
+        if (neighbour) {
+          // the dragged edge and the neighbour's facing one move together
+          this.entryCommands.updateMany([
+            { id: entryId, entry: { ...entry, startOffsetMins, endOffsetMins } },
+            {
+              id: neighbour.id,
+              entry: {
+                ...neighbour,
+                startOffsetMins: neighbourChange.startOffsetMins,
+                endOffsetMins: neighbourChange.endOffsetMins,
+              },
+            },
+          ]);
+          this.selectedID = undefined;
+        } else {
+          this.updateEntry({ ...entry, startOffsetMins, endOffsetMins });
+        }
         this.renderEntries();
         return this.entries.find((entry) => entry.id === entryId);
       },

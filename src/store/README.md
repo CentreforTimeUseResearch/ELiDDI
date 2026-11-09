@@ -24,7 +24,7 @@ The shape mirrors the diary domain described in [CONTEXT.md](../../CONTEXT.md) â
 ## `store.js`
 
 ```js
-createStore(reducer, initialState); // -> { getState, dispatch, subscribe }
+createStore(reducer, initialState); // -> { getState, dispatch, batch, subscribe }
 combineReducers(reducersObject); // -> a single reducer that delegates one state key per sub-reducer
 ```
 
@@ -37,6 +37,17 @@ Notification rules, each relied on by components that tear each other down mid-d
 - A listener that **throws** is logged; the rest are still notified, and `dispatch` itself doesn't throw.
 - `subscribe(nonFunction)` **throws** a `TypeError` at the call site.
 - Each `subscribe` call is its own subscription, even for the same function; its unsubscribe removes only that one, and calling it twice is harmless.
+
+### `batch(actions)`
+
+Applies a list of actions as **one** change, for operations that must touch several Entries at once (e.g. resizing an edge also moves the neighbour's boundary). It folds the actions through the reducer to build a single next state, assigns it, and notifies subscribers once. So:
+
+- Subscribers never see an in-between state (such as two Entries overlapping mid-move), and `persistence.js` and `src/sync/` get one notification and one snapshot per batch.
+- If the reducer throws for any action, **nothing is committed** and nobody is notified; the error propagates to the caller.
+- An empty list does nothing and notifies nobody.
+- The same listener-error isolation and mid-dispatch subscribe/unsubscribe rules apply as for `dispatch`.
+
+There is no batch action type; reducers are unchanged. See `docs/design/README.md` (Decisions).
 
 ## `appStore.js`
 

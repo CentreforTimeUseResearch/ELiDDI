@@ -142,27 +142,31 @@ export class BaseTimeline extends TinyBase {
       axis: this.constructor.axis,
       getPxPerMinute: () => this.getPxPerMinute(),
       crossAxisCenter: this.constructor.crossAxisCenter,
-      onCommitResize: (entryId, { startOffsetMins, endOffsetMins }, neighbourChange) => {
+      onCommitResize: (entryId, { startOffsetMins, endOffsetMins }, neighbourChanges = []) => {
         const entry = this.entries.find((entry) => entry.id === entryId);
         if (!entry) {
           return undefined;
         }
-        const neighbour = neighbourChange
-          ? this.entries.find((other) => other.id === neighbourChange.entryId)
-          : undefined;
+        // the neighbours that gave way, still present in this Timeline
+        const neighbours = neighbourChanges
+          .map((change) => ({
+            change,
+            neighbour: this.entries.find((other) => other.id === change.entryId),
+          }))
+          .filter(({ neighbour }) => neighbour);
         this.selectedID = entryId;
-        if (neighbour) {
-          // the dragged edge and the neighbour's facing one move together
+        if (neighbours.length > 0) {
+          // the dragged Entry and the ones that gave way change together
           this.entryCommands.updateMany([
             { id: entryId, entry: { ...entry, startOffsetMins, endOffsetMins } },
-            {
+            ...neighbours.map(({ change, neighbour }) => ({
               id: neighbour.id,
               entry: {
                 ...neighbour,
-                startOffsetMins: neighbourChange.startOffsetMins,
-                endOffsetMins: neighbourChange.endOffsetMins,
+                startOffsetMins: change.startOffsetMins,
+                endOffsetMins: change.endOffsetMins,
               },
-            },
+            })),
           ]);
           this.selectedID = undefined;
         } else {

@@ -41,6 +41,7 @@ export class TimelineStack extends TinyBase {
     super.connectedCallback();
     this.assignEventHandlers();
     this.registerCleanup(this.store.subscribe(() => this.updateState()));
+    this.registerCleanup(this.panelCoordinator.registerGuard());
   }
 
   updateState() {

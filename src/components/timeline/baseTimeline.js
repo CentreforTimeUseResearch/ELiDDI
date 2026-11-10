@@ -8,6 +8,7 @@ import { stepDay, goToToday, stepDimension } from '../../utils/navigation';
 import { clampCreateSpan, getNowLimitOffsetMins } from './createSpan';
 import { EntryCommands, formatOverlapMessage } from './entryCommands';
 import { SVGNS } from './timelineConstants';
+import { guardUnsavedEdits } from '../../utils/unsavedEdits';
 
 const INDEX = 'index';
 
@@ -279,10 +280,19 @@ export class BaseTimeline extends TinyBase {
 
   // Enter on an Entry: the same as clicking it, then focus goes into the panel
   openEntryFromKeyboard(entry) {
-    this.createPreview.hide(); // opening an Entry ends any new-Entry block
-    this.selectedID = entry.id;
-    this.panelActions.openEntry(entry);
-    this.panelActions.focus?.();
+    this.openEntryGuarded(entry, () => this.panelActions.focus?.());
+  }
+
+  // opens an Entry in the panel once nothing unsaved would be lost by it (the
+  // Respondent is asked first if it would): the Timeline's own selection and
+  // block change only then
+  openEntryGuarded(entry, afterOpen) {
+    guardUnsavedEdits({ dimensionIndex: this.dimensionIndex }, () => {
+      this.createPreview.hide(); // opening an Entry ends any new-Entry block
+      this.selectedID = entry.id;
+      this.panelActions.openEntry(entry);
+      afterOpen?.();
+    });
   }
 
   // Enter on an empty slot: the same as clicking it -> whether anything opened
@@ -319,12 +329,16 @@ export class BaseTimeline extends TinyBase {
   // opens the details panel for a new Entry spanning `span`, and keeps a
   // provisional block on the Timeline until the panel closes (saved or not)
   startNewEntry({ startOffsetMins, endOffsetMins, atLimit }) {
-    // clear anything left over from an edit opened but never saved/deleted
-    this.selectedID = undefined;
-    this.panelActions.openNewEntry(startOffsetMins, endOffsetMins);
-    // after opening: the panel's own store updates run first, and
-    // syncCreatePreview hides the block unless the panel is showing
-    this.createPreview.show({ startOffsetMins, endOffsetMins, atLimit });
+    // only once nothing unsaved would be lost by it: the block and the
+    // selection change then, not before
+    guardUnsavedEdits({ dimensionIndex: this.dimensionIndex }, () => {
+      // clear anything left over from an edit opened but never saved/deleted
+      this.selectedID = undefined;
+      this.panelActions.openNewEntry(startOffsetMins, endOffsetMins);
+      // after opening: the panel's own store updates run first, and
+      // syncCreatePreview hides the block unless the panel is showing
+      this.createPreview.show({ startOffsetMins, endOffsetMins, atLimit });
+    });
   }
 
   // the provisional block belongs to the new-Entry panel session: it goes
@@ -514,9 +528,7 @@ export class BaseTimeline extends TinyBase {
         console.error('Problem with identifying entry from click', e.target);
         return;
       }
-      this.createPreview.hide(); // opening an Entry ends any new-Entry block
-      this.selectedID = entryId;
-      this.panelActions.openEntry(entry);
+      this.openEntryGuarded(entry);
     } else {
       // only a click in the gridline zone starts a new Entry
       if (e.target.dataset?.part !== 'gridline-zone') {

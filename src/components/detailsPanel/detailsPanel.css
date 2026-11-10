@@ -134,6 +134,65 @@ el-details-panel[data-confirming-delete] .entry-error {
   display: none;
 }
 
+/* the unsaved-changes question, in place of Save, Delete and their messages */
+el-details-panel[data-leaving] .btn-save-btn,
+el-details-panel[data-leaving] .btn-delete-btn,
+el-details-panel[data-leaving] .save-hint,
+el-details-panel[data-leaving] .entry-error {
+  display: none;
+}
+
+.leave-prompt[hidden],
+.leave-prompt [hidden] {
+  display: none;
+}
+
+.leave-prompt-question,
+.leave-prompt-reason {
+  margin: var(--space-sm) var(--space-md);
+  font-family: var(--font-text);
+  font-size: var(--text-body-size);
+  color: var(--color-on-dark);
+  text-align: center;
+}
+
+.leave-prompt-question {
+  font-weight: var(--text-caption-strong-weight);
+}
+
+.btn-leave-save,
+.btn-leave-discard,
+.btn-leave-keep {
+  display: block;
+  margin: var(--space-sm) var(--space-md) 0;
+  width: calc(100% - (var(--space-md) * 2));
+  font-family: var(--font-text);
+  font-size: var(--text-body-size);
+  padding: 11px 22px;
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--color-primary);
+  cursor: pointer;
+}
+
+.btn-leave-save,
+.btn-leave-keep {
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.btn-leave-discard {
+  background-color: transparent;
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+.btn-leave-save:focus-visible,
+.btn-leave-discard:focus-visible,
+.btn-leave-keep:focus-visible {
+  outline: 2px solid var(--color-primary-focus);
+  outline-offset: 2px;
+}
+
 .delete-confirm[hidden] {
   display: none;
 }

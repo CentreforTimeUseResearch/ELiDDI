@@ -1,6 +1,7 @@
 import { TinyBase } from '../base';
 import { HIDE_PANEL, SWITCH_DATE } from '../../store/actionTypes';
 import { getCurrentDiaryDateKey } from '../../utils/time';
+import { guardUnsavedEdits } from '../../utils/unsavedEdits';
 import './datePicker.css';
 
 export class DatePicker extends TinyBase {
@@ -49,14 +50,24 @@ export class DatePicker extends TinyBase {
       return;
     }
 
-    this.store.dispatch({
-      type: HIDE_PANEL,
-    });
+    // unsaved edits go with the day, so the Respondent is asked first; if they
+    // keep editing the picker goes back to the day still showing
+    guardUnsavedEdits(
+      { all: true },
+      () => {
+        this.store.dispatch({
+          type: HIDE_PANEL,
+        });
 
-    this.store.dispatch({
-      type: SWITCH_DATE,
-      payload: dateKey,
-    });
+        this.store.dispatch({
+          type: SWITCH_DATE,
+          payload: dateKey,
+        });
+      },
+      () => {
+        if (this.dateInput) this.dateInput.value = this.currentDate;
+      }
+    );
   }
 
   render() {

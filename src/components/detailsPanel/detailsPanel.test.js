@@ -3,6 +3,7 @@ import { DetailsPanel } from './detailsPanel';
 import { TinyBase } from '../base';
 import { appStore } from '../../store/appStore';
 import { SHOW_PANEL, HIDE_PANEL } from '../../store/actionTypes';
+import { registerUnsavedEditsGuard } from '../../utils/unsavedEdits';
 
 class TestHarness extends TinyBase {}
 if (!customElements.get('test-harness-detailspanel')) {
@@ -393,6 +394,338 @@ describe('DetailsPanel', () => {
 
       expect(hint(second).id).not.toBe(firstIds[0]);
       expect(second.querySelector('.entry-error').id).not.toBe(firstIds[1]);
+    });
+  });
+
+  // #242: asking before something unsaved is lost
+  describe('leaving with unsaved edits', () => {
+    const ENTRY = { id: 7, startOffsetMins: 60, endOffsetMins: 90, activity: 'sleeping' };
+    let el;
+    let saveEntry;
+
+    function mountPanel() {
+      const harness = document.createElement('test-harness-detailspanel');
+      saveEntry = vi.fn(() => el.reset()); // what a successful save does: the Timeline closes the panel
+      const key = harness.setProps(
+        { findNextEntryAfter: () => undefined, saveEntry, deleteEntry: vi.fn() },
+        true
+      );
+      el = document.createElement('el-details-panel');
+      el.setAttribute('key', key);
+      el.setAttribute('dimensionindex', '0');
+      el.setAttribute('heading', 'Heading');
+      el.setAttribute('instruction', 'Instruction');
+      document.body.appendChild(el);
+      appStore.dispatch({ type: SHOW_PANEL, payload: 'details' });
+      return el;
+    }
+    const prompt = () => el.querySelector('.leave-prompt');
+    const asking = () => !prompt().hasAttribute('hidden');
+    const saveButton = () => el.querySelector('.btn-leave-save');
+    const discardButton = () => el.querySelector('.btn-leave-discard');
+    const keepButton = () => el.querySelector('.btn-leave-keep');
+    const visible = (button) => !button.hasAttribute('hidden') && !button.closest('[hidden]');
+    const callbacks = () => ({ onSave: vi.fn(), onDiscard: vi.fn(), onKeep: vi.fn() });
+    const editedEntry = () => {
+      mountPanel();
+      el.openEntry(ENTRY);
+      el.setEndTime(100);
+    };
+
+    beforeEach(() => {
+      HTMLElement.prototype.showPopover = vi.fn(); // jsdom has no Popover API
+      appStore.dispatch({ type: HIDE_PANEL });
+    });
+
+    afterEach(() => {
+      delete HTMLElement.prototype.showPopover;
+      appStore.dispatch({ type: HIDE_PANEL });
+    });
+
+    describe('the prompt', () => {
+      it('is not showing until it is asked for', () => {
+        mountPanel();
+
+        expect(asking()).toBe(false);
+      });
+
+      it('says there are unsaved changes, in a labelled group, not a browser dialog', () => {
+        editedEntry();
+        const confirm = vi.spyOn(window, 'confirm');
+
+        el.showLeavePrompt(callbacks());
+
+        expect(asking()).toBe(true);
+        expect(prompt().textContent).toContain('You have unsaved changes to this entry.');
+        expect(prompt().getAttribute('role')).toBe('group');
+        expect(
+          el.querySelector(`#${prompt().getAttribute('aria-labelledby')}`).textContent
+        ).toContain('unsaved changes');
+        expect(confirm).not.toHaveBeenCalled();
+        expect(document.querySelector('dialog[open]')).toBeNull();
+      });
+
+      it('offers Save, Discard and Keep editing when the entry is complete', () => {
+        editedEntry();
+
+        el.showLeavePrompt(callbacks());
+
+        expect(visible(saveButton())).toBe(true);
+        expect(visible(discardButton())).toBe(true);
+        expect(visible(keepButton())).toBe(true);
+      });
+
+      it('does not offer Save for an incomplete entry, and says why in text', () => {
+        editedEntry();
+        el.onSetActivityOnSelectedEntry('');
+
+        el.showLeavePrompt(callbacks());
+
+        expect(visible(saveButton())).toBe(false);
+        expect(visible(discardButton())).toBe(true);
+        expect(visible(keepButton())).toBe(true);
+        expect(prompt().textContent).toContain("can't be saved yet");
+        expect(prompt().textContent).toContain('Choose an activity');
+      });
+
+      it('gives focus to Keep editing, the safe choice, which is described by the question', () => {
+        editedEntry();
+
+        el.showLeavePrompt(callbacks());
+
+        expect(document.activeElement).toBe(keepButton());
+        expect(
+          el.querySelector(`#${keepButton().getAttribute('aria-describedby')}`).textContent
+        ).toContain('unsaved changes');
+      });
+
+      it('puts Save, Delete and the Save hint out of the way while it asks', () => {
+        editedEntry();
+
+        el.showLeavePrompt(callbacks());
+
+        expect(el.hasAttribute('data-leaving')).toBe(true);
+      });
+
+      it('replaces a Delete question that was showing', () => {
+        editedEntry();
+        el.querySelector('.btn-delete-btn').click();
+        expect(el.hasAttribute('data-confirming-delete')).toBe(true);
+
+        el.showLeavePrompt(callbacks());
+
+        expect(el.hasAttribute('data-confirming-delete')).toBe(false);
+        expect(asking()).toBe(true);
+      });
+    });
+
+    describe('answering it', () => {
+      it('Save takes the prompt away and does what it was given', () => {
+        editedEntry();
+        const given = callbacks();
+        el.showLeavePrompt(given);
+
+        saveButton().click();
+
+        expect(asking()).toBe(false);
+        expect(given.onSave).toHaveBeenCalledOnce();
+        expect(given.onDiscard).not.toHaveBeenCalled();
+        expect(given.onKeep).not.toHaveBeenCalled();
+      });
+
+      it('Discard takes the prompt away and does what it was given', () => {
+        editedEntry();
+        const given = callbacks();
+        el.showLeavePrompt(given);
+
+        discardButton().click();
+
+        expect(asking()).toBe(false);
+        expect(given.onDiscard).toHaveBeenCalledOnce();
+        expect(given.onSave).not.toHaveBeenCalled();
+      });
+
+      it('Keep editing takes the prompt away, leaves the draft, and gives focus back to where it was', () => {
+        editedEntry();
+        const opener = document.createElement('button');
+        document.body.appendChild(opener);
+        opener.focus();
+        const given = callbacks();
+        el.showLeavePrompt(given);
+
+        keepButton().click();
+
+        expect(asking()).toBe(false);
+        expect(given.onKeep).toHaveBeenCalledOnce();
+        expect(el.hasUnsavedEdits()).toBe(true);
+        expect(el.state.endOffsetMins).toBe(100);
+        expect(document.activeElement).toBe(opener);
+      });
+
+      it('Keep editing goes to the activity field if where it was is gone', () => {
+        editedEntry();
+        const opener = document.createElement('button');
+        document.body.appendChild(opener);
+        opener.focus();
+        el.showLeavePrompt(callbacks());
+        opener.remove();
+
+        keepButton().click();
+
+        expect(document.activeElement).toBe(el.querySelector('[role="combobox"]'));
+      });
+
+      it('Escape is Keep editing, and does not also close the panel', () => {
+        editedEntry();
+        const given = callbacks();
+        el.showLeavePrompt(given);
+
+        const escape = new KeyboardEvent('keydown', {
+          key: 'Escape',
+          bubbles: true,
+          cancelable: true,
+        });
+        keepButton().dispatchEvent(escape);
+
+        expect(escape.defaultPrevented).toBe(true);
+        expect(given.onKeep).toHaveBeenCalledOnce();
+        expect(asking()).toBe(false);
+        expect(appStore.getState().uipanel).toBe('details');
+      });
+
+      it('answers once: a second press does nothing more', () => {
+        editedEntry();
+        const given = callbacks();
+        el.showLeavePrompt(given);
+
+        discardButton().click();
+        discardButton().click();
+
+        expect(given.onDiscard).toHaveBeenCalledOnce();
+      });
+    });
+
+    describe('when it is dropped without an answer', () => {
+      it('goes when the panel is reset, and nothing is called', () => {
+        editedEntry();
+        const given = callbacks();
+        el.showLeavePrompt(given);
+
+        el.reset();
+
+        expect(asking()).toBe(false);
+        expect(el.hasAttribute('data-leaving')).toBe(false);
+        expect(given.onKeep).not.toHaveBeenCalled();
+        expect(given.onDiscard).not.toHaveBeenCalled();
+      });
+
+      it('goes when the panel is hidden, and does not come back with it', () => {
+        editedEntry();
+        el.showLeavePrompt(callbacks());
+
+        appStore.dispatch({ type: HIDE_PANEL });
+        appStore.dispatch({ type: SHOW_PANEL, payload: 'details' });
+
+        expect(asking()).toBe(false);
+      });
+    });
+
+    describe('saving from the prompt', () => {
+      it('does not save an incomplete entry', () => {
+        editedEntry();
+        el.onSetActivityOnSelectedEntry('');
+
+        expect(el.saveDraft()).toBe(false);
+        expect(saveEntry).not.toHaveBeenCalled();
+      });
+
+      it('saves a complete one, and says it worked when the panel has been closed by the save', () => {
+        editedEntry();
+
+        expect(el.saveDraft()).toBe(true);
+        expect(saveEntry).toHaveBeenCalledWith(
+          expect.objectContaining({ id: 7, endOffsetMins: 100 })
+        );
+      });
+
+      it('says it did not work when the save was refused, with the reason left showing', () => {
+        editedEntry();
+        saveEntry.mockImplementation(() =>
+          el.showError('This overlaps with your existing "Home" entry')
+        );
+
+        expect(el.saveDraft()).toBe(false);
+        expect(el.querySelector('.entry-error').hasAttribute('hidden')).toBe(false);
+        expect(el.state.endOffsetMins).toBe(100); // nothing lost
+      });
+    });
+
+    describe('closing the panel (Escape, the chevron)', () => {
+      const escape = (target) =>
+        target.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      const chevron = () => el.querySelector('[data-openCloseButton]');
+
+      it('asks the guard, as a close, rather than just hiding', () => {
+        editedEntry();
+        const guard = vi.fn();
+        const unregister = registerUnsavedEditsGuard(guard);
+
+        escape(el.querySelector('[role="combobox"]'));
+        chevron().click();
+
+        expect(guard).toHaveBeenCalledTimes(2);
+        expect(guard).toHaveBeenCalledWith({}, expect.any(Function), undefined);
+        expect(appStore.getState().uipanel).toBe('details'); // not closed until it says so
+        unregister();
+      });
+
+      it('hides the panel and forgets what was in it, when the guard lets it go', () => {
+        editedEntry();
+        const unregister = registerUnsavedEditsGuard((scope, proceed) => proceed());
+
+        escape(el.querySelector('[role="combobox"]'));
+
+        expect(appStore.getState().uipanel).not.toBe('details');
+        expect(el.state).toEqual({});
+        expect(el.hasUnsavedEdits()).toBe(false);
+        unregister();
+      });
+
+      it('leaves no stale draft behind when nothing is registered and the panel was clean', () => {
+        mountPanel();
+        el.openEntry(ENTRY);
+
+        escape(el.querySelector('[role="combobox"]'));
+        appStore.dispatch({ type: SHOW_PANEL, payload: 'details' }); // as the chevron does
+
+        expect(el.state).toEqual({});
+      });
+
+      it('closes by the chevron too, and opens by it when closed', () => {
+        mountPanel();
+        el.openEntry(ENTRY);
+
+        chevron().click();
+        expect(appStore.getState().uipanel).not.toBe('details');
+        expect(el.state).toEqual({});
+
+        chevron().click();
+        expect(appStore.getState().uipanel).toBe('details');
+      });
+    });
+
+    describe('what a parked draft is', () => {
+      it('knows whether a parked draft is unsaved, from what it holds and was opened with', () => {
+        mountPanel();
+        el.openEntry(ENTRY);
+        const clean = el.getDraft();
+        el.setEndTime(100);
+        const edited = el.getDraft();
+
+        expect(el.isDraftUnsaved(clean)).toBe(false);
+        expect(el.isDraftUnsaved(edited)).toBe(true);
+        expect(el.isDraftUnsaved(undefined)).toBe(false);
+      });
     });
   });
 

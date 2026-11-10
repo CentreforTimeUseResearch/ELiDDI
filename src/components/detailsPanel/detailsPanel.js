@@ -4,6 +4,8 @@ import { TinyBase } from '../base';
 import { HIDE_PANEL, SHOW_PANEL } from '../../store/actionTypes';
 import './detailsPanel.css';
 import { escapeHtml } from '../../utils/html';
+import { guardUnsavedEdits } from '../../utils/unsavedEdits';
+import { announce } from '../../utils/announce';
 import { MIN_ENTRY_DURATION_MINS } from '../timeline/timelineConstants';
 
 const DIMENSION_INDEX = 'dimensionindex';
@@ -25,6 +27,8 @@ export class DetailsPanel extends TinyBase {
   instanceId = ++instanceCount;
   baseline; // what the panel was opened with, to tell when something is unsaved
   confirmingDelete = false; // Delete has been pressed and the question is showing
+  leaveCallbacks; // set while the unsaved-changes question is showing
+  leaveReturnFocus; // where focus was when it was asked
   saveButton;
   saveHint;
   dayBoundaryInMinutes;
@@ -82,6 +86,11 @@ export class DetailsPanel extends TinyBase {
     this.deleteConfirm = this.querySelector('.delete-confirm');
     this.confirmDeleteButton = this.querySelector('.btn-confirm-delete-btn');
     this.keepButton = this.querySelector('.btn-keep-btn');
+    this.leavePrompt = this.querySelector('.leave-prompt');
+    this.leaveReason = this.querySelector('.leave-prompt-reason');
+    this.leaveSaveButton = this.querySelector('.btn-leave-save');
+    this.leaveDiscardButton = this.querySelector('.btn-leave-discard');
+    this.leaveKeepButton = this.querySelector('.btn-leave-keep');
     this.errorDisplay = this.querySelector('.entry-error');
     this.openCloseButton = this.querySelector('[data-openCloseButton]');
   }
@@ -93,11 +102,12 @@ export class DetailsPanel extends TinyBase {
     this.keepButton.addEventListener('click', () =>
       this.cancelDeleteConfirmation({ returnFocus: true })
     );
+    this.leaveSaveButton.addEventListener('click', () => this.answerLeavePrompt('onSave'));
+    this.leaveDiscardButton.addEventListener('click', () => this.answerLeavePrompt('onDiscard'));
+    this.leaveKeepButton.addEventListener('click', () => this.answerLeavePrompt('onKeep'));
     this.openCloseButton.addEventListener('click', () => {
       if (this.open) {
-        this.store.dispatch({
-          type: HIDE_PANEL,
-        });
+        this.requestClose();
       } else {
         this.store.dispatch({
           type: SHOW_PANEL,
@@ -199,7 +209,74 @@ export class DetailsPanel extends TinyBase {
   // a block just made. A block dragged out and given nothing else is not
   // unsaved - nothing the Respondent chose would be lost
   hasUnsavedEdits() {
-    return this.baseline !== undefined && this.basisOf(this.state) !== this.baseline;
+    return this.isDraftUnsaved({ state: this.state, baseline: this.baseline });
+  }
+
+  // the same of a parked draft (see getDraft)
+  isDraftUnsaved(draft) {
+    return (
+      Boolean(draft) && draft.baseline !== undefined && this.basisOf(draft.state) !== draft.baseline
+    );
+  }
+
+  // closes the panel and forgets what was in it, once the guard says nothing
+  // unsaved would be lost (Escape and the chevron both come here)
+  requestClose() {
+    guardUnsavedEdits({}, () => {
+      this.store.dispatch({ type: HIDE_PANEL });
+      this.reset();
+    });
+  }
+
+  // --- the unsaved-changes question ---------------------------------------
+
+  // asks, here in the panel (not a browser dialog), what to do with the unsaved
+  // edit that something is about to drop. Each callback is called once, by the
+  // answer: onSave, onDiscard, onKeep. Focus goes to Keep editing, the safe one
+  showLeavePrompt(callbacks) {
+    this.cancelDeleteConfirmation();
+    this.leaveCallbacks = callbacks;
+    const active = document.activeElement;
+    this.leaveReturnFocus = active && active !== document.body ? active : undefined;
+    const reasons = this.getIncompleteReasons();
+    const complete = reasons.length === 0;
+    this.leaveSaveButton.toggleAttribute('hidden', !complete);
+    this.leaveReason.textContent = complete ? '' : `It can't be saved yet. ${reasons.join('. ')}.`;
+    this.leaveReason.toggleAttribute('hidden', complete);
+    this.leavePrompt.removeAttribute('hidden');
+    this.setAttribute('data-leaving', '');
+    announce(`You have unsaved changes to this entry. ${this.leaveReason.textContent}`.trim());
+    this.leaveKeepButton.focus();
+  }
+
+  answerLeavePrompt(which) {
+    const callbacks = this.leaveCallbacks;
+    if (!callbacks) return; // already answered
+    const returnTo = this.leaveReturnFocus;
+    this.hideLeavePrompt();
+    if (which === 'onKeep') {
+      if (returnTo?.isConnected) {
+        returnTo.focus();
+      } else {
+        this.focusActivity();
+      }
+    }
+    callbacks[which]?.();
+  }
+
+  hideLeavePrompt() {
+    this.leaveCallbacks = undefined;
+    this.leaveReturnFocus = undefined;
+    this.leavePrompt?.setAttribute('hidden', '');
+    this.removeAttribute('data-leaving');
+  }
+
+  // saves the open entry as Save does -> whether it was saved (not if it is
+  // incomplete, or the save was refused, e.g. an overlap, which shows why)
+  saveDraft() {
+    if (!this.isEntryComplete()) return false;
+    this.props.saveEntry(this.state);
+    return Object.keys(this.state).length === 0; // a save resets the panel
   }
 
   // the panel's state and what it was opened with, to park while another
@@ -224,6 +301,7 @@ export class DetailsPanel extends TinyBase {
     this.baseline = undefined;
     this.confirmingDelete = false;
     this.removeAttribute('data-confirming-delete');
+    this.hideLeavePrompt();
     this.render();
     this.getChildElementReferences();
     this.assignEventHandlers();
@@ -239,6 +317,7 @@ export class DetailsPanel extends TinyBase {
     this.open = false;
     this.classList.remove('active');
     this.cancelDeleteConfirmation(); // an unanswered question does not wait for the panel to come back
+    this.hideLeavePrompt();
   }
 
   // keyboard: the way in after opening an Entry from a Timeline
@@ -259,6 +338,12 @@ export class DetailsPanel extends TinyBase {
     if (e.key !== 'Escape' || !this.open) {
       return;
     }
+    if (this.leaveCallbacks) {
+      // Escape answers the question (Keep editing); it does not also close the panel
+      e.preventDefault();
+      this.answerLeavePrompt('onKeep');
+      return;
+    }
     if (this.confirmingDelete) {
       // Escape answers the question (Keep it); it does not also close the panel
       e.preventDefault();
@@ -271,7 +356,7 @@ export class DetailsPanel extends TinyBase {
       }
       return;
     }
-    this.store.dispatch({ type: HIDE_PANEL });
+    this.requestClose();
   }
 
   closeActivityList() {
@@ -572,6 +657,13 @@ export class DetailsPanel extends TinyBase {
               <p class="save-hint" id="save-hint-${this.instanceId}" hidden></p>
               <button class="btn btn-save-btn opaque" aria-disabled="true">Save</button>
               <button class="btn btn-delete-btn hide">Delete</button>
+              <div class="leave-prompt" role="group" aria-labelledby="leave-prompt-question-${this.instanceId}" hidden>
+                <p class="leave-prompt-question" id="leave-prompt-question-${this.instanceId}">You have unsaved changes to this entry.</p>
+                <p class="leave-prompt-reason" hidden></p>
+                <button type="button" class="btn btn-leave-save">Save</button>
+                <button type="button" class="btn btn-leave-discard">Discard</button>
+                <button type="button" class="btn btn-leave-keep" aria-describedby="leave-prompt-question-${this.instanceId}">Keep editing</button>
+              </div>
               <div class="delete-confirm" role="group" aria-labelledby="delete-confirm-question-${this.instanceId}" hidden>
                 <p class="delete-confirm-question" id="delete-confirm-question-${this.instanceId}">Delete this entry? This can't be undone.</p>
                 <button type="button" class="btn btn-confirm-delete-btn">Delete</button>

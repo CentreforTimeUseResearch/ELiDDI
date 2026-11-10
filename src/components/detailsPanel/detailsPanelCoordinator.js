@@ -1,4 +1,5 @@
 import { SWITCH_DIMENSION, SHOW_PANEL } from '../../store/actionTypes';
+import { registerUnsavedEditsGuard } from '../../utils/unsavedEdits';
 
 // The app has ONE <el-details-panel>, in both layouts (ADR 0005). Each stack
 // (TimelineStack on mobile, HorizontalTimelineStack on desktop) owns one of
@@ -65,6 +66,56 @@ export class DetailsPanelCoordinator {
       focus: () => this.panelActions?.focus?.(),
       reportSaveConflict: (message) => this.panelActions?.reportSaveConflict(message),
     };
+  }
+
+  // makes this the one place that is asked before anything unsaved is lost
+  // -> a function that stops it (the stack calls it as it goes)
+  registerGuard() {
+    return registerUnsavedEditsGuard((scope, proceed, onCancel) =>
+      this.guard(scope, proceed, onCancel)
+    );
+  }
+
+  // the Dimension whose unsaved draft `scope` would lose, if any: the one being
+  // opened into (the panel's own, or one parked), or with `all`, any of them
+  // (the one showing first)
+  unsavedDimension({ dimensionIndex = this.dimensionIndex, all = false }) {
+    const parked = (index) => this.panel?.isDraftUnsaved(this.drafts.get(index));
+    if (all) {
+      if (this.panel?.hasUnsavedEdits()) {
+        return this.dimensionIndex;
+      }
+      return [...this.drafts.keys()].find(parked);
+    }
+    if (dimensionIndex === this.dimensionIndex) {
+      return this.panel?.hasUnsavedEdits() ? dimensionIndex : undefined;
+    }
+    return parked(dimensionIndex) ? dimensionIndex : undefined;
+  }
+
+  // lets `proceed` go when nothing unsaved would be lost; otherwise shows the
+  // draft that would be (its Dimension brought forward, the panel shown) and
+  // asks, one draft at a time. Saving or discarding one goes on to the next;
+  // keeping one stops the lot (`onCancel`)
+  guard(scope, proceed, onCancel) {
+    const index = this.unsavedDimension(scope);
+    if (index === undefined) {
+      proceed();
+      return;
+    }
+    if (index !== this.dimensionIndex) {
+      this.store.dispatch({ type: SWITCH_DIMENSION, payload: index }); // restores its draft
+    }
+    this.store.dispatch({ type: SHOW_PANEL, payload: 'details' });
+    const goOn = () => this.guard(scope, proceed, onCancel);
+    this.panel.showLeavePrompt({
+      onSave: () => (this.panel.saveDraft() ? goOn() : onCancel?.()),
+      onDiscard: () => {
+        this.panel.reset();
+        goOn();
+      },
+      onKeep: () => onCancel?.(),
+    });
   }
 
   // makes `dimensionIndex` current (onStoreUpdate retargets the panel),

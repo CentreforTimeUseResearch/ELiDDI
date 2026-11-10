@@ -1,5 +1,6 @@
 import { HIDE_PANEL, SWITCH_DATE, SWITCH_DIMENSION } from '../store/actionTypes';
 import { addDaysToDateKey, getCurrentDiaryDateKey } from './time';
+import { guardUnsavedEdits } from './unsavedEdits';
 
 // What the day and Dimension controls do. The nav bar's buttons and the
 // Timelines' keyboard shortcuts both call these, so "the shortcut does the
@@ -13,19 +14,24 @@ export function dayBefore(currentDate, today) {
   return before > today ? today : before;
 }
 
-// switches the day, after closing the details panel (as the date picker does;
-// unsaved edits go with it, see DetailsPanelCoordinator's date handling).
-// Refuses the day already showing and a day that has not begun, checked now,
-// not when a button was drawn, so a page left open across 04:00 still behaves
+// switches the day, after closing the details panel (as the date picker does).
+// Unsaved edits go with it, so the Respondent is asked first (unsavedEdits.js):
+// the day has not switched yet when this returns if they were. Refuses the day
+// already showing and a day that has not begun, checked now, not when a button
+// was drawn, so a page left open across 04:00 still behaves
 // -> whether it switched
 export function goToDate(store, dateKey) {
   const { currentDate } = store.getState();
   if (dateKey === currentDate || dateKey > getCurrentDiaryDateKey()) {
     return false;
   }
-  store.dispatch({ type: HIDE_PANEL });
-  store.dispatch({ type: SWITCH_DATE, payload: dateKey });
-  return true;
+  let switched = false;
+  guardUnsavedEdits({ all: true }, () => {
+    store.dispatch({ type: HIDE_PANEL });
+    store.dispatch({ type: SWITCH_DATE, payload: dateKey });
+    switched = true;
+  });
+  return switched;
 }
 
 // one day back (-1) or on (1) from the day showing

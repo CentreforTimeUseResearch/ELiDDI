@@ -31,6 +31,7 @@ export class HorizontalTimelineStack extends TinyBase {
   connectedCallback() {
     super.connectedCallback();
     this.rows = [...this.querySelectorAll('el-horizontal-timeline')];
+    this.registerCleanup(this.panelCoordinator.registerGuard());
     this.registerCleanup(
       this.store.subscribe(() => {
         this.panelCoordinator.onStoreUpdate();

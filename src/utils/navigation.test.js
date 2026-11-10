@@ -3,6 +3,7 @@ import { createStore } from '../store/store';
 import { eliddiReducer } from '../store/eliddiReducer';
 import { SHOW_PANEL, SWITCH_DATE, SWITCH_DIMENSION } from '../store/actionTypes';
 import { dayBefore, goToDate, stepDay, goToToday, stepDimension } from './navigation';
+import { registerUnsavedEditsGuard } from './unsavedEdits';
 
 // What the day and Dimension controls do, shared by the buttons and the
 // keyboard shortcuts so the two cannot differ. "Today" is Monday 9 November
@@ -56,6 +57,62 @@ describe('navigation', () => {
       expect(goToDate(store, '2026-11-10')).toBe(false);
 
       expect(dispatch).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('goToDate and unsaved edits', () => {
+    it('asks the guard, for every draft, and waits for it', () => {
+      const store = storeOn('2026-11-05');
+      const guard = vi.fn();
+      const unregister = registerUnsavedEditsGuard(guard);
+
+      const switched = goToDate(store, '2026-11-06');
+
+      expect(guard).toHaveBeenCalledWith({ all: true }, expect.any(Function), undefined);
+      expect(switched).toBe(false); // asked, did not switch yet
+      expect(store.getState().currentDate).toBe('2026-11-05');
+      unregister();
+    });
+
+    it('switches when the guard lets it go, now or later', () => {
+      const store = storeOn('2026-11-05');
+      let later;
+      const unregister = registerUnsavedEditsGuard((scope, proceed) => {
+        later = proceed;
+      });
+
+      goToDate(store, '2026-11-06');
+      expect(store.getState().currentDate).toBe('2026-11-05');
+      later();
+
+      expect(store.getState().currentDate).toBe('2026-11-06');
+      expect(store.getState().uipanel).toBeUndefined();
+      unregister();
+    });
+
+    it('does not even ask about a day that cannot be gone to', () => {
+      const store = storeOn('2026-11-05');
+      const guard = vi.fn();
+      const unregister = registerUnsavedEditsGuard(guard);
+
+      goToDate(store, '2026-11-05'); // already showing
+      goToDate(store, '2026-11-12'); // has not begun
+
+      expect(guard).not.toHaveBeenCalled();
+      unregister();
+    });
+
+    it('is asked for by the day buttons and the shortcuts alike', () => {
+      const store = storeOn('2026-11-05');
+      const guard = vi.fn();
+      const unregister = registerUnsavedEditsGuard(guard);
+
+      stepDay(store, 1);
+      stepDay(store, -1);
+      goToToday(store);
+
+      expect(guard).toHaveBeenCalledTimes(3);
+      unregister();
     });
   });
 

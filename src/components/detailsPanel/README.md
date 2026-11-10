@@ -41,7 +41,17 @@ DetailsPanel, in turn, receives (via props) `saveEntry(entry)`, `deleteEntry(id)
 
 The panel records what it was **opened with** (its baseline): `openEntry` records the Entry as stored, `openNewEntry` the start and end it was given, and `reset()` forgets it. `hasUnsavedEdits()` is true when the start, end or activity now differ from that. So an Entry just opened is not unsaved, nor is a new block just dragged out and given nothing else (nothing the Respondent chose would be lost), and changing something back makes it not unsaved again. Several activities (a multiple-choice Dimension) compare as a set, in any order; no activity, an empty one and an empty list are the same.
 
-The [coordinator](detailsPanelCoordinator.js) parks and restores a draft across a Dimension switch through `getDraft()` / `restoreDraft()`, which carry the baseline with the state, so a restored draft is still known to be unsaved (or not). Nothing acts on `hasUnsavedEdits()` yet beyond reading it: asking before an edit is lost is a separate piece of work (#242).
+The [coordinator](detailsPanelCoordinator.js) parks and restores a draft across a Dimension switch through `getDraft()` / `restoreDraft()`, which carry the baseline with the state, so a restored draft is still known to be unsaved (or not). A parked draft is checked with `isDraftUnsaved(draft)`.
+
+## Asking before an unsaved edit is lost
+
+Nothing unsaved is dropped silently. The things that would drop it (opening another Entry or an empty slot, starting a new Entry, changing day, and the panel's own Escape and chevron) call `guardUnsavedEdits(scope, proceed, onCancel)` in [`utils/unsavedEdits.js`](../../utils/unsavedEdits.js) instead of going ahead. The [coordinator](detailsPanelCoordinator.js) registers itself as the guard (`registerGuard()`, called by both stacks), and:
+
+- With nothing unsaved, `proceed` runs at once. (Closing also resets the panel, so no stale draft is left in a hidden panel.)
+- With something unsaved, the panel shows an in-panel question (`showLeavePrompt`, a labelled `role="group"`, not a browser dialog): "You have unsaved changes to this entry." with **Save**, **Discard** and **Keep editing**. Focus goes to **Keep editing** (the safe one), which is described by the question, and the question is announced politely.
+- **Save** is offered only if the entry is complete; otherwise the group says "It can't be saved yet." with the reason, and only Discard and Keep editing are shown. Save goes through the normal save (`saveDraft()`), so an overlap error shows and nothing is lost (the original action is then cancelled, as for Keep editing); on success `proceed` runs. **Discard** drops the draft (`reset()`) and `proceed` runs. **Keep editing**, or **Escape**, calls `onCancel`, leaves the draft as it was and puts focus back where it was.
+- `scope` says what could be lost: `{ dimensionIndex }` (an open into that Dimension: the panel's own draft, or one parked for it) or `{ all: true }` (a change of day: every Dimension's draft). A Dimension switch is **not** asked about, since its draft is parked; a restored draft counts as unsaved. For a draft parked in another Dimension, that Dimension is brought forward first so the Respondent can see what is being asked about; with several, they are asked one at a time.
+- Callers do their own visible work only in `proceed` (the Timeline's selection and the new-Entry block change when the open goes ahead, and the day does not change until then), and undo anything done in advance in `onCancel` (the date picker puts its input back).
 
 ## Save when the entry is not complete
 

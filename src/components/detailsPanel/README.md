@@ -49,6 +49,15 @@ Save is **`aria-disabled="true"`**, not `disabled`, and also faded (the `opaque`
 
 The time and duration fields already tie their own error to the field with `aria-describedby` and announce it politely; a test keeps that from regressing.
 
+## Deleting
+
+Delete does not delete: it **asks first, in the panel** (no browser `confirm`, no dialog). Pressing it hides Save, its hint and Delete, and shows a labelled group (`role="group"`, named by its question) in their place: "Delete this entry? This can't be undone." with **Delete** (outlined, danger) and **Keep it** (filled, the safe answer). Focus goes to **Keep it**, which is also described by the question, so a screen reader reads it with the choice.
+
+- **Delete** removes the Entry through `deleteEntry(id)` once (the question is answered, so a second press or a double-click cannot delete again). The Timeline then closes the panel and puts focus on the empty slot where the Entry was ([`BaseTimeline.deleteEntry`](../timeline/baseTimeline.js)), whether the panel was opened with a mouse or a key, since the Delete button that had focus is gone.
+- **Keep it**, or **Escape**, goes back to Save and Delete with focus on Delete. That Escape answers the question and does **not** also close the panel; the next one does.
+- An unanswered question does not wait: it is dropped when another Entry is opened (`openEntry`), a new one is started or the panel is reset (a Dimension or day change, a save), or the panel is hidden, so it never comes back unasked. If the Entry turns out to have gone already, the question is put away rather than left on screen.
+- Only the Entry open in the panel can be asked about; a new, unsaved one has no Delete.
+
 ## Keyboard
 
 Escape closes the panel, like its close button (`HIDE_PANEL`), except that when the activity list is open that Escape is for closing the list: the next one closes the panel. The list is only known to be open from its popover (`:popover-open`), because the combobox's `aria-expanded` is never set to true, and the list opens as soon as the field is focused, so the panel notes in the capture phase whether it was open, lets the list's own handling run, and closes the list itself if that left it open.

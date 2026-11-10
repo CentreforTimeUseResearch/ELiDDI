@@ -348,6 +348,14 @@ export class TimelineKeyboard {
     this.ring.show(this.cursor);
   }
 
+  // puts focus on whatever is at this time of day (the empty slot where an Entry
+  // was deleted, say), however the Respondent got here - a mouse, as much as a key
+  focusAt(startOffsetMins) {
+    this.cursor = stopContaining(this.stops(), startOffsetMins);
+    this.syncRoving();
+    this.focusCursor();
+  }
+
   // --- shortcut keys -----------------------------------------------------
 
   // the single-key shortcuts, which only work here, on a Timeline that has focus

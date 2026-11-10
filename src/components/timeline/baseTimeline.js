@@ -554,6 +554,7 @@ export class BaseTimeline extends TinyBase {
   }
 
   deleteEntry(id) {
+    const start = this.entries.find((entry) => entry.id === id)?.startOffsetMins;
     this.resizeController.hideHandlesIfActiveFor(id);
     if (!this.entryCommands.remove(id)) {
       return;
@@ -562,6 +563,11 @@ export class BaseTimeline extends TinyBase {
     this.selectedID = undefined;
     this.panelActions.close();
     this.renderEntries();
+    // the panel (and the Delete button that was pressed) has gone, so focus
+    // would be lost: it goes to the empty slot where the Entry was
+    if (start !== undefined) {
+      this.keyboard?.focusAt(start);
+    }
   }
 
   saveEntry(entry) {

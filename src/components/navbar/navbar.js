@@ -2,7 +2,7 @@ import '../timelinePicker/timelinePicker.js';
 import '../contextualHelp/contextualHelp.js';
 import '../syncStatus/syncStatus.js';
 import { TinyBase } from '../base';
-import { RESET_ONBOARDING, SHOW_PANEL, HIDE_PANEL, SWITCH_DATE } from '../../store/actionTypes';
+import { RESET_ONBOARDING, SHOW_PANEL } from '../../store/actionTypes';
 import { DIARY_STATUS } from '../../store/diaryStatus';
 import {
   formatDateKeyAsDDMMYYYY,
@@ -11,6 +11,7 @@ import {
   getCurrentDiaryDateKey,
 } from '../../utils/time';
 import { announce, ensureAnnouncer } from '../../utils/announce';
+import { dayBefore, stepDay, goToToday } from '../../utils/navigation';
 import { getAccounts } from '../../auth/authClient';
 import { requestLogout } from '../../sync/appSync';
 import './navbar.css';
@@ -20,6 +21,7 @@ import './navbar.css';
 // JS, so this is the one place their labels/handlers are defined
 const MENU_ITEMS = [
   { label: 'Instructions', buttonClass: 'instructions-button' },
+  { label: 'Keyboard shortcuts', buttonClass: 'shortcuts-button' },
   { label: 'Reset (clears this day)', buttonClass: 'reset-diary-button' },
   { label: 'View stats' },
   { label: 'About this study' },
@@ -96,18 +98,11 @@ export class Navbar extends TinyBase {
     }
   }
 
-  // the day Previous goes to: one back, but never to a day that has not begun
-  // (a stored day in the future, which no control can reach, steps down to today)
-  dayBefore(currentDate, today) {
-    const before = addDaysToDateKey(currentDate, -1);
-    return before > today ? today : before;
-  }
-
   // names each button for where it goes, and says why Next / Today are off
   updateDayButtons(currentDate, today) {
     this.querySelector('.previous-day-button').setAttribute(
       'aria-label',
-      `Previous day, ${formatDateKeyAsLongDate(this.dayBefore(currentDate, today))}`
+      `Previous day, ${formatDateKeyAsLongDate(dayBefore(currentDate, today))}`
     );
     const nextDisabled = currentDate >= today;
     this.setDayButton('.next-day-button', '.next-day-reason', nextDisabled, NEXT_DAY_REASON);
@@ -138,18 +133,6 @@ export class Navbar extends TinyBase {
     this.querySelector(reasonSelector).textContent = disabled ? reason : '';
   }
 
-  // one day per press, from where the store says it is now. Closes the panel
-  // first, as the date picker does (unsaved edits go with it, see
-  // DetailsPanelCoordinator's date handling)
-  goToDate(dateKey) {
-    const { currentDate } = this.store.getState();
-    if (dateKey === currentDate || dateKey > getCurrentDiaryDateKey()) {
-      return; // no change, or a day that has not begun
-    }
-    this.store.dispatch({ type: HIDE_PANEL });
-    this.store.dispatch({ type: SWITCH_DATE, payload: dateKey });
-  }
-
   assignEventHandlers() {
     if (!this.ready) {
       const hamMenu = this.querySelector('.ham-menu');
@@ -165,6 +148,14 @@ export class Navbar extends TinyBase {
           this.store.dispatch({ type: RESET_ONBOARDING });
           hamMenu.classList.toggle('active');
           offScreenMenu.classList.toggle('active');
+        });
+      });
+      // the keyboard shortcuts, in a dialog of DynamicTimelineUI's
+      this.querySelectorAll('.shortcuts-button').forEach((button) => {
+        button.addEventListener('click', () => {
+          this.store.dispatch({ type: SHOW_PANEL, payload: 'shortcuts' });
+          hamMenu.classList.remove('active');
+          offScreenMenu.classList.remove('active');
         });
       });
       // asks first: DynamicTimelineUI's reset dialog does the clearing
@@ -184,17 +175,15 @@ export class Navbar extends TinyBase {
           requestLogout();
         });
       });
-      this.querySelector('.previous-day-button')?.addEventListener('click', () => {
-        const { currentDate } = this.store.getState();
-        this.goToDate(this.dayBefore(currentDate, getCurrentDiaryDateKey()));
-      });
-      this.querySelector('.next-day-button')?.addEventListener('click', () => {
-        const { currentDate } = this.store.getState();
-        this.goToDate(addDaysToDateKey(currentDate, 1)); // goToDate refuses a day that has not begun
-      });
-      this.querySelector('.today-button')?.addEventListener('click', () => {
-        this.goToDate(getCurrentDiaryDateKey());
-      });
+      // one day per press, from where the store says it is now; the keyboard
+      // shortcuts on a Timeline call the same functions (utils/navigation.js)
+      this.querySelector('.previous-day-button')?.addEventListener('click', () =>
+        stepDay(this.store, -1)
+      );
+      this.querySelector('.next-day-button')?.addEventListener('click', () =>
+        stepDay(this.store, 1)
+      );
+      this.querySelector('.today-button')?.addEventListener('click', () => goToToday(this.store));
       this.querySelector('.change-date-button')?.addEventListener('click', () => {
         this.store.dispatch({ type: SHOW_PANEL, payload: 'date' });
         // hamMenu.classList.toggle('active');

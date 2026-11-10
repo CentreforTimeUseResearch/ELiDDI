@@ -518,7 +518,13 @@ describe('Navbar', () => {
   });
 
   // #115
-  const MENU_LABELS = ['Instructions', 'Reset (clears this day)', 'View stats', 'About this study'];
+  const MENU_LABELS = [
+    'Instructions',
+    'Keyboard shortcuts',
+    'Reset (clears this day)',
+    'View stats',
+    'About this study',
+  ];
   const labelsIn = (el, listSelector) =>
     [...el.querySelectorAll(`${listSelector} li`)].map((li) => li.textContent.trim());
 
@@ -536,7 +542,7 @@ describe('Navbar', () => {
     ['sidebar', '.menu-list[data-menu="generic"]'],
     ['nav bar', '.nav-menu-list'],
   ])(
-    'makes only the wired-up options (Instructions, Reset) buttons in the %s',
+    'makes only the wired-up options (Instructions, Keyboard shortcuts, Reset) buttons in the %s',
     (_, listSelector) => {
       const el = document.createElement('el-nav-bar');
       document.body.appendChild(el);
@@ -545,12 +551,13 @@ describe('Navbar', () => {
         b.textContent.trim()
       );
 
-      expect(buttons).toEqual(['Instructions', 'Reset (clears this day)']);
+      expect(buttons).toEqual(['Instructions', 'Keyboard shortcuts', 'Reset (clears this day)']);
     }
   );
 
   it.each([
     ['Instructions', '.instructions-button'],
+    ['Keyboard shortcuts', '.shortcuts-button'],
     ['Reset', '.reset-diary-button'],
   ])('closes the open sidebar when its %s option is chosen', (_, buttonSelector) => {
     const el = document.createElement('el-nav-bar');
@@ -583,6 +590,18 @@ describe('Navbar', () => {
     el.querySelector('.nav-menu-list .instructions-button').click();
 
     expect(el.store.getState().onboarding).toBe(true);
+  });
+
+  it('opens the keyboard shortcuts (SHOW_PANEL shortcuts) from either copy of its item', () => {
+    const el = document.createElement('el-nav-bar');
+    document.body.appendChild(el);
+
+    el.querySelector('.nav-menu-list .shortcuts-button').click();
+    expect(el.store.getState().uipanel).toBe('shortcuts');
+
+    el.store.dispatch({ type: 'HIDE_PANEL' });
+    el.querySelector('.menu-list .shortcuts-button').click();
+    expect(el.store.getState().uipanel).toBe('shortcuts');
   });
 
   it('asks to reset (SHOW_PANEL reset) from either copy of the Reset item, clearing nothing itself', () => {

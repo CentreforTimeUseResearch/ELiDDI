@@ -53,6 +53,7 @@ export class TimelineKeyboard {
     getNowLimitMins,
     onOpenEntry,
     onCreateAt,
+    onShortcut,
     onPreview,
     onRestore,
     onCommit,
@@ -68,6 +69,7 @@ export class TimelineKeyboard {
     this.getNowLimitMins = getNowLimitMins;
     this.onOpenEntry = onOpenEntry;
     this.onCreateAt = onCreateAt;
+    this.onShortcut = onShortcut; // a shortcut key: 'previous-dimension' ... 'today'
     this.onPreview = onPreview; // draws spans: [{ id, startOffsetMins, endOffsetMins }]
     this.onRestore = onRestore; // redraws everything from what is stored
     this.onCommit = onCommit; // stores the grabbed Entry and the ones that gave way
@@ -300,6 +302,12 @@ export class TimelineKeyboard {
       return;
     }
     this.noteInput(true);
+    const shortcut = this.shortcutFor(e);
+    if (shortcut) {
+      e.preventDefault();
+      this.onShortcut(shortcut);
+      return;
+    }
     const stops = this.stops();
     const current = this.cursor;
     let next;
@@ -338,6 +346,40 @@ export class TimelineKeyboard {
     e.preventDefault();
     this.moveTo(next);
     this.ring.show(this.cursor);
+  }
+
+  // --- shortcut keys -----------------------------------------------------
+
+  // the single-key shortcuts, which only work here, on a Timeline that has focus
+  // (WCAG 2.1.4: a one-character shortcut must be off unless its component has
+  // focus). Ctrl/Alt/Meta are already ruled out; Shift makes a different key,
+  // except that Caps Lock gives 'T' without Shift
+  shortcutFor(e) {
+    switch (e.key) {
+      case '[':
+        return 'previous-dimension';
+      case ']':
+        return 'next-dimension';
+      case ',':
+        return 'previous-day';
+      case '.':
+        return 'next-day';
+      default:
+        return e.key.toLowerCase() === 't' && !e.shiftKey ? 'today' : undefined;
+    }
+  }
+
+  // the Entries on another day are another set: keep the place in the day, and
+  // let go of anything that belonged to the old one
+  dateChanged() {
+    if (this.session) {
+      this.session = undefined;
+      endKeyboardStatus('');
+    }
+    this.pendingReturn = undefined;
+    if (this.cursor) {
+      this.cursor = stopContaining(this.stops(), this.cursor.startOffsetMins);
+    }
   }
 
   // --- grabbing an Entry -------------------------------------------------

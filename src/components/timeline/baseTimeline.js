@@ -4,6 +4,7 @@ import { EntryResizeController } from './entryResizeController';
 import { EntryCreateController } from './entryCreateController';
 import { CreatePreview } from './createPreview';
 import { TimelineKeyboard } from './timelineKeyboard';
+import { stepDay, goToToday, stepDimension } from '../../utils/navigation';
 import { clampCreateSpan, getNowLimitOffsetMins } from './createSpan';
 import { EntryCommands, formatOverlapMessage } from './entryCommands';
 import { SVGNS } from './timelineConstants';
@@ -218,6 +219,7 @@ export class BaseTimeline extends TinyBase {
       getNowLimitMins: () => getNowLimitOffsetMins(this.currentDate),
       onOpenEntry: (entry) => this.openEntryFromKeyboard(entry),
       onCreateAt: (anchorMins) => this.createAtFromKeyboard(anchorMins),
+      onShortcut: (shortcut) => this.onShortcut(shortcut),
       // a grab draws its blocks live, as a handle drag does, and stores nothing until confirmed
       onPreview: (spans) =>
         spans.forEach(({ id, startOffsetMins, endOffsetMins }) =>
@@ -233,6 +235,46 @@ export class BaseTimeline extends TinyBase {
     });
     keyboard.connect();
     return keyboard;
+  }
+
+  // a shortcut key on this Timeline: the same as the control it is a shortcut
+  // for (utils/navigation.js is what both call)
+  onShortcut(shortcut) {
+    switch (shortcut) {
+      case 'previous-dimension':
+        this.goToDimension(-1);
+        break;
+      case 'next-dimension':
+        this.goToDimension(1);
+        break;
+      case 'previous-day':
+        stepDay(this.store, -1);
+        break;
+      case 'next-day':
+        stepDay(this.store, 1);
+        break;
+      case 'today':
+        goToToday(this.store);
+        break;
+    }
+  }
+
+  // the previous or next Dimension from this Timeline's, with focus on its
+  // Timeline: focus left on this one would be off-screen on a phone, whose
+  // strip scrolls to the new Dimension
+  goToDimension(direction) {
+    const next = stepDimension(
+      this.store,
+      direction,
+      GLOBALS.DATA.timeline.length,
+      this.dimensionIndex
+    );
+    document.querySelector(`${this.localName}[index="${next}"]`)?.focusTimeline?.();
+  }
+
+  // puts keyboard focus on this Timeline's current stop
+  focusTimeline() {
+    this.keyboard?.focusCursor();
   }
 
   // Enter on an Entry: the same as clicking it, then focus goes into the panel
@@ -316,6 +358,9 @@ export class BaseTimeline extends TinyBase {
     const dateChanged = state.currentDate !== this.currentDate;
     this.currentDate = state.currentDate;
     this.entries = state.diaries[this.currentDate]?.timelines[this.dimensionIndex] ?? EMPTY_ENTRIES;
+    if (dateChanged) {
+      this.keyboard?.dateChanged(); // keeps the place in the day on the new day's Entries
+    }
     return dateChanged;
   }
 

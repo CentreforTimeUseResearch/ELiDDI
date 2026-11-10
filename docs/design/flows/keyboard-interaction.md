@@ -18,19 +18,19 @@ The Respondent uses only the keyboard (or a switch/screen reader that emulates i
 
 Along the time axis (Up/Down on vertical Timelines, Left/Right on horizontal; the other pair switches Dimension where relevant):
 
-| Key                | On slot                           | On Entry                         | In grab / resize mode   |
-| ------------------ | --------------------------------- | -------------------------------- | ----------------------- |
-| Arrow along time   | Previous / next slot              | Previous / next Entry or gap     | Move / resize by 10 min |
-| Home / End         | Start / end of day                | First / last Entry               | Jump to limit           |
-| PageUp / PageDown  | -/+ 1 hour                        | -/+ 1 hour                       | -/+ 1 hour              |
-| Enter              | Create default block, open panel  | Open panel                       | Commit                  |
-| Space              | Start create (extend with arrows) | Enter grab mode                  | Commit                  |
-| Shift + arrow      | Extend creation                   | Resize end edge (start with Alt) | Resize                  |
-| Escape             | Cancel                            | Close selection                  | Revert                  |
-| Delete / Backspace |                                   | Ask to delete                    |                         |
-| `[` / `]`          | Previous / next Dimension         | same                             |                         |
-| `,` / `.`          | Previous / next day               | same                             |                         |
-| `t`                | Today                             | same                             |                         |
+| Key                | On slot                           | On Entry                     | In grab / resize mode            |
+| ------------------ | --------------------------------- | ---------------------------- | -------------------------------- |
+| Arrow along time   | Previous / next slot              | Previous / next Entry or gap | Move / resize by 10 min          |
+| Home / End         | Start / end of day                | First / last Entry           | Jump to limit                    |
+| PageUp / PageDown  | -/+ 1 hour                        | -/+ 1 hour                   | -/+ 1 hour                       |
+| Enter              | Create default block, open panel  | Open panel                   | Commit                           |
+| Space              | Start create (extend with arrows) | Enter grab mode              | Commit                           |
+| Shift + arrow      | Extend creation                   | (none: grab it first)        | Resize end edge (start with Alt) |
+| Escape             | Cancel                            | Close selection              | Revert                           |
+| Delete / Backspace |                                   | Ask to delete                |                                  |
+| `[` / `]`          | Previous / next Dimension         | same                         |                                  |
+| `,` / `.`          | Previous / next day               | same                         |                                  |
+| `t`                | Today                             | same                         |                                  |
 
 No key is single-character-only without a modifier unless it can be turned off or remapped (WCAG 2.1.4); the letter and punctuation shortcuts above apply only while a Timeline has focus.
 
@@ -41,14 +41,18 @@ Native form controls and links are fully keyboard operable: Tab through cards, a
 ## Enhanced behaviour with JavaScript
 
 - Timeline uses roving `tabindex`; one Tab stop per Timeline, so a screen has at most one stop per Dimension.
-- Limits and snapping match pointer gestures exactly (same rules as [move-resize](move-resize.md) and [create-entry](create-entry.md)).
+- Limits and snapping match pointer gestures exactly (same rules as [move-resize](move-resize.md) and [create-entry](create-entry.md)): one pure implementation of each is used by both.
+- **Grab mode**: Space on an Entry picks it up. In it, an arrow along the time axis moves the Entry 10 minutes; Shift+arrow moves its end edge and Alt+Shift+arrow its start edge; PageUp/PageDown use an hour instead of 10 minutes (with the same modifiers); Home/End go to the limit; Enter or Space confirms; Escape cancels. Tab, a click, or the Entry being changed elsewhere also cancels. Resizing is only in grab mode, so a stray Shift+arrow never changes an Entry.
+- Within a run of one kind of key, each step is worked out from where the run began, so moving on and back restores any neighbour that was trimmed. Changing kind (say, from a move to a resize) starts a new run from what the last one left.
+- Nothing is stored until it is confirmed; Escape discards every change, however many kinds were made. Confirming with nothing changed stores nothing and says "No change".
+- The message (mode, keys, each step, limits, result) is **one visible status bar** at the bottom of the window that is also a polite live region, so it is read once and seen once. After a confirm or cancel it stays a few seconds.
 - Focus never gets lost when blocks re-render: the Entry id (or slot time) is restored after render.
 - Visible focus indicator at least 3:1 contrast and not hidden by overlapping blocks.
 
 ## Accessibility
 
 - Timeline container: `role="application"` is avoided; use `role="group"` labelled "Primary activity timeline" containing buttons for slots and Entries (`role="grid"` is only used for the activity picker grid).
-- A polite `aria-live` region reports each step in modes: "Grabbed Eating 12:30 to 13:00. Use arrows to move, Enter to confirm, Escape to cancel."; "Now 12:40 to 13:10."
+- A polite `aria-live` region reports each step in modes: "Grabbed Eating, 12:30 to 13:00. Up and Down arrow keys move it. ... Enter to confirm, Escape to cancel."; "Now 12:40 to 13:10."; the Entries that gave way ("The next entry now starts at 13:10."); and any limit with its reason ("Limit reached: the neighbouring entry can't be shorter than 10 minutes.").
 - Hint text for the mode is visible on screen, not only announced.
 - Panel: focus moves in on open, trapped only when it is modal (narrow screens); Escape closes and focus returns to the invoking element.
 - Target WCAG 2.2 AA: 2.1.1 Keyboard, 2.1.4 Character Key Shortcuts, 2.4.7 Focus Visible, 2.4.11 Focus Not Obscured, 2.5.7 Dragging Movements (every drag has a non-drag path), 2.5.8 Target Size.

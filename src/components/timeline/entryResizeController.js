@@ -1,6 +1,7 @@
 import { formatOffsetAsClockTime } from '../../utils/time';
-import { SVGNS, MINUTES_PER_DAY, MIN_ENTRY_DURATION_MINS } from './timelineConstants';
+import { SVGNS } from './timelineConstants';
 import { computeMove } from './moveSpan';
+import { computeResize } from './resizeSpan';
 import { getNowLimitOffsetMins } from './createSpan';
 
 // Phase 10.6: which SVG attributes carry "position along the timeline axis"
@@ -52,7 +53,7 @@ const LIMIT_FLASH_MS = 300;
 // update - see onCommitResize.
 export class EntryResizeController {
   activeHandleEntryId;
-  activeDrag; // { entryId, edge, pointerId, currentStart, currentEnd, captureElement, previousNeighborEnd, nextNeighborStart, adjacent, wasAtLimit, atLimit } while a handle is being dragged
+  activeDrag; // { entryId, edge, pointerId, currentStart, currentEnd, neighbours, captureElement, wasAtLimit, atLimit } while a handle is being dragged
   longPressTimer;
   longPressCandidate; // { entryId, pointerId, startX, startY } while a press is pending
   suppressNextClick = false; // set when a long-press fires, so the click it also triggers doesn't open the panel
@@ -413,71 +414,19 @@ export class EntryResizeController {
     // panning under a touch drag - see the pointermove preventDefault() in
     // onEntryPointerMove for why this alone isn't relied on
     this.svg?.classList.add('dragging-handle');
-    // fixed for the whole drag, rather than recomputed as the pointer moves
-    // past other entries - "the adjacent entry" means this entry's immediate
-    // temporal neighbors as they stood when the drag started
-    const neighborBounds = this.isSingleChoiceDimension()
-      ? this.findNeighborBounds(entry)
-      : { previousEnd: 0, nextStart: MINUTES_PER_DAY };
+    // the rules (the neighbours, the limits) are computeResize's, and read
+    // the stored Entries each time, which do not change during the drag
     this.activeDrag = {
       entryId,
       edge,
       pointerId: e.pointerId,
       currentStart: entry.startOffsetMins,
       currentEnd: entry.endOffsetMins,
+      neighbours: [],
       captureElement: e.target,
-      previousNeighborEnd: neighborBounds.previousEnd,
-      nextNeighborStart: neighborBounds.nextStart,
-      adjacent: this.isSingleChoiceDimension() ? this.findAdjacent(entry, edge) : undefined,
       wasAtLimit: false,
       atLimit: false,
     };
-  }
-
-  // the Entry that shares this edge, if any: it ends where this one starts
-  // (start edge) or starts where this one ends (end edge). Dragging a shared
-  // edge moves the neighbour's facing boundary too, so the Timeline stays
-  // contiguous; an edge with a gap beside it has no such neighbour, and only
-  // ever moves itself. -> { entryId, originalStart, originalEnd } or undefined
-  findAdjacent(entry, edge) {
-    const neighbour = this.getEntries().find(
-      (other) =>
-        other.id !== entry.id &&
-        (edge === 'start'
-          ? other.endOffsetMins === entry.startOffsetMins
-          : other.startOffsetMins === entry.endOffsetMins)
-    );
-    return neighbour
-      ? {
-          entryId: neighbour.id,
-          originalStart: neighbour.startOffsetMins,
-          originalEnd: neighbour.endOffsetMins,
-        }
-      : undefined;
-  }
-
-  // where the adjacent Entry's facing boundary is for the drag as it stands
-  adjacentSpan(drag) {
-    const { adjacent } = drag;
-    return drag.edge === 'start'
-      ? { startOffsetMins: adjacent.originalStart, endOffsetMins: drag.currentStart }
-      : { startOffsetMins: drag.currentEnd, endOffsetMins: adjacent.originalEnd };
-  }
-
-  // among this entry's timeline siblings, the latest end time at or before
-  // this entry's own start, and the earliest start time at or after this
-  // entry's own end - the immediate temporal neighbors a drag can't cross
-  // in a single-choice dimension (dimensions that already tolerate
-  // overlapping entries have no such neighbors to respect)
-  findNeighborBounds(entry) {
-    const others = this.getEntries().filter((other) => other.id !== entry.id);
-    const previousEnd = others
-      .filter((other) => other.endOffsetMins <= entry.startOffsetMins)
-      .reduce((max, other) => Math.max(max, other.endOffsetMins), 0);
-    const nextStart = others
-      .filter((other) => other.startOffsetMins >= entry.endOffsetMins)
-      .reduce((min, other) => Math.min(min, other.startOffsetMins), MINUTES_PER_DAY);
-    return { previousEnd, nextStart };
   }
 
   updateDragToSvgPosition(svgCoord) {
@@ -488,15 +437,24 @@ export class EntryResizeController {
       this.updateMoveToSvgPosition(svgCoord);
       return;
     }
-    const rawOffsetMins = this.calculateTheTimeSlotClicked(svgCoord >= 0 ? svgCoord : 0);
-    const clampedOffsetMins = this.clampDragOffset(rawOffsetMins);
-    const hitLimit = clampedOffsetMins !== rawOffsetMins;
-    if (this.activeDrag.edge === 'start') {
-      this.activeDrag.currentStart = clampedOffsetMins;
-    } else {
-      this.activeDrag.currentEnd = clampedOffsetMins;
+    const drag = this.activeDrag;
+    const entry = this.getEntries().find((entry) => entry.id === drag.entryId);
+    if (!entry) {
+      return;
     }
-    this.activeDrag.atLimit = hitLimit;
+    const resize = computeResize({
+      entry,
+      entries: this.getEntries(),
+      edge: drag.edge,
+      requestedOffsetMins: this.calculateTheTimeSlotClicked(svgCoord >= 0 ? svgCoord : 0),
+      singleChoice: this.isSingleChoiceDimension(),
+      nowLimitMins: getNowLimitOffsetMins(this.getCurrentDate()),
+    });
+    const hitLimit = resize.atLimit;
+    drag.currentStart = resize.startOffsetMins;
+    drag.currentEnd = resize.endOffsetMins;
+    drag.neighbours = resize.neighbours;
+    drag.atLimit = hitLimit;
     this.renderDragFeedback();
     // flash once per approach, not on every tick still pressed against the
     // same wall - otherwise holding at a limit reads as a constant strobe
@@ -504,33 +462,6 @@ export class EntryResizeController {
       this.flashLimitCue();
     }
     this.activeDrag.wasAtLimit = hitLimit;
-  }
-
-  // the [min, max] this drag's moving edge may snap to - the day's own
-  // bounds, this entry's minimum duration, this entry's fixed neighbors
-  // (see startHandleDrag), and, only for the current diary day, "now"
-  clampDragOffset(rawOffsetMins) {
-    const { min, max } = this.getDragBounds(this.activeDrag);
-    return Math.min(Math.max(rawOffsetMins, min), max);
-  }
-
-  getDragBounds(drag) {
-    const nowLimit = getNowLimitOffsetMins(this.getCurrentDate());
-    // an adjacent Entry gives way, down to its own minimum duration; with a
-    // gap beside the edge, the Entry beyond the gap is a wall instead
-    if (drag.edge === 'start') {
-      const min = drag.adjacent
-        ? drag.adjacent.originalStart + MIN_ENTRY_DURATION_MINS
-        : drag.previousNeighborEnd;
-      const max = Math.min(drag.currentEnd - MIN_ENTRY_DURATION_MINS, nowLimit);
-      return { min, max: Math.max(max, min) }; // never let max fall below min if there's no room left
-    }
-    const min = drag.currentStart + MIN_ENTRY_DURATION_MINS;
-    const wall = drag.adjacent
-      ? drag.adjacent.originalEnd - MIN_ENTRY_DURATION_MINS
-      : drag.nextNeighborStart;
-    const max = Math.min(wall, MINUTES_PER_DAY, nowLimit);
-    return { min, max: Math.max(max, min) };
   }
 
   flashLimitCue() {
@@ -565,22 +496,13 @@ export class EntryResizeController {
       return;
     }
     this.updateEntryRectLive(drag);
-    if (drag.adjacent) {
-      const { startOffsetMins, endOffsetMins } = this.adjacentSpan(drag);
-      this.updateEntryRectLive({
-        entryId: drag.adjacent.entryId,
-        currentStart: startOffsetMins,
-        currentEnd: endOffsetMins,
-      });
-    }
+    this.updateNeighbourRects(drag);
     this.updateHandlePosition('start', drag.currentStart, drag.edge === 'start', drag.atLimit);
     this.updateHandlePosition('end', drag.currentEnd, drag.edge === 'end', drag.atLimit);
   }
 
-  // the Entry, the neighbours it is trimming, and its handles, with the
-  // Entry's new times as one readout at its start edge
-  renderMoveFeedback(drag) {
-    this.updateEntryRectLive(drag);
+  // the neighbours the drag is moving the boundary of
+  updateNeighbourRects(drag) {
     drag.neighbours.forEach((neighbour) =>
       this.updateEntryRectLive({
         entryId: neighbour.id,
@@ -588,6 +510,13 @@ export class EntryResizeController {
         currentEnd: neighbour.endOffsetMins,
       })
     );
+  }
+
+  // the Entry, the neighbours it is trimming, and its handles, with the
+  // Entry's new times as one readout at its start edge
+  renderMoveFeedback(drag) {
+    this.updateEntryRectLive(drag);
+    this.updateNeighbourRects(drag);
     const times = `${formatOffsetAsClockTime(drag.currentStart)}–${formatOffsetAsClockTime(drag.currentEnd)}`;
     this.updateHandlePosition(
       'start',
@@ -669,9 +598,8 @@ export class EntryResizeController {
     this.releaseDragCapture(drag);
     this.svg?.classList.remove('dragging-handle');
     // only the neighbours the drag actually moved are passed on
-    let neighbourChanges = [];
+    const neighbourChanges = this.changedNeighbours(drag);
     if (drag.edge === 'body') {
-      neighbourChanges = this.changedNeighbours(drag);
       // the click that ends this press must not open the Entry
       this.suppressClicks();
       if (drag.currentStart === drag.originalStart && neighbourChanges.length === 0) {
@@ -679,12 +607,6 @@ export class EntryResizeController {
         this.cancelDragVisuals(drag);
         return;
       }
-    } else if (drag.adjacent) {
-      const span = this.adjacentSpan(drag);
-      const moved =
-        span.startOffsetMins !== drag.adjacent.originalStart ||
-        span.endOffsetMins !== drag.adjacent.originalEnd;
-      neighbourChanges = moved ? [{ entryId: drag.adjacent.entryId, ...span }] : [];
     }
     const updatedEntry = this.onCommitResize(
       drag.entryId,
@@ -726,13 +648,6 @@ export class EntryResizeController {
       currentStart: entry.startOffsetMins,
       currentEnd: entry.endOffsetMins,
     });
-    if (drag.adjacent) {
-      this.updateEntryRectLive({
-        entryId: drag.adjacent.entryId,
-        currentStart: drag.adjacent.originalStart,
-        currentEnd: drag.adjacent.originalEnd,
-      });
-    }
     (drag.neighbours ?? []).forEach((neighbour) => {
       const stored = this.getEntries().find((other) => other.id === neighbour.id);
       if (stored) {

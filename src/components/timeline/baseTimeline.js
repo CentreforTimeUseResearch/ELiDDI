@@ -148,40 +148,46 @@ export class BaseTimeline extends TinyBase {
       axis: this.constructor.axis,
       getPxPerMinute: () => this.getPxPerMinute(),
       crossAxisCenter: this.constructor.crossAxisCenter,
-      onCommitResize: (entryId, { startOffsetMins, endOffsetMins }, neighbourChanges = []) => {
-        const entry = this.entries.find((entry) => entry.id === entryId);
-        if (!entry) {
-          return undefined;
-        }
-        // the neighbours that gave way, still present in this Timeline
-        const neighbours = neighbourChanges
-          .map((change) => ({
-            change,
-            neighbour: this.entries.find((other) => other.id === change.entryId),
-          }))
-          .filter(({ neighbour }) => neighbour);
-        this.selectedID = entryId;
-        if (neighbours.length > 0) {
-          // the dragged Entry and the ones that gave way change together
-          this.entryCommands.updateMany([
-            { id: entryId, entry: { ...entry, startOffsetMins, endOffsetMins } },
-            ...neighbours.map(({ change, neighbour }) => ({
-              id: neighbour.id,
-              entry: {
-                ...neighbour,
-                startOffsetMins: change.startOffsetMins,
-                endOffsetMins: change.endOffsetMins,
-              },
-            })),
-          ]);
-          this.selectedID = undefined;
-        } else {
-          this.updateEntry({ ...entry, startOffsetMins, endOffsetMins });
-        }
-        this.renderEntries();
-        return this.entries.find((entry) => entry.id === entryId);
-      },
+      onCommitResize: (entryId, span, neighbourChanges) =>
+        this.commitEntryChange(entryId, span, neighbourChanges),
     });
+  }
+
+  // stores a drag or a keyboard grab of an Entry: its new span, and the
+  // Entries that gave way to it ([{ entryId, startOffsetMins, endOffsetMins }]),
+  // as one change -> the Entry as stored afterwards, or undefined if it is gone
+  commitEntryChange(entryId, { startOffsetMins, endOffsetMins }, neighbourChanges = []) {
+    const entry = this.entries.find((entry) => entry.id === entryId);
+    if (!entry) {
+      return undefined;
+    }
+    // the neighbours that gave way, still present in this Timeline
+    const neighbours = neighbourChanges
+      .map((change) => ({
+        change,
+        neighbour: this.entries.find((other) => other.id === change.entryId),
+      }))
+      .filter(({ neighbour }) => neighbour);
+    this.selectedID = entryId;
+    if (neighbours.length > 0) {
+      // the Entry and the ones that gave way change together
+      this.entryCommands.updateMany([
+        { id: entryId, entry: { ...entry, startOffsetMins, endOffsetMins } },
+        ...neighbours.map(({ change, neighbour }) => ({
+          id: neighbour.id,
+          entry: {
+            ...neighbour,
+            startOffsetMins: change.startOffsetMins,
+            endOffsetMins: change.endOffsetMins,
+          },
+        })),
+      ]);
+      this.selectedID = undefined;
+    } else {
+      this.updateEntry({ ...entry, startOffsetMins, endOffsetMins });
+    }
+    this.renderEntries();
+    return this.entries.find((entry) => entry.id === entryId);
   }
 
   createCreateController() {
@@ -208,8 +214,22 @@ export class BaseTimeline extends TinyBase {
       getEntries: () => this.entries,
       getDimensionName: () => GLOBALS.DATA.timeline[this.dimensionIndex]?.name ?? '',
       isPanelOpen: () => this.store.getState().uipanel === 'details',
+      isSingleChoice: () => this.isSingleChoiceDimension,
+      getNowLimitMins: () => getNowLimitOffsetMins(this.currentDate),
       onOpenEntry: (entry) => this.openEntryFromKeyboard(entry),
       onCreateAt: (anchorMins) => this.createAtFromKeyboard(anchorMins),
+      // a grab draws its blocks live, as a handle drag does, and stores nothing until confirmed
+      onPreview: (spans) =>
+        spans.forEach(({ id, startOffsetMins, endOffsetMins }) =>
+          this.resizeController.updateEntryRectLive({
+            entryId: id,
+            currentStart: startOffsetMins,
+            currentEnd: endOffsetMins,
+          })
+        ),
+      onRestore: () => this.renderEntries(),
+      onCommit: (entryId, span, neighbourChanges) =>
+        this.commitEntryChange(entryId, span, neighbourChanges),
     });
     keyboard.connect();
     return keyboard;

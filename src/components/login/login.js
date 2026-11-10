@@ -3,26 +3,29 @@ import { appSession } from '../../auth/session';
 import { describeLoginFailure, getAccounts, login } from '../../auth/authClient';
 import { requestLogout } from '../../sync/appSync';
 import { appSyncStatus, SYNC_STATUS } from '../../sync/syncStatus';
+import { t } from '../../i18n/i18n';
 import './login.css';
 
-// What the Respondent is told above the form after a login has ended
+// What the Respondent is told above the form after a login has ended.
+// Catalogue keys, not strings (ADR 0008): t() runs at use time, so the
+// language is read then, not at module evaluation.
 const NOTICES = {
-  logout: 'You have logged out.',
-  expired: 'Your session has ended. Please log in again.',
+  logout: 'login.notice.logout',
+  expired: 'login.notice.expired',
 };
 
 // What the dialog says, instead of the form, while the Respondent is logged in
 // but their diary is not on screen yet (or must not be touched). Logging out
 // is always offered, so someone else can use the device.
 const GATES = {
-  [SYNC_STATUS.LOADING]: { text: 'Loading your diary…', button: null },
+  [SYNC_STATUS.LOADING]: { text: 'login.gate.loading', button: null },
   [SYNC_STATUS.LOAD_FAILED]: {
-    text: 'Your diary could not be loaded. Check your connection and try again.',
-    button: { action: 'retry', label: 'Try again' },
+    text: 'login.gate.loadFailed',
+    button: { action: 'retry', label: 'login.gate.retry' },
   },
   [SYNC_STATUS.OUTDATED]: {
-    text: 'This page is out of date and cannot open your diary safely. Reload the page to continue.',
-    button: { action: 'reload', label: 'Reload the page' },
+    text: 'login.gate.outdated',
+    button: { action: 'reload', label: 'login.gate.reload' },
   },
 };
 
@@ -63,11 +66,11 @@ export class Login extends TinyBase {
     if (!gate) {
       return;
     }
-    this.gateText.textContent = gate.text;
+    this.gateText.textContent = t(gate.text);
     const main = gate.button
-      ? `<button type="button" class="login-submit" data-gate="${gate.button.action}">${gate.button.label}</button>`
+      ? `<button type="button" class="login-submit" data-gate="${gate.button.action}">${t(gate.button.label)}</button>`
       : '';
-    this.gateButtons.innerHTML = `${main}<button type="button" class="login-secondary" data-gate="logout">Log out</button>`;
+    this.gateButtons.innerHTML = `${main}<button type="button" class="login-secondary" data-gate="logout">${t('login.gate.logout')}</button>`;
   }
 
   onGateClick(event) {
@@ -85,7 +88,7 @@ export class Login extends TinyBase {
     if (session === null) {
       this.input.value = '';
       this.showError('');
-      this.noticeElement.textContent = NOTICES[reason] ?? '';
+      this.noticeElement.textContent = reason in NOTICES ? t(NOTICES[reason]) : '';
     }
   }
 
@@ -101,7 +104,7 @@ export class Login extends TinyBase {
   setBusy(busy) {
     this.busy = busy;
     this.button.disabled = busy;
-    this.button.textContent = busy ? 'Logging in…' : 'Log in';
+    this.button.textContent = busy ? t('login.submitting') : t('login.submit');
     this.form.setAttribute('aria-busy', String(busy));
   }
 
@@ -131,11 +134,11 @@ export class Login extends TinyBase {
   render() {
     this.innerHTML = `
       <form class="login-form" novalidate>
-        <h4 id="login-title">Log in</h4>
+        <h4 id="login-title">${t('login.title')}</h4>
         <p class="login-notice" data-login-notice role="status"></p>
-        <label class="login-label" for="login-code">Login code</label>
+        <label class="login-label" for="login-code">${t('login.codeLabel')}</label>
         <p class="login-hint" id="login-code-hint">
-          8 letters and numbers, like ABCD-EFGH. Capital letters and the hyphen are optional.
+          ${t('login.codeHint')}
         </p>
         <input
           type="text"
@@ -152,7 +155,7 @@ export class Login extends TinyBase {
           aria-describedby="login-code-hint login-error"
         />
         <p class="login-error" id="login-error" data-login-error role="alert"></p>
-        <button type="submit" class="login-submit">Log in</button>
+        <button type="submit" class="login-submit">${t('login.submit')}</button>
       </form>
       <div class="login-gate" data-login-gate hidden>
         <p class="login-gate-text" data-login-gate-text role="status"></p>

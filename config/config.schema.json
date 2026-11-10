@@ -61,7 +61,8 @@
         },
         "language": {
           "type": "string",
-          "pattern": "^[a-zA-Z]{2}$"
+          "pattern": "^[a-zA-Z]{2}$",
+          "description": "Two-letter code selecting the UI-string catalogue in src/i18n/ (docs/adr/0008-ui-strings-from-a-message-catalogue.md). Absent, or naming a catalogue that doesn't exist, falls back to English."
         },
         "instructions": {
           "type": "boolean",

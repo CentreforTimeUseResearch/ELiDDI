@@ -1,4 +1,5 @@
 import { getCurrentOffsetMins, getCurrentDiaryDateKey } from '../../utils/time';
+import { onHalfMinuteTick } from '../../utils/nowTicker';
 import { BaseTimeline, EMPTY_ENTRIES } from './baseTimeline';
 import { renderEntryBlocks, visibleLength } from './entryBlocks';
 import { Y_AXIS } from './entryResizeController';
@@ -24,8 +25,7 @@ export class Timeline extends BaseTimeline {
   connectedCallback() {
     super.connectedCallback();
     this.updateFutureOverlay();
-    const futureOverlayIntervalId = setInterval(this.updateFutureOverlay.bind(this), 30000);
-    this.registerCleanup(() => clearInterval(futureOverlayIntervalId));
+    this.registerCleanup(onHalfMinuteTick(() => this.updateFutureOverlay()));
     if (this.dimensionIndex !== this.shadowIndex) {
       this.renderShadowDimension();
     }

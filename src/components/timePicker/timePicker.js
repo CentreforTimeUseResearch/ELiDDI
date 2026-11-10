@@ -7,6 +7,7 @@ import {
   showFieldError,
   clearFieldError,
 } from '../../utils/validatedFormField';
+import { onHalfMinuteTick } from '../../utils/nowTicker';
 import './timePicker.css';
 
 const ID = INPUT_ID_ATTR;
@@ -42,8 +43,7 @@ export class TimePicker extends TinyBase {
     this.maxTimeValue = this.props?.getMaxTime?.();
     this.assignEventHandlers();
     if (this[CONSTRAINED]) {
-      const intervalId = setInterval(this.updateTimeConstraints.bind(this), 30000);
-      this.registerCleanup(() => clearInterval(intervalId));
+      this.registerCleanup(onHalfMinuteTick(() => this.updateTimeConstraints()));
     }
     this.validate();
   }

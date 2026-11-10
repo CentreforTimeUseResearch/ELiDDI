@@ -5,9 +5,10 @@ import { HIDE_PANEL, SHOW_PANEL } from '../../store/actionTypes';
 import './detailsPanel.css';
 import { escapeHtml } from '../../utils/html';
 import { guardUnsavedEdits } from '../../utils/unsavedEdits';
-import { announce } from '../../utils/announce';
 import { MIN_ENTRY_DURATION_MINS } from '../timeline/timelineConstants';
 import { getDayBoundaryInMinutes } from '../../utils/time';
+import { DeleteConfirmFlow } from './deleteConfirmFlow';
+import { LeavePromptFlow } from './leavePromptFlow';
 
 const DIMENSION_INDEX = 'dimensionindex';
 const HEADING = 'heading';
@@ -27,12 +28,23 @@ export class DetailsPanel extends TinyBase {
   open = false;
   instanceId = ++instanceCount;
   baseline; // what the panel was opened with, to tell when something is unsaved
-  confirmingDelete = false; // Delete has been pressed and the question is showing
-  leaveCallbacks; // set while the unsaved-changes question is showing
-  leaveReturnFocus; // where focus was when it was asked
   saveButton;
   saveHint;
   dayBoundaryInMinutes = getDayBoundaryInMinutes();
+
+  // the two in-panel questions, each its own small state machine (see their
+  // files); the panel injects the few things they cannot know
+  deleteConfirmFlow = new DeleteConfirmFlow({
+    host: this,
+    getEntryId: () => this.state.id,
+    deleteEntry: (id) => this.props.deleteEntry(id),
+    returnFocusTo: () => this.deleteButton.focus(),
+  });
+  leavePromptFlow = new LeavePromptFlow({
+    host: this,
+    getIncompleteReasons: () => this.getIncompleteReasons(),
+    focusFallback: () => this.focusActivity(),
+  });
 
   timelinePickerPanel;
   popoverElement;
@@ -75,28 +87,15 @@ export class DetailsPanel extends TinyBase {
     this.saveButton = this.querySelector('.btn-save-btn');
     this.saveHint = this.querySelector('.save-hint');
     this.deleteButton = this.querySelector('.btn-delete-btn');
-    this.deleteConfirm = this.querySelector('.delete-confirm');
-    this.confirmDeleteButton = this.querySelector('.btn-confirm-delete-btn');
-    this.keepButton = this.querySelector('.btn-keep-btn');
-    this.leavePrompt = this.querySelector('.leave-prompt');
-    this.leaveReason = this.querySelector('.leave-prompt-reason');
-    this.leaveSaveButton = this.querySelector('.btn-leave-save');
-    this.leaveDiscardButton = this.querySelector('.btn-leave-discard');
-    this.leaveKeepButton = this.querySelector('.btn-leave-keep');
     this.errorDisplay = this.querySelector('.entry-error');
     this.openCloseButton = this.querySelector('[data-openCloseButton]');
   }
 
   assignEventHandlers() {
+    this.deleteConfirmFlow.bind(this);
+    this.leavePromptFlow.bind(this);
     this.saveButton.addEventListener('click', () => this.onSaveButtonClick());
-    this.deleteButton.addEventListener('click', () => this.onDeleteButtonClick());
-    this.confirmDeleteButton.addEventListener('click', () => this.onConfirmDelete());
-    this.keepButton.addEventListener('click', () =>
-      this.cancelDeleteConfirmation({ returnFocus: true })
-    );
-    this.leaveSaveButton.addEventListener('click', () => this.answerLeavePrompt('onSave'));
-    this.leaveDiscardButton.addEventListener('click', () => this.answerLeavePrompt('onDiscard'));
-    this.leaveKeepButton.addEventListener('click', () => this.answerLeavePrompt('onKeep'));
+    this.deleteButton.addEventListener('click', () => this.deleteConfirmFlow.begin());
     this.openCloseButton.addEventListener('click', () => {
       if (this.open) {
         this.requestClose();
@@ -222,45 +221,13 @@ export class DetailsPanel extends TinyBase {
 
   // --- the unsaved-changes question ---------------------------------------
 
-  // asks, here in the panel (not a browser dialog), what to do with the unsaved
-  // edit that something is about to drop. Each callback is called once, by the
-  // answer: onSave, onDiscard, onKeep. Focus goes to Keep editing, the safe one
+  // asks what to do with the unsaved edit that something is about to drop
+  // (the coordinator's guard calls this) - the question itself is
+  // LeavePromptFlow's; only one question shows at a time, so a pending
+  // delete confirmation gives way first
   showLeavePrompt(callbacks) {
-    this.cancelDeleteConfirmation();
-    this.leaveCallbacks = callbacks;
-    const active = document.activeElement;
-    this.leaveReturnFocus = active && active !== document.body ? active : undefined;
-    const reasons = this.getIncompleteReasons();
-    const complete = reasons.length === 0;
-    this.leaveSaveButton.toggleAttribute('hidden', !complete);
-    this.leaveReason.textContent = complete ? '' : `It can't be saved yet. ${reasons.join('. ')}.`;
-    this.leaveReason.toggleAttribute('hidden', complete);
-    this.leavePrompt.removeAttribute('hidden');
-    this.setAttribute('data-leaving', '');
-    announce(`You have unsaved changes to this entry. ${this.leaveReason.textContent}`.trim());
-    this.leaveKeepButton.focus();
-  }
-
-  answerLeavePrompt(which) {
-    const callbacks = this.leaveCallbacks;
-    if (!callbacks) return; // already answered
-    const returnTo = this.leaveReturnFocus;
-    this.hideLeavePrompt();
-    if (which === 'onKeep') {
-      if (returnTo?.isConnected) {
-        returnTo.focus();
-      } else {
-        this.focusActivity();
-      }
-    }
-    callbacks[which]?.();
-  }
-
-  hideLeavePrompt() {
-    this.leaveCallbacks = undefined;
-    this.leaveReturnFocus = undefined;
-    this.leavePrompt?.setAttribute('hidden', '');
-    this.removeAttribute('data-leaving');
+    this.deleteConfirmFlow.cancel();
+    this.leavePromptFlow.show(callbacks);
   }
 
   // saves the open entry as Save does -> whether it was saved (not if it is
@@ -291,9 +258,8 @@ export class DetailsPanel extends TinyBase {
   reset() {
     this.state = {};
     this.baseline = undefined;
-    this.confirmingDelete = false;
-    this.removeAttribute('data-confirming-delete');
-    this.hideLeavePrompt();
+    this.deleteConfirmFlow.dismiss();
+    this.leavePromptFlow.hide();
     this.render();
     this.getChildElementReferences();
     this.assignEventHandlers();
@@ -308,8 +274,8 @@ export class DetailsPanel extends TinyBase {
   hidePanel() {
     this.open = false;
     this.classList.remove('active');
-    this.cancelDeleteConfirmation(); // an unanswered question does not wait for the panel to come back
-    this.hideLeavePrompt();
+    this.deleteConfirmFlow.cancel(); // an unanswered question does not wait for the panel to come back
+    this.leavePromptFlow.hide();
   }
 
   // keyboard: the way in after opening an Entry from a Timeline
@@ -330,16 +296,16 @@ export class DetailsPanel extends TinyBase {
     if (e.key !== 'Escape' || !this.open) {
       return;
     }
-    if (this.leaveCallbacks) {
+    if (this.leavePromptFlow.isShowing) {
       // Escape answers the question (Keep editing); it does not also close the panel
       e.preventDefault();
-      this.answerLeavePrompt('onKeep');
+      this.leavePromptFlow.answer('onKeep');
       return;
     }
-    if (this.confirmingDelete) {
+    if (this.deleteConfirmFlow.confirming) {
       // Escape answers the question (Keep it); it does not also close the panel
       e.preventDefault();
-      this.cancelDeleteConfirmation({ returnFocus: true });
+      this.deleteConfirmFlow.cancel({ returnFocus: true });
       return;
     }
     if (this.listWasOpenOnEscape) {
@@ -370,7 +336,7 @@ export class DetailsPanel extends TinyBase {
   // part of the panelActions contract handed to Timeline via
   // registerPanelActions - pre-fills the panel for editing an existing entry
   openEntry(entry) {
-    this.cancelDeleteConfirmation(); // a question about the last Entry is not about this one
+    this.deleteConfirmFlow.cancel(); // a question about the last Entry is not about this one
     this.setStartTime(entry.startOffsetMins);
     this.setEndTime(entry.endOffsetMins);
     this.setActivity(entry.activity);
@@ -503,46 +469,6 @@ export class DetailsPanel extends TinyBase {
     }
   }
 
-  // Delete does not delete: it asks, here in the panel (not a browser dialog),
-  // with the safe answer focused. Only the Entry that is open can be asked about
-  onDeleteButtonClick() {
-    if (this.state.id === undefined) return;
-    this.confirmingDelete = true;
-    this.deleteConfirm.removeAttribute('hidden');
-    this.setAttribute('data-confirming-delete', '');
-    this.keepButton.focus();
-  }
-
-  onConfirmDelete() {
-    if (!this.confirmingDelete || this.state.id === undefined) return;
-    const id = this.state.id;
-    // answered: a second press, or a double-click, cannot delete again
-    this.confirmingDelete = false;
-    this.props.deleteEntry(id);
-    // a successful delete resets the panel (the Timeline closes it); if the
-    // Entry was already gone it does not, and the question must not be left up
-    if (this.state.id === id) {
-      this.hideDeleteConfirmation();
-    }
-  }
-
-  // Keep it, Escape, or the panel moving on to something else. Focus goes back
-  // to Delete only when the Respondent answered (it would be taken from wherever
-  // it is going otherwise)
-  cancelDeleteConfirmation({ returnFocus = false } = {}) {
-    if (!this.confirmingDelete) return;
-    this.confirmingDelete = false;
-    this.hideDeleteConfirmation();
-    if (returnFocus) {
-      this.deleteButton.focus();
-    }
-  }
-
-  hideDeleteConfirmation() {
-    this.deleteConfirm?.setAttribute('hidden', '');
-    this.removeAttribute('data-confirming-delete');
-  }
-
   showSaveButton() {
     this.saveButton.classList.remove('opaque');
     this.saveButton.removeAttribute('aria-disabled');
@@ -648,19 +574,7 @@ export class DetailsPanel extends TinyBase {
               <div class="entry-error" id="entry-error-${this.instanceId}" aria-live="polite" hidden></div>
               <p class="save-hint" id="save-hint-${this.instanceId}" hidden></p>
               <button class="btn btn-save-btn opaque" aria-disabled="true">Save</button>
-              <button class="btn btn-delete-btn hide">Delete</button>
-              <div class="leave-prompt" role="group" aria-labelledby="leave-prompt-question-${this.instanceId}" hidden>
-                <p class="leave-prompt-question" id="leave-prompt-question-${this.instanceId}">You have unsaved changes to this entry.</p>
-                <p class="leave-prompt-reason" hidden></p>
-                <button type="button" class="btn btn-leave-save">Save</button>
-                <button type="button" class="btn btn-leave-discard">Discard</button>
-                <button type="button" class="btn btn-leave-keep" aria-describedby="leave-prompt-question-${this.instanceId}">Keep editing</button>
-              </div>
-              <div class="delete-confirm" role="group" aria-labelledby="delete-confirm-question-${this.instanceId}" hidden>
-                <p class="delete-confirm-question" id="delete-confirm-question-${this.instanceId}">Delete this entry? This can't be undone.</p>
-                <button type="button" class="btn btn-confirm-delete-btn">Delete</button>
-                <button type="button" class="btn btn-keep-btn" aria-describedby="delete-confirm-question-${this.instanceId}">Keep it</button>
-              </div>
+              <button class="btn btn-delete-btn hide">Delete</button>${this.leavePromptFlow.markup(this.instanceId)}${this.deleteConfirmFlow.markup(this.instanceId)}
             </div>
             `;
   }

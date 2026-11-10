@@ -139,6 +139,114 @@ describe('DialogWidget', () => {
   });
 
   // a dialog the Respondent must act on rather than skip, e.g. the login
+  // #231: a dialog hands focus back to what had it when it opened
+  describe('focus', () => {
+    function mountWithOpener(props = {}) {
+      let actions;
+      const opener = document.createElement('button');
+      opener.textContent = 'open';
+      document.body.appendChild(opener);
+      const el = createDialog({ registerDialogActions: (a) => (actions = a), ...props });
+      return { el, actions, opener };
+    }
+
+    it('returns to whatever had focus when it opened, once it closes', () => {
+      const { actions, opener } = mountWithOpener();
+      opener.focus();
+
+      actions.open();
+      document.querySelector('[data-close]').focus(); // focus moved into the dialog
+      actions.close();
+
+      expect(document.activeElement).toBe(opener);
+    });
+
+    it('returns when closed by its close button, or by Escape', () => {
+      const { el, actions, opener } = mountWithOpener();
+      opener.focus();
+      actions.open();
+      el.querySelector('[data-close]').focus();
+      el.querySelector('[data-close]').click();
+      expect(document.activeElement).toBe(opener);
+
+      actions.open();
+      el.querySelector('[data-close]').focus();
+      el.querySelector('dialog').dispatchEvent(new Event('cancel', { cancelable: true }));
+      expect(document.activeElement).toBe(opener);
+    });
+
+    it('returns when its owner closes it from its own request-close handler', () => {
+      let dialogActions;
+      const onRequestClose = vi.fn(() => dialogActions.close());
+      const { actions, opener } = mountWithOpener({ onRequestClose });
+      dialogActions = actions;
+      opener.focus();
+      actions.open();
+
+      document.querySelector('[data-close]').click();
+
+      expect(onRequestClose).toHaveBeenCalled();
+      expect(document.activeElement).toBe(opener);
+    });
+
+    it('goes back to what had focus first, not to something inside it, if opened again while open', () => {
+      const { actions, opener } = mountWithOpener();
+      opener.focus();
+      actions.open();
+      document.querySelector('[data-close]').focus();
+
+      actions.open(); // the store tells it to open on every update
+
+      actions.close();
+      expect(document.activeElement).toBe(opener);
+    });
+
+    it('does not take focus when it was never open', () => {
+      const { actions } = mountWithOpener();
+      const other = document.createElement('button');
+      document.body.appendChild(other);
+      other.focus();
+
+      actions.close();
+      actions.close();
+
+      expect(document.activeElement).toBe(other);
+    });
+
+    it('does nothing more than once for one opening', () => {
+      const { actions, opener } = mountWithOpener();
+      opener.focus();
+      actions.open();
+      actions.close();
+      const other = document.createElement('button');
+      document.body.appendChild(other);
+      other.focus();
+
+      actions.close();
+
+      expect(document.activeElement).toBe(other);
+    });
+
+    it('copes with what had focus having gone', () => {
+      const { actions, opener } = mountWithOpener();
+      opener.focus();
+      actions.open();
+      opener.remove();
+
+      expect(() => actions.close()).not.toThrow();
+      expect(document.activeElement).not.toBe(opener);
+    });
+
+    it('has no one to return to when nothing had focus', () => {
+      const { actions } = mountWithOpener();
+      document.activeElement?.blur?.();
+
+      actions.open();
+
+      expect(() => actions.close()).not.toThrow();
+    });
+  });
+
   describe('when dismissible is false', () => {
     it('renders no close button', () => {
       const el = createDialog({ dismissible: false, content: '<p>log in</p>' });

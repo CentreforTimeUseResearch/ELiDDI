@@ -40,35 +40,87 @@ export class HorizontalTimelineStack extends TinyBase {
     this.updateCurrentLabel();
   }
 
-  // the label of the current Dimension is marked, for assistive tech and
-  // for the styling in horizontalTimelineStack.css
+  // the tab of the current Dimension is selected (for assistive tech, and the
+  // styling in horizontalTimelineStack.css), and is the one Tab stop of the
+  // list: the arrow keys move within it
   updateCurrentLabel() {
     const { currentDimensionIndex } = this.store.getState();
     this.labels.forEach((label, index) => {
-      if (index === currentDimensionIndex) {
-        label.setAttribute('aria-current', 'true');
-      } else {
-        label.removeAttribute('aria-current');
-      }
+      const selected = index === currentDimensionIndex;
+      label.setAttribute('aria-selected', String(selected));
+      label.tabIndex = selected ? 0 : -1;
     });
+  }
+
+  // what clicking a label, or arrowing to it, does
+  selectDimension(dimensionIndex) {
+    this.store.dispatch({ type: HIDE_PANEL });
+    this.store.dispatch({ type: SWITCH_DIMENSION, payload: dimensionIndex });
+  }
+
+  // Down/Up go to the next/previous tab (wrapping), Home/End to the first and
+  // last, selecting it as they go: choosing a Dimension only retargets the
+  // panel, so there is nothing to commit to (automatic activation). Other
+  // keys, and arrows with a modifier, are left to the browser
+  onTabKeyDown(event) {
+    if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) {
+      return;
+    }
+    const current = Number(event.target?.dataset?.dimensionIndex);
+    if (!Number.isInteger(current)) {
+      return;
+    }
+    const count = this.labels.length;
+    let next;
+    switch (event.key) {
+      case 'ArrowDown':
+        next = (current + 1) % count;
+        break;
+      case 'ArrowUp':
+        next = (current - 1 + count) % count;
+        break;
+      case 'Home':
+        next = 0;
+        break;
+      case 'End':
+        next = count - 1;
+        break;
+      default:
+        return;
+    }
+    event.preventDefault();
+    this.selectDimension(next);
+    this.labels[next].focus();
   }
 
   // the name of a Dimension, in the same grid row as that Dimension's row,
   // so the two line up whatever the row's height and scroll together. A
-  // button, as the sidebar list it replaces was: it switches the current
-  // Dimension without opening an Entry
+  // button, as the sidebar list it replaces was, and a tab of the Dimensions
+  // list: it switches the current Dimension without opening an Entry
   createLabel(dimensionIndex, gridRow) {
     const label = document.createElement('button');
     label.type = 'button';
     label.className = 'dimension-label';
+    label.setAttribute('role', 'tab');
+    label.setAttribute('aria-selected', 'false');
+    label.tabIndex = -1;
     label.dataset.dimensionIndex = dimensionIndex;
     label.style.gridRow = gridRow;
     label.textContent = GLOBALS.DATA.timeline[dimensionIndex].name;
-    label.addEventListener('click', () => {
-      this.store.dispatch({ type: HIDE_PANEL });
-      this.store.dispatch({ type: SWITCH_DIMENSION, payload: dimensionIndex });
-    });
+    label.addEventListener('click', () => this.selectDimension(dimensionIndex));
     return label;
+  }
+
+  // the labels' tab list. It takes no part in the layout (display: contents,
+  // see the CSS), so each tab stays in its grid row beside its Timeline
+  createTabList() {
+    const tabList = document.createElement('div');
+    tabList.className = 'dimension-tabs';
+    tabList.setAttribute('role', 'tablist');
+    tabList.setAttribute('aria-label', 'Dimensions');
+    tabList.setAttribute('aria-orientation', 'vertical');
+    tabList.addEventListener('keydown', (event) => this.onTabKeyDown(event));
+    return tabList;
   }
 
   get panelElement() {
@@ -110,13 +162,17 @@ export class HorizontalTimelineStack extends TinyBase {
   render() {
     this.appendChild(document.createElement('el-horizontal-timeline-axis'));
 
+    const tabList = this.createTabList();
     for (let i = 0; i < this.numTimelines; i++) {
       // row 1 of the grid is the axis
-      const gridRow = String(i + 2);
-      const label = this.createLabel(i, gridRow);
+      const label = this.createLabel(i, String(i + 2));
       this.labels.push(label);
-      this.appendChild(label);
+      tabList.appendChild(label);
+    }
+    this.appendChild(tabList);
 
+    for (let i = 0; i < this.numTimelines; i++) {
+      const gridRow = String(i + 2);
       const row = document.createElement('el-horizontal-timeline');
       row.style.gridRow = gridRow;
       row.setAttribute('index', i);

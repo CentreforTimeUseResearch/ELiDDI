@@ -18,10 +18,11 @@ Terminology (Dimension, Timeline) follows [CONTEXT.md](../../../CONTEXT.md).
 
 - Reads and reacts to `currentDimensionIndex`.
 - On change, dispatches `HIDE_PANEL` then `SWITCH_DIMENSION`.
+- Starts on the current Dimension (it used to show the first until something changed), and follows the store by selecting the matching option in the **same** `<select>`. It used to rebuild the `<select>` on every change, which dropped keyboard focus, so a keyboard user could not keep arrowing through the Dimensions.
 
 ## Behaviour notes
 
-- Test file naming: `timelinePicker.te-st.js`, not currently run by Vitest (see the root README's note on `.te-st.js` vs `.test.js`).
+- It is a native `<select>` named "Dimension" (`aria-label`): that already exposes its role and value, and arrow-key behaviour, on a phone. The desktop layout's Dimension row labels are a tab list instead (see [HorizontalTimelineStack](../horizontalTimelineStack/README.md)).
 
 ---
 

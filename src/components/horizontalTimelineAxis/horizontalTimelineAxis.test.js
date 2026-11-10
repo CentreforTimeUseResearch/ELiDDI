@@ -134,6 +134,89 @@ describe('HorizontalTimelineAxis', () => {
     });
   });
 
+  // #231: a zoom change is said, and focus is not lost when a button gives out
+  describe('zoom announcements and focus', () => {
+    const said = () =>
+      (document.querySelector('.announcer')?.textContent ?? '').replace(/\u00a0/g, '');
+
+    beforeEach(() => {
+      document.body.innerHTML = '';
+    });
+
+    it('says the new zoom level when it changes', () => {
+      createAxis();
+
+      document.querySelector('.zoom-in').click();
+
+      expect(said()).toBe('Zoom 125%');
+
+      document.querySelector('.zoom-in').click();
+      expect(said()).toBe('Zoom 150%');
+    });
+
+    it('says when it is as close as it goes', () => {
+      appStore.dispatch({ type: SET_HORIZONTAL_ZOOM, payload: MAX_ZOOM - 0.25 });
+      createAxis();
+
+      document.querySelector('.zoom-in').click();
+
+      expect(said()).toBe('Zoom 400%, the closest view');
+    });
+
+    it('says when the whole day is showing', () => {
+      appStore.dispatch({ type: SET_HORIZONTAL_ZOOM, payload: 1.25 });
+      createAxis({ containerWidth: 2880 }); // fits the whole day at zoom 1
+
+      document.querySelector('.zoom-out').click();
+
+      expect(said()).toBe('Zoom 100%, the whole day is showing');
+    });
+
+    it('says nothing when the zoom did not change, or at first', () => {
+      appStore.dispatch({ type: SET_HORIZONTAL_ZOOM, payload: MAX_ZOOM });
+      createAxis();
+      expect(said()).toBe('');
+
+      document.querySelector('.zoom-in').click(); // disabled: already at the limit
+
+      expect(said()).toBe('');
+    });
+
+    it('moves focus to the other button when the one pressed gives out', () => {
+      appStore.dispatch({ type: SET_HORIZONTAL_ZOOM, payload: MAX_ZOOM - 0.25 });
+      const el = createAxis();
+      el.querySelector('.zoom-in').focus();
+
+      el.querySelector('.zoom-in').click();
+
+      expect(el.querySelector('.zoom-in').disabled).toBe(true);
+      expect(document.activeElement).toBe(el.querySelector('.zoom-out'));
+    });
+
+    it('does the same going the other way', () => {
+      appStore.dispatch({ type: SET_HORIZONTAL_ZOOM, payload: 1.25 });
+      const el = createAxis({ containerWidth: 2880 });
+      el.querySelector('.zoom-out').focus();
+
+      el.querySelector('.zoom-out').click();
+
+      expect(el.querySelector('.zoom-out').disabled).toBe(true);
+      expect(document.activeElement).toBe(el.querySelector('.zoom-in'));
+    });
+
+    it('does not take focus when it was elsewhere', () => {
+      appStore.dispatch({ type: SET_HORIZONTAL_ZOOM, payload: MAX_ZOOM - 0.25 });
+      const el = createAxis();
+      const other = document.createElement('button');
+      document.body.appendChild(other);
+      other.focus();
+
+      el.querySelector('.zoom-in').click();
+
+      expect(document.activeElement).toBe(other);
+    });
+  });
+
   describe('future overlay', () => {
     it('shows the future overlay when viewing the actual current diary day', () => {
       appStore.dispatch({ type: SWITCH_DATE, payload: getCurrentDiaryDateKey() });

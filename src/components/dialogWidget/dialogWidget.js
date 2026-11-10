@@ -10,6 +10,7 @@ export class DialogWidget extends TinyBase {
   static observedAttributes = [ID, TEXT, POSITION, BACKDROP];
 
   dialog;
+  opener; // what had focus when the dialog opened
 
   constructor() {
     super();
@@ -61,6 +62,11 @@ export class DialogWidget extends TinyBase {
       console.error('missing dialog element!');
       return;
     }
+    // the store tells a dialog to open on every update, not once: only the
+    // first of those is the Respondent's own focus to come back to
+    if (!this.dialog.open) {
+      this.opener = document.activeElement;
+    }
     this.dialog.showModal();
   }
 
@@ -69,7 +75,22 @@ export class DialogWidget extends TinyBase {
       console.error('missing dialog element!');
       return;
     }
+    const wasOpen = this.dialog.open;
     this.dialog.close();
+    if (wasOpen) {
+      this.returnFocus();
+    }
+  }
+
+  // closing a modal puts focus back on what had it when it opened (browsers do
+  // this themselves, but not all of them, and not when that was a button
+  // pressed with the mouse in Safari, which does not focus it)
+  returnFocus() {
+    const opener = this.opener;
+    this.opener = undefined;
+    if (opener && opener !== document.body && opener.isConnected) {
+      opener.focus?.();
+    }
   }
 
   attributeChangedCallback(name, oldValue, newValue) {

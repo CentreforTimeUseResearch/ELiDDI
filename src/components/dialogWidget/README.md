@@ -31,6 +31,7 @@ A generic, reusable modal wrapper around the native [`<dialog>`](https://develop
 ## Behaviour notes
 
 - `moveSpotlight(x, y, size)` and `moveModalTop(y)` set CSS custom properties (`--spotlight1-x`, `--spotlight1-y`, `--spotlight-size`, `--modal-y-pos`) rather than touching layout directly — see `dialogWidget.css` for how [Onboarding](../onboarding/README.md)'s spotlight effect consumes them.
+- **Focus goes back** to what had it when the dialog opened, once it closes (by its button, Escape, or its owner), e.g. the date button after the date dialog. Browsers do this for a native `<dialog>` themselves, but not all, and not when the opener was a button pressed with the mouse in Safari. The store tells a dialog to open on every update, so only the first `open()` of a run records the opener, and only a `close()` of a dialog that was open returns focus (once). Nothing is done if the opener has gone, or nothing had focus.
 - `content` is trusted markup: it is injected as a raw HTML string (`this.props.content`) and DialogWidget does not escape or sanitize it. Sanitizing here would strip the deliberate HTML in [Onboarding](../onboarding/README.md)'s study-config step text (e.g. `<strong>`). Today's callers pass static markup or that config text. A caller building `content` from any dynamic or Respondent-entered data must run it through `escapeHtml` from `src/utils/html.js` first.
 
 ---

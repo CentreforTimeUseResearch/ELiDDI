@@ -28,6 +28,7 @@ The top navigation bar: a hamburger menu (Instructions / Reset), the [Timeline P
 - **Off, but reachable.** They use `aria-disabled`, not `disabled`, so a keyboard user can still focus them and find out why: the reason ("You can't fill in days that haven't happened", "Already showing today") is the button's `title` and a visually hidden description it points at with `aria-describedby`. A disabled Next day is named just "Next day", since its date does not exist yet.
 - The date button also shows the day's status under the date: "Not started" (nothing entered), "In progress" or "Complete" (`getDayStatus`). On screens under 630px the words "Selected day:" are visually hidden (kept for screen readers) so the date, "change" and the status fit.
 - There is no press-and-hold repeat, and no swipe between days (a horizontal swipe switches Dimension).
+- **A day change is announced**, however it happened (a day button, the date picker, anything else that switches the date): "Showing Sunday 8 November, 3 of 6 timelines started", or "..., diary complete" for a submitted day (`getDayAnnouncement`), through the page's polite live region ([`utils/announce.js`](../../utils/announce.js)). It is not announced when the bar is first shown, nor for other changes. Focus is **not** moved: it stays on the button that was pressed so it can be pressed again (stepping back several days would otherwise mean finding it again each time), and the date dialog hands focus back to the date button when it closes ([DialogWidget](../dialogWidget/README.md)).
 
 ## Behaviour notes
 

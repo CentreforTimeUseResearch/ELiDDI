@@ -25,6 +25,8 @@ export class TimelinePicker extends TinyBase {
   }
 
   connectedCallback() {
+    // start on the Dimension that is current, not always the first
+    this.currentDimensionIndex = this.store.getState().currentDimensionIndex;
     super.connectedCallback();
   }
 
@@ -36,11 +38,19 @@ export class TimelinePicker extends TinyBase {
     });
   }
 
+  // follows the current Dimension by selecting its option in the same
+  // <select>, not by building a new one: a new element is not focused, so
+  // choosing a Dimension with the keyboard would drop focus, and the next
+  // arrow key would go nowhere
   update() {
     const { currentDimensionIndex } = this.store.getState();
     if (this.currentDimensionIndex !== currentDimensionIndex) {
       this.currentDimensionIndex = currentDimensionIndex;
-      this.render();
+      if (this.timelinePicker) {
+        this.timelinePicker.value = String(currentDimensionIndex);
+      } else {
+        this.render();
+      }
     }
   }
 
@@ -78,14 +88,13 @@ export class TimelinePicker extends TinyBase {
     this.innerHTML = `
             <div class="el-form-group width-adjust">
                <!-- <label class="el-label" for="timeline-picker">Choose dimension:</label> -->
-                <select 
+                <select
                   id="timeline-picker"
-                  class="el-select" 
+                  class="el-select"
                   data-timeline-picker
-                  name="timeline-picker" 
-                  aria-describedby="timeline-picker-hint"
+                  name="timeline-picker"
+                  aria-label="Dimension"
                 >
-                    
                     ${this.createOptions()}
                 </select>
             </div>

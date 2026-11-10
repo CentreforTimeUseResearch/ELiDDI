@@ -6,6 +6,7 @@ import {
   formatOffsetAsClockTime,
 } from '../../utils/time';
 import { SET_HORIZONTAL_ZOOM } from '../../store/actionTypes';
+import { announce, ensureAnnouncer } from '../../utils/announce';
 import { NATIVE_ZOOM, MAX_ZOOM, ZOOM_STEP, getEffectivePxPerMinute } from './zoomConstants';
 import { renderGridLines } from './gridLines';
 import './horizontalTimelineAxis.css';
@@ -45,6 +46,7 @@ export class HorizontalTimelineAxis extends TinyBase {
     this.currentDate = state.currentDate;
     this.zoomLevel = state.horizontalZoomLevel;
     super.connectedCallback();
+    ensureAnnouncer(); // before its first message, so a screen reader is already listening
     this.getChildElementReferences();
     this.assignEventHandlers();
     this.registerCleanup(this.store.subscribe(() => this.updateState()));
@@ -83,6 +85,7 @@ export class HorizontalTimelineAxis extends TinyBase {
     if (zoomChanged) {
       this.renderAxis();
       this.updateButtonDisabledState();
+      announce(this.describeZoom());
     }
     if (dateChanged || zoomChanged) {
       this.updateFutureOverlay();
@@ -113,12 +116,35 @@ export class HorizontalTimelineAxis extends TinyBase {
     this.store.dispatch({ type: SET_HORIZONTAL_ZOOM, payload: nextZoom });
   }
 
-  updateButtonDisabledState() {
-    if (this.zoomInButton) {
-      this.zoomInButton.disabled = this.zoomLevel >= MAX_ZOOM;
+  // "Zoom 125%", and when it can go no further, which way that is
+  describeZoom() {
+    const percent = `Zoom ${Math.round(this.zoomLevel * 100)}%`;
+    if (this.zoomLevel >= MAX_ZOOM) {
+      return `${percent}, the closest view`;
     }
-    if (this.zoomOutButton) {
-      this.zoomOutButton.disabled = this.zoomLevel <= this.computeMinZoom();
+    if (this.zoomLevel <= this.computeMinZoom()) {
+      return `${percent}, the whole day is showing`;
+    }
+    return percent;
+  }
+
+  updateButtonDisabledState() {
+    const zoomIn = this.zoomInButton;
+    const zoomOut = this.zoomOutButton;
+    // a button that has focus cannot keep it once disabled: hand it to the
+    // other, so the keyboard can carry on (zoomed all the way in, zooming out
+    // is what comes next)
+    const hadFocus = document.activeElement;
+    if (zoomIn) {
+      zoomIn.disabled = this.zoomLevel >= MAX_ZOOM;
+    }
+    if (zoomOut) {
+      zoomOut.disabled = this.zoomLevel <= this.computeMinZoom();
+    }
+    if (hadFocus === zoomIn && zoomIn?.disabled && !zoomOut?.disabled) {
+      zoomOut.focus();
+    } else if (hadFocus === zoomOut && zoomOut?.disabled && !zoomIn?.disabled) {
+      zoomIn.focus();
     }
   }
 

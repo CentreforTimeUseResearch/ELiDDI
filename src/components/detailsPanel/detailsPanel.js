@@ -47,7 +47,11 @@ export class DetailsPanel extends TinyBase {
   });
 
   timelinePickerPanel;
-  popoverElement;
+  // the three observed attributes (set by DetailsPanelCoordinator's
+  // applyDimension), carried onto named fields by attributeChangedCallback
+  dimensionIndex;
+  heading;
+  instruction;
 
   connectedCallback() {
     super.connectedCallback();
@@ -74,14 +78,24 @@ export class DetailsPanel extends TinyBase {
     this.updateSaveState();
   }
 
+  // explicit, named fields - not `this[name] = newValue`, which writes
+  // stringly-named lowercase properties onto the instance and lets a future
+  // observed attribute silently shadow a method
   attributeChangedCallback(name, oldValue, newValue) {
-    if (this[name] !== newValue) {
-      this[name] = newValue;
+    switch (name) {
+      case DIMENSION_INDEX:
+        this.dimensionIndex = newValue;
+        break;
+      case HEADING:
+        this.heading = newValue;
+        break;
+      case INSTRUCTION:
+        this.instruction = newValue;
+        break;
     }
   }
 
   getChildElementReferences() {
-    // this.popoverElement = document.getElementById('popover');
     this.timelinePickerPanel = this.querySelector('el-time-picker-panel');
     this.activityPicker = this.querySelector('el-activity-picker');
     this.saveButton = this.querySelector('.btn-save-btn');
@@ -565,9 +579,9 @@ export class DetailsPanel extends TinyBase {
             </div>
             <div class="details-panel-content">
               <el-activity-picker
-                dimensionindex="${this[DIMENSION_INDEX]}"
-                instruction="${escapeHtml(this[INSTRUCTION])}"
-                heading="${escapeHtml(this[HEADING])}"
+                dimensionindex="${this.dimensionIndex}"
+                instruction="${escapeHtml(this.instruction)}"
+                heading="${escapeHtml(this.heading)}"
                 ${this.setProps({ onFocusCallback: () => this.onFocusCallback(), onSetActivityOnSelectedEntry: (activity) => this.onSetActivityOnSelectedEntry(activity), onSetActivitiesOnSelectedEntry: (activities) => this.onSetActivitiesOnSelectedEntry(activities) })}
               ></el-activity-picker>
               <el-time-picker-panel ${this.setProps({ onTimeSet: (setTimeProps) => this.onSetOffsetMins(setTimeProps), getContinueToTarget: (startTimeInMinutes) => this.getContinueToTarget(startTimeInMinutes) })} day-boundary="${this.dayBoundaryInMinutes}"></el-time-picker-panel>

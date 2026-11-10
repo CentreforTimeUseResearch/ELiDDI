@@ -35,7 +35,6 @@ export const EMPTY_ENTRIES = [];
 // panelActions are always injected as props by the stack that owns the one
 // shared details panel (DetailsPanelCoordinator, ADR 0005).
 export class BaseTimeline extends TinyBase {
-  static observedAttributes = [INDEX];
   // the SVG and (for Timeline) the details panel are built once and kept
   // across a DOM move - see TinyBase.connectedCallback
   static renderOnce = true;
@@ -83,9 +82,17 @@ export class BaseTimeline extends TinyBase {
     super.connectedCallback();
     // injected by the stack, whose one shared panel (ADR 0005) it opens
     this.panelActions = this.props;
-    this.registerCleanup(this.store.subscribe(() => this.updateState()));
-    this.registerCleanup(this.store.subscribe(() => this.syncCreatePreview()));
-    this.registerCleanup(this.store.subscribe(() => this.syncKeyboardFocus()));
+    // one subscription, calling the three reactions in this order - their
+    // relative order matters (the preview and keyboard focus read what
+    // updateState has just redrawn), so it is stated here rather than left
+    // to the store's notify order of three separate subscriptions
+    this.registerCleanup(
+      this.store.subscribe(() => {
+        this.updateState();
+        this.syncCreatePreview();
+        this.syncKeyboardFocus();
+      })
+    );
     this.getChildElementReferences();
 
     this.listen(document, 'keydown', (e) => this.onGlobalKeyDown(e));
@@ -105,11 +112,10 @@ export class BaseTimeline extends TinyBase {
     this.renderEntries();
   }
 
-  attributeChangedCallback(name, oldValue, newValue) {
-    if (this[name] !== newValue) {
-      this[name] = newValue;
-    }
-  }
+  // no attributeChangedCallback: `index` is read once, in connectedCallback
+  // (into dimensionIndex) - a Timeline never changes Dimension after
+  // creation, and nothing reads a mirrored property (TimelineStack reads the
+  // attribute itself, see its scrollsnapchange handler)
 
   render() {
     this.appendChild(this.fragment);

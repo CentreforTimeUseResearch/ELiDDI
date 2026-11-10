@@ -39,7 +39,6 @@ export class TimePicker extends TinyBase {
 
   connectedCallback() {
     super.connectedCallback();
-    // this.store.subscribe(()=>this.onStateUpdate()));
     this.maxTimeValue = this.props?.getMaxTime?.();
     this.assignEventHandlers();
     if (this[CONSTRAINED]) {

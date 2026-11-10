@@ -2,6 +2,7 @@ import { TinyBase } from '../base';
 import { HIDE_PANEL, SWITCH_DIMENSION } from '../../store/actionTypes';
 import './timelinePicker.css';
 import { escapeHtml } from '../../utils/html';
+import { dimensions } from '../../config/appConfig';
 
 export class TimelinePicker extends TinyBase {
   dimensionNames;
@@ -16,7 +17,7 @@ export class TimelinePicker extends TinyBase {
   }
 
   parseDimensionNamesFromData() {
-    const dimensionsData = GLOBALS.DATA.timeline;
+    const dimensionsData = dimensions();
     if (!Array.isArray(dimensionsData)) {
       console.error('invalid dimension array');
       return;

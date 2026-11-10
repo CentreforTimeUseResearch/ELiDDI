@@ -12,7 +12,7 @@ import {
 } from '../../utils/time';
 import { announce, ensureAnnouncer } from '../../utils/announce';
 import { dayBefore, stepDay, goToToday } from '../../utils/navigation';
-import { getAccounts } from '../../auth/authClient';
+import { accounts, dimensions } from '../../config/appConfig';
 import { requestLogout } from '../../sync/appSync';
 import './navbar.css';
 
@@ -56,7 +56,7 @@ export function getDayAnnouncement(dateKey, diary) {
   if (diary?.status === DIARY_STATUS.COMPLETE) {
     return `Showing ${day}, diary complete`;
   }
-  const total = GLOBALS.DATA.timeline.length;
+  const total = dimensions().length;
   const started = (diary?.timelines ?? []).filter(
     (timeline) => Array.isArray(timeline) && timeline.length > 0
   ).length;
@@ -197,7 +197,7 @@ export class Navbar extends TinyBase {
   // duplicate (see navbar.css) - same items/labels/handlers, only the
   // wrapping classes differ so each copy can be styled for where it lives
   renderMenuItems(itemClass) {
-    const accountsOn = getAccounts(globalThis.GLOBALS?.DATA).enabled;
+    const accountsOn = accounts().enabled;
     return MENU_ITEMS.filter((item) => accountsOn || !item.accountsOnly)
       .map((item) =>
         item.buttonClass
@@ -245,7 +245,7 @@ export class Navbar extends TinyBase {
                 </div>
             </div>
             <div class="right-pane">
-                ${getAccounts(globalThis.GLOBALS?.DATA).enabled ? '<el-sync-status></el-sync-status>' : ''}
+                ${accounts().enabled ? '<el-sync-status></el-sync-status>' : ''}
                 <el-contextual-help></el-contextual-help>
             </div>
         </nav>

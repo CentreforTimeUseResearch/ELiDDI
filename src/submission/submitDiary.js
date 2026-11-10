@@ -29,7 +29,8 @@ export function getSubmitTarget(config) {
 //                                             is asked to log in; the Diary stays)
 //
 // diary is the Diary for `date` (a YYYY-MM-DD key), config is the study config
-// (GLOBALS.DATA), session is the login to use (the page's own by default)
+// (src/config/appConfig.js's studyConfig() for the running study's), session
+// is the login to use (the page's own by default)
 export async function submitDiary({ diary, date, config, session = appSession }) {
   if (!diary) {
     return { ok: false, reason: 'no-diary' };

@@ -5,7 +5,7 @@ import { getActivityDisplayName } from './activities';
 // isolation from rendering and event wiring.
 
 // content is an array of {name, activities} categories (see
-// GLOBALS.DATA.timeline[dimensionIndex].categories) - returns the same
+// a Dimension config's categories, src/config/appConfig.js) - returns the same
 // shape with each category's activities filtered to those whose display
 // name - the label it's shown with, as hasKnownActivity compares - includes
 // searchString (case-insensitive)

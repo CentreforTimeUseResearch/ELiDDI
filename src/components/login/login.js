@@ -1,6 +1,7 @@
 import { TinyBase } from '../base';
 import { appSession } from '../../auth/session';
-import { describeLoginFailure, getAccounts, login } from '../../auth/authClient';
+import { describeLoginFailure, login } from '../../auth/authClient';
+import { accounts } from '../../config/appConfig';
 import { requestLogout } from '../../sync/appSync';
 import { appSyncStatus, SYNC_STATUS } from '../../sync/syncStatus';
 import { t } from '../../i18n/i18n';
@@ -117,7 +118,7 @@ export class Login extends TinyBase {
     this.showError('');
     this.noticeElement.textContent = '';
 
-    const { backendUrl } = getAccounts(globalThis.GLOBALS?.DATA);
+    const { backendUrl } = accounts();
     const result = await login({ backendUrl, code: this.input.value });
     this.setBusy(false);
 

@@ -1,6 +1,7 @@
 import '../accordion/accordion';
 import { TinyBase } from '../base';
 import { searchActivities, hasKnownActivity } from '../../utils/activitySearch';
+import { dimension } from '../../config/appConfig';
 import { escapeHtml } from '../../utils/html';
 import { KeyboardGridNavigation } from './keyboardGridNavigation';
 import './activityPicker.css';
@@ -46,9 +47,10 @@ export class ActivityPicker extends TinyBase {
     // picker's own dimension is fixed by its dimensionindex attribute, not
     // the globally-active currentDimensionIndex
     const dimensionIndex = Number(this.getAttribute(DIMENSION_INDEX));
-    this.content = GLOBALS.DATA.timeline[dimensionIndex].categories;
-    this.mode = GLOBALS.DATA.timeline[dimensionIndex].mode;
-    this.allowFreeText = GLOBALS.DATA.timeline[dimensionIndex].allow_free_text === true;
+    const dimensionData = dimension(dimensionIndex);
+    this.content = dimensionData.categories;
+    this.mode = dimensionData.mode;
+    this.allowFreeText = dimensionData.allow_free_text === true;
   }
 
   get isMulti() {

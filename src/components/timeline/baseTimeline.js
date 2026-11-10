@@ -9,6 +9,7 @@ import { clampCreateSpan, getNowLimitOffsetMins } from './createSpan';
 import { EntryCommands, formatOverlapMessage } from './entryCommands';
 import { SVGNS } from './timelineConstants';
 import { guardUnsavedEdits } from '../../utils/unsavedEdits';
+import { dimension, dimensions } from '../../config/appConfig';
 
 const INDEX = 'index';
 
@@ -214,7 +215,7 @@ export class BaseTimeline extends TinyBase {
       getPxPerMinute: () => this.getPxPerMinute(),
       crossBox: this.constructor.crossAxisBox,
       getEntries: () => this.entries,
-      getDimensionName: () => GLOBALS.DATA.timeline[this.dimensionIndex]?.name ?? '',
+      getDimensionName: () => dimension(this.dimensionIndex)?.name ?? '',
       isPanelOpen: () => this.store.getState().uipanel === 'details',
       isSingleChoice: () => this.isSingleChoiceDimension,
       getNowLimitMins: () => getNowLimitOffsetMins(this.currentDate),
@@ -264,12 +265,7 @@ export class BaseTimeline extends TinyBase {
   // Timeline: focus left on this one would be off-screen on a phone, whose
   // strip scrolls to the new Dimension
   goToDimension(direction) {
-    const next = stepDimension(
-      this.store,
-      direction,
-      GLOBALS.DATA.timeline.length,
-      this.dimensionIndex
-    );
+    const next = stepDimension(this.store, direction, dimensions().length, this.dimensionIndex);
     document.querySelector(`${this.localName}[index="${next}"]`)?.focusTimeline?.();
   }
 

@@ -28,7 +28,10 @@ export const SPECIAL_DIMENSION = {
 };
 
 // appends SPECIAL_DIMENSION to the shared test config for one test;
-// returns its index and a function that removes it again
+// returns its index and a function that removes it again.
+// Deliberately touches GLOBALS directly rather than src/config/appConfig:
+// the seam is read-only by design, and this helper's whole job is to mutate
+// the (unfrozen, test-environment) config - see the note in appConfig.js.
 export function addSpecialDimension() {
   const index = GLOBALS.DATA.timeline.push(SPECIAL_DIMENSION) - 1;
   return { index, remove: () => GLOBALS.DATA.timeline.splice(index, 1) };

@@ -18,7 +18,7 @@ import {
   SET_DESKTOP_LAYOUT,
 } from '../../store/actionTypes';
 import { watchDesktopBreakpoint } from '../../utils/breakpoint';
-import { getAccounts } from '../../auth/authClient';
+import { accounts as serverAccounts } from '../../config/appConfig';
 import { appSession } from '../../auth/session';
 import { appSyncStatus, BLOCKS_DIARY } from '../../sync/syncStatus';
 
@@ -31,7 +31,7 @@ export class DynamicTimelineUI extends TinyBase {
   shortcutsDialogActions;
   resetDialogActions;
   loginDialogActions;
-  accounts = getAccounts(globalThis.GLOBALS?.DATA);
+  accounts = serverAccounts();
   stackContainer;
   isDesktopLayout;
 

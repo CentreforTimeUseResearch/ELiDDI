@@ -8,6 +8,7 @@ import {
 } from '../../store/actionTypes';
 import './onboarding.css';
 import { escapeHtml } from '../../utils/html';
+import { onboardingSteps } from '../../config/appConfig';
 
 export class Onboarding extends TinyBase {
   store = super.getStore();
@@ -72,10 +73,9 @@ export class Onboarding extends TinyBase {
     if (!onboarding) {
       return;
     }
-    const numberOfSteps = GLOBALS.DATA.instructions.length;
-    const isLastStep = onboardingStep === numberOfSteps - 1; // index is zero indexed so last index is one less than numberOfSteps;
-    const { title, text, spotlight, modalTop, showPanel } =
-      GLOBALS.DATA.instructions[onboardingStep];
+    const steps = onboardingSteps();
+    const isLastStep = onboardingStep === steps.length - 1; // index is zero indexed so last index is one less than the step count;
+    const { title, text, spotlight, modalTop, showPanel } = steps[onboardingStep];
 
     if (showPanel && showPanel !== uipanel) {
       this.onOpenPanel(showPanel);
@@ -98,7 +98,7 @@ export class Onboarding extends TinyBase {
               <div>${text}</div> 
             </div>
             <div class="navigation">
-              <progress id="onboarding-progress" max="${numberOfSteps}" value="${onboardingStep + 1}">${onboardingStep} of ${numberOfSteps}</progress>
+              <progress id="onboarding-progress" max="${steps.length}" value="${onboardingStep + 1}">${onboardingStep} of ${steps.length}</progress>
               <div class="button-bar">
                 ${onboardingStep > 0 ? `<button data-back>back</button>` : ''}
                 <button data-next ${isLastStep ? `class="last"` : ''} >${isLastStep ? 'start' : 'next'}</button>

@@ -2,6 +2,7 @@ import '../timePicker/timePicker';
 import '../durationInput/durationInput';
 import { TinyBase } from '../base';
 import { getMaxEditableTimeInMinutes } from '../../utils/time';
+import { dayBoundary } from '../../config/appConfig';
 import { MIN_ENTRY_DURATION_MINS } from '../timeline/timelineConstants';
 import './timePickerPanel.css';
 
@@ -137,7 +138,7 @@ export class TimePickerPanel extends TinyBase {
        the minimum after the start (#162) - recomputed on every change, so
        the message clears once the times are valid */
     if (endTotalMinutes > endDayBoundaryInMinutes) {
-      this.endTimeError = `End time can't be between ${GLOBALS.DATA.day_boundary} and ${this.convertMinutesToTimePickerFormat(this.startInputMinutes)}`;
+      this.endTimeError = `End time can't be between ${dayBoundary()} and ${this.convertMinutesToTimePickerFormat(this.startInputMinutes)}`;
     } else if (endTotalMinutes - startTotalMinutes < MIN_ENTRY_DURATION_MINS) {
       this.endTimeError = `End time must be at least ${MIN_ENTRY_DURATION_MINS} minutes after the start time`;
     } else {

@@ -4,6 +4,7 @@ import doneIconSource from '../../assets/icons/check-252.svg?raw';
 import { TinyBase } from '../base';
 import { HIDE_PANEL, SHOW_PANEL } from '../../store/actionTypes';
 import { canSubmit, validateDiary } from '../../validation/validateDiary';
+import { studyConfig } from '../../config/appConfig';
 
 import './contextualHelp.css';
 
@@ -63,7 +64,7 @@ export class ContextualHelp extends TinyBase {
   // keeps focus
   updateReadiness() {
     const { diaries, currentDate } = this.store.getState();
-    const results = validateDiary(diaries[currentDate], GLOBALS.DATA);
+    const results = validateDiary(diaries[currentDate], studyConfig());
     const state = results.length === 0 ? NO_RULES : canSubmit(results) ? READY : NOT_READY;
     if (state === this.readiness) return;
     this.readiness = state;

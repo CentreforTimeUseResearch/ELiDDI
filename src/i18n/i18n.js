@@ -5,14 +5,16 @@
 // time: custom elements start upgrading (and rendering, and therefore
 // translating) while modules are still being evaluated, before anything has
 // had a chance to call an init function - the ordering lesson
-// freezeGlobals.js records. In the browser it comes from
-// GLOBALS.DATA.general.language; setLocale() is the explicit override for
-// the two callers that have a config but no GLOBALS: the no-JS generator
-// (scripts/lib/generateNoJs.js) and tests.
+// freezeGlobals.js records. In the browser it comes from the study config
+// (general.language, read through src/config/appConfig.js); setLocale() is
+// the explicit override for the two callers that have a config but no
+// injected study config: the no-JS generator (scripts/lib/generateNoJs.js)
+// and tests.
 //
 // Pure by contract - no console, no process - because the generator imports
 // it at build time, same rule as scripts/lib/generateNoJs.js itself.
 import en from './en.js';
+import { language } from '../config/appConfig';
 
 // language code -> catalogue; adding a language is one import + one line here
 const catalogues = { en };
@@ -24,7 +26,7 @@ export function setLocale(code) {
 }
 
 function activeCatalogue() {
-  const code = localeOverride ?? globalThis.GLOBALS?.DATA?.general?.language;
+  const code = localeOverride ?? language();
   return catalogues[code] ?? en;
 }
 

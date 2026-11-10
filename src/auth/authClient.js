@@ -3,9 +3,10 @@
 // (general.server_accounts, see config/config.schema.json). Never throws for
 // a failed request: the caller gets a result to show the Respondent.
 
-// -> { enabled, backendUrl } for a study config (GLOBALS.DATA). Accounts are
-// off unless the config explicitly says true, so a config that predates the
-// setting behaves exactly as before.
+// -> { enabled, backendUrl } for a study config (the running study's comes
+// via src/config/appConfig.js's accounts()). Accounts are off unless the
+// config explicitly says true, so a config that predates the setting behaves
+// exactly as before.
 export function getAccounts(config) {
   const general = config?.general;
   const backendUrl = typeof general?.backend_url === 'string' ? general.backend_url : '';

@@ -127,3 +127,44 @@ el-timeline {
 [data-part='slot']:focus {
   outline: none;
 }
+
+/* the message for keyboard moves and resizes (keyboardStatus.js): the mode and
+   the keys while an Entry is grabbed, then the result for a few seconds. Fixed
+   to the window so it is seen wherever the Timeline is scrolled to; absent
+   while it has nothing to say */
+.keyboard-status {
+  position: fixed;
+  left: 50%;
+  bottom: 1rem;
+  transform: translateX(-50%);
+  z-index: 10;
+  box-sizing: border-box;
+  max-width: min(36rem, calc(100vw - 2rem));
+  padding: var(--space-sm) var(--space-md);
+  border: 2px solid transparent;
+  border-radius: var(--radius-lg, 12px);
+  background: var(--color-surface-tile);
+  color: var(--color-on-dark);
+  font-family: var(--font-text);
+  font-size: var(--text-fine-print-size);
+  line-height: 1.4;
+  pointer-events: none;
+}
+
+.keyboard-status:empty {
+  display: none;
+}
+
+/* below 630px the details panel is a strip along the bottom of the window,
+   so the message sits above it rather than over its heading. Keep in sync
+   with --medium-width in style.css's :root - media queries can't read custom
+   properties, so this is a hand-kept literal */
+@media (max-width: 629px) {
+  .keyboard-status {
+    bottom: 9.5rem;
+  }
+}
+
+.keyboard-status.is-active {
+  border-color: var(--color-primary-on-dark);
+}

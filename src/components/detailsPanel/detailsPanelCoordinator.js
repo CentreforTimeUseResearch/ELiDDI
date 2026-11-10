@@ -19,7 +19,7 @@ export class DetailsPanelCoordinator {
   panelActions; // what the panel registers: openEntry / openNewEntry / close / reportSaveConflict
   dimensionIndex;
   currentDate;
-  drafts = new Map(); // Dimension index -> the panel's state when it was switched away from
+  drafts = new Map(); // Dimension index -> the panel's draft (its state, and what it was opened with) when it was switched away from
 
   // getTimeline(dimensionIndex) -> that Dimension's Timeline element
   constructor({ store, getTimeline }) {
@@ -61,6 +61,7 @@ export class DetailsPanelCoordinator {
           actions.openNewEntry(startOffsetMins, endOffsetMins)
         ),
       close: () => this.panelActions?.close(),
+      hasUnsavedEdits: () => this.panelActions?.hasUnsavedEdits?.() ?? false,
       focus: () => this.panelActions?.focus?.(),
       reportSaveConflict: (message) => this.panelActions?.reportSaveConflict(message),
     };
@@ -109,9 +110,11 @@ export class DetailsPanelCoordinator {
     this.panel?.setAttribute('instruction', dimension?.instruction ?? '');
   }
 
+  // the panel's draft is what it holds and what it was opened with (so a
+  // restored draft is still known to be unsaved, or not)
   parkDraft() {
-    const draft = { ...(this.panel?.state ?? {}) };
-    if (Object.keys(draft).length > 0) {
+    const draft = this.panel?.getDraft();
+    if (draft) {
       this.drafts.set(this.dimensionIndex, draft);
     } else {
       this.drafts.delete(this.dimensionIndex);
@@ -124,9 +127,6 @@ export class DetailsPanelCoordinator {
       return;
     }
     this.drafts.delete(this.dimensionIndex);
-    if (typeof draft.startOffsetMins === 'number') this.panel.setStartTime(draft.startOffsetMins);
-    if (typeof draft.endOffsetMins === 'number') this.panel.setEndTime(draft.endOffsetMins);
-    if (draft.activity !== undefined) this.panel.setActivity(draft.activity);
-    if (draft.id !== undefined) this.panel.setEntryId(draft.id);
+    this.panel.restoreDraft(draft);
   }
 }

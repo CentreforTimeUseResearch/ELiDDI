@@ -37,6 +37,392 @@ describe('DetailsPanel', () => {
     return el;
   }
 
+  // #232: what the panel was opened with, so it knows when something is unsaved
+  describe('unsaved edits', () => {
+    const START = 60;
+    const END = 90;
+    // clock minutes of an offset, as the time picker reports them (day boundary 04:00)
+    const clock = (offsetMins) => offsetMins + 4 * 60;
+
+    function mountPanel({ dimensionIndex = 0 } = {}) {
+      const harness = document.createElement('test-harness-detailspanel');
+      const saveEntry = vi.fn();
+      const key = harness.setProps(
+        { findNextEntryAfter: () => undefined, saveEntry, deleteEntry: vi.fn() },
+        true
+      );
+      const el = document.createElement('el-details-panel');
+      el.setAttribute('key', key);
+      el.setAttribute('dimensionindex', String(dimensionIndex));
+      el.setAttribute('heading', 'Heading');
+      el.setAttribute('instruction', 'Instruction');
+      document.body.appendChild(el);
+      return { el, saveEntry };
+    }
+
+    it('is not unsaved when nothing has been opened', () => {
+      const { el } = mountPanel();
+
+      expect(el.hasUnsavedEdits()).toBe(false);
+    });
+
+    it('is not unsaved straight after opening an Entry', () => {
+      const { el } = mountPanel();
+
+      el.openEntry({ id: 3, startOffsetMins: START, endOffsetMins: END, activity: 'sleeping' });
+
+      expect(el.hasUnsavedEdits()).toBe(false);
+    });
+
+    it('is not unsaved straight after opening a new block, even one dragged out with times already', () => {
+      const { el } = mountPanel();
+
+      el.openNewEntry(START, END);
+
+      expect(el.hasUnsavedEdits()).toBe(false);
+    });
+
+    it('is unsaved once the start, the end or the activity has changed', () => {
+      const { el } = mountPanel();
+      const open = () =>
+        el.openEntry({ id: 3, startOffsetMins: START, endOffsetMins: END, activity: 'sleeping' });
+
+      open();
+      el.setEndTime(100);
+      expect(el.hasUnsavedEdits()).toBe(true);
+
+      open();
+      el.setStartTime(70);
+      expect(el.hasUnsavedEdits()).toBe(true);
+
+      open();
+      el.setActivity('resting');
+      expect(el.hasUnsavedEdits()).toBe(true);
+    });
+
+    it('is unsaved once a new block has been given an activity', () => {
+      const { el } = mountPanel();
+      el.openNewEntry(START, END);
+
+      el.onSetActivityOnSelectedEntry('sleeping');
+
+      expect(el.hasUnsavedEdits()).toBe(true);
+    });
+
+    it('is not unsaved again when a change is changed back', () => {
+      const { el } = mountPanel();
+      el.openEntry({ id: 3, startOffsetMins: START, endOffsetMins: END, activity: 'sleeping' });
+
+      el.setEndTime(100);
+      el.setEndTime(END);
+
+      expect(el.hasUnsavedEdits()).toBe(false);
+    });
+
+    it('is not unsaved when a time is set to the one it already has, through the time picker', () => {
+      const { el } = mountPanel();
+      el.openEntry({ id: 3, startOffsetMins: START, endOffsetMins: END, activity: 'sleeping' });
+
+      el.onSetOffsetMins({ timeField: 'endTime', timeInMinutes: clock(END) });
+      el.onSetOffsetMins({ timeField: 'startTime', timeInMinutes: clock(START) });
+
+      expect(el.hasUnsavedEdits()).toBe(false);
+    });
+
+    it('does not mind the order of several chosen activities (a multiple-choice Dimension)', () => {
+      const { el } = mountPanel({ dimensionIndex: 3 });
+      el.openEntry({
+        id: 3,
+        startOffsetMins: START,
+        endOffsetMins: END,
+        activity: ['alone', 'with friends'],
+      });
+
+      el.onSetActivitiesOnSelectedEntry(['with friends', 'alone']);
+      expect(el.hasUnsavedEdits()).toBe(false);
+
+      el.onSetActivitiesOnSelectedEntry(['alone', 'with friends', 'with family']);
+      expect(el.hasUnsavedEdits()).toBe(true);
+
+      el.onSetActivitiesOnSelectedEntry(['alone']);
+      expect(el.hasUnsavedEdits()).toBe(true);
+    });
+
+    it('treats no activity, an empty one and an empty list as the same thing', () => {
+      const { el } = mountPanel();
+      el.openNewEntry(START, END);
+
+      el.onSetActivityOnSelectedEntry('');
+      expect(el.hasUnsavedEdits()).toBe(false);
+      el.onSetActivitiesOnSelectedEntry([]);
+      expect(el.hasUnsavedEdits()).toBe(false);
+    });
+
+    it('is not unsaved once the panel has been reset, whatever was in it', () => {
+      const { el } = mountPanel();
+      el.openEntry({ id: 3, startOffsetMins: START, endOffsetMins: END, activity: 'sleeping' });
+      el.setEndTime(100);
+
+      el.reset();
+
+      expect(el.hasUnsavedEdits()).toBe(false);
+    });
+
+    it('is a fresh start each time something is opened', () => {
+      const { el } = mountPanel();
+      el.openEntry({ id: 3, startOffsetMins: START, endOffsetMins: END, activity: 'sleeping' });
+      el.setEndTime(100);
+
+      el.openEntry({ id: 4, startOffsetMins: 120, endOffsetMins: 150, activity: 'resting' });
+
+      expect(el.hasUnsavedEdits()).toBe(false);
+    });
+
+    it('is offered to a Timeline through the panel actions', () => {
+      let actions;
+      const harness = document.createElement('test-harness-detailspanel');
+      const key = harness.setProps(
+        {
+          findNextEntryAfter: () => undefined,
+          saveEntry: vi.fn(),
+          deleteEntry: vi.fn(),
+          registerPanelActions: (registered) => {
+            actions = registered;
+          },
+        },
+        true
+      );
+      const el = document.createElement('el-details-panel');
+      el.setAttribute('key', key);
+      el.setAttribute('dimensionindex', '0');
+      document.body.appendChild(el);
+      actions.openEntry({
+        id: 3,
+        startOffsetMins: START,
+        endOffsetMins: END,
+        activity: 'sleeping',
+      });
+      expect(actions.hasUnsavedEdits()).toBe(false);
+
+      el.setEndTime(100);
+
+      expect(actions.hasUnsavedEdits()).toBe(true);
+    });
+
+    it('can be parked and restored, with what it was opened with', () => {
+      const { el } = mountPanel();
+      el.openEntry({ id: 3, startOffsetMins: START, endOffsetMins: END, activity: 'sleeping' });
+      el.setEndTime(100);
+
+      const draft = el.getDraft();
+      el.reset();
+      expect(el.hasUnsavedEdits()).toBe(false);
+      el.restoreDraft(draft);
+
+      expect(el.state).toMatchObject({ startOffsetMins: START, endOffsetMins: 100 });
+      expect(el.hasUnsavedEdits()).toBe(true);
+    });
+
+    it('restores a clean draft as clean', () => {
+      const { el } = mountPanel();
+      el.openEntry({ id: 3, startOffsetMins: START, endOffsetMins: END, activity: 'sleeping' });
+
+      const draft = el.getDraft();
+      el.reset();
+      el.restoreDraft(draft);
+
+      expect(el.hasUnsavedEdits()).toBe(false);
+    });
+
+    it('has no draft to park when nothing is open', () => {
+      const { el } = mountPanel();
+
+      expect(el.getDraft()).toBeUndefined();
+    });
+  });
+
+  // #232: Save says why it is off, instead of only fading
+  describe('Save when the entry is not complete', () => {
+    function mountPanel() {
+      const harness = document.createElement('test-harness-detailspanel');
+      const saveEntry = vi.fn();
+      const key = harness.setProps(
+        { findNextEntryAfter: () => undefined, saveEntry, deleteEntry: vi.fn() },
+        true
+      );
+      const el = document.createElement('el-details-panel');
+      el.setAttribute('key', key);
+      el.setAttribute('dimensionindex', '0');
+      el.setAttribute('heading', 'Heading');
+      el.setAttribute('instruction', 'Instruction');
+      document.body.appendChild(el);
+      return { el, saveEntry };
+    }
+    const save = (el) => el.querySelector('.btn-save-btn');
+    const hint = (el) => el.querySelector('.save-hint');
+    const hintText = (el) => hint(el).textContent.trim();
+
+    beforeEach(() => {
+      HTMLElement.prototype.showPopover = vi.fn(); // jsdom has no Popover API
+    });
+
+    afterEach(() => {
+      delete HTMLElement.prototype.showPopover;
+    });
+
+    it('is aria-disabled, and still an ordinary focusable button', () => {
+      const { el } = mountPanel();
+      el.openNewEntry(60, 90); // no activity yet
+
+      expect(save(el).getAttribute('aria-disabled')).toBe('true');
+      expect(save(el).disabled).toBe(false);
+      expect(save(el).tabIndex).toBe(0);
+    });
+
+    it('says what is missing, as text, tied to the button', () => {
+      const { el } = mountPanel();
+      el.openNewEntry(60, 90);
+
+      expect(hintText(el)).toBe('Choose an activity');
+      const describedBy = save(el).getAttribute('aria-describedby').split(' ');
+      expect(describedBy).toContain(hint(el).id);
+      expect(el.querySelector(`#${hint(el).id}`)).toBe(hint(el));
+      expect(hint(el).hasAttribute('hidden')).toBe(false);
+    });
+
+    it('says an entry must be long enough', () => {
+      const { el } = mountPanel();
+      el.openNewEntry(60, 90);
+      el.onSetActivityOnSelectedEntry('sleeping');
+
+      el.setEndTime(60);
+
+      expect(hintText(el)).toBe('An entry must last at least 10 minutes');
+      expect(save(el).getAttribute('aria-disabled')).toBe('true');
+    });
+
+    it('says everything that is missing', () => {
+      const { el } = mountPanel();
+      el.openNewEntry(60, 90);
+
+      el.setEndTime(60);
+
+      expect(hintText(el)).toBe('Choose an activity. An entry must last at least 10 minutes');
+    });
+
+    it('is quiet, and enabled, once the entry is complete', () => {
+      const { el } = mountPanel();
+      el.openNewEntry(60, 90);
+
+      el.onSetActivityOnSelectedEntry('sleeping');
+
+      expect(save(el).hasAttribute('aria-disabled')).toBe(false);
+      expect(hintText(el)).toBe('');
+      expect(hint(el).hasAttribute('hidden')).toBe(true);
+      expect(save(el).getAttribute('aria-describedby') ?? '').not.toContain(hint(el).id);
+    });
+
+    it('says why again if the entry becomes incomplete again', () => {
+      const { el } = mountPanel();
+      el.openNewEntry(60, 90);
+      el.onSetActivityOnSelectedEntry('sleeping');
+
+      el.onSetActivityOnSelectedEntry('');
+
+      expect(save(el).getAttribute('aria-disabled')).toBe('true');
+      expect(hintText(el)).toBe('Choose an activity');
+    });
+
+    it('does not save when pressed, and takes focus to what needs choosing', () => {
+      const { el, saveEntry } = mountPanel();
+      el.openNewEntry(60, 90);
+
+      save(el).click();
+
+      expect(saveEntry).not.toHaveBeenCalled();
+      expect(document.activeElement).toBe(el.querySelector('[role="combobox"]'));
+    });
+
+    it('takes focus to the end time when it is the time that is wrong', () => {
+      const { el, saveEntry } = mountPanel();
+      el.openNewEntry(60, 90);
+      el.onSetActivityOnSelectedEntry('sleeping');
+      el.setEndTime(60);
+
+      save(el).click();
+
+      expect(saveEntry).not.toHaveBeenCalled();
+      expect(document.activeElement.closest('el-time-picker')?.getAttribute('input-id')).toBe(
+        'endTime'
+      );
+    });
+
+    it('saves as before once complete', () => {
+      const { el, saveEntry } = mountPanel();
+      el.openNewEntry(60, 90);
+      el.onSetActivityOnSelectedEntry('sleeping');
+
+      save(el).click();
+
+      expect(saveEntry).toHaveBeenCalledOnce();
+    });
+
+    it('keeps the panel message area, for save conflicts, tied to Save while it says something', () => {
+      const { el } = mountPanel();
+      el.openNewEntry(60, 90);
+      el.onSetActivityOnSelectedEntry('sleeping');
+      const error = el.querySelector('.entry-error');
+      expect(error.id).not.toBe('');
+      expect(save(el).getAttribute('aria-describedby') ?? '').not.toContain(error.id);
+
+      el.showError('This overlaps with your existing "Home" entry');
+      expect(save(el).getAttribute('aria-describedby').split(' ')).toContain(error.id);
+
+      el.clearError();
+      expect(save(el).getAttribute('aria-describedby') ?? '').not.toContain(error.id);
+    });
+
+    // one after the other: the activity list's own popover has a fixed id, so
+    // two panels in a page at once are not something the app (or a test) can do
+    it('does not give the hint or the message the same id as another panel', () => {
+      const first = mountPanel().el;
+      const firstIds = [hint(first).id, first.querySelector('.entry-error').id];
+      first.remove();
+
+      const second = mountPanel().el;
+
+      expect(hint(second).id).not.toBe(firstIds[0]);
+      expect(second.querySelector('.entry-error').id).not.toBe(firstIds[1]);
+    });
+  });
+
+  // #232: the field-level wiring is already right; this keeps it that way
+  describe('validation messages stay tied to their fields', () => {
+    it('points every time and duration field at a hint and an error that exist', () => {
+      const harness = document.createElement('test-harness-detailspanel');
+      const key = harness.setProps(
+        { findNextEntryAfter: () => undefined, saveEntry: vi.fn(), deleteEntry: vi.fn() },
+        true
+      );
+      const el = document.createElement('el-details-panel');
+      el.setAttribute('key', key);
+      el.setAttribute('dimensionindex', '0');
+      document.body.appendChild(el);
+      el.openNewEntry(60, 90);
+
+      const fields = [...el.querySelectorAll('el-time-picker input, el-duration-input input')];
+      expect(fields.length).toBeGreaterThanOrEqual(4); // start, end, hours, minutes
+      fields.forEach((field) => {
+        const tokens = field.getAttribute('aria-describedby').split(' ');
+        expect(tokens.length).toBe(2);
+        tokens.forEach((token) => expect(el.querySelector(`#${token}`)).not.toBeNull());
+      });
+      el.querySelectorAll('.error-text').forEach((error) =>
+        expect(error.getAttribute('aria-live')).toBe('polite')
+      );
+    });
+  });
+
   describe('keyboard', () => {
     const escape = (target) =>
       target.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));

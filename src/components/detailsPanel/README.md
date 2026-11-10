@@ -30,11 +30,24 @@ Nothing calls DetailsPanel's methods directly. Instead, on connect, DetailsPanel
 | `openNewEntry(startOffsetMins, endOffsetMins?)` | Reset the panel and pre-fill the start and end times, for a brand new Entry. The end defaults to one slot (10 minutes) after the start. |
 | `close()`                                       | Reset the panel's state.                                                                                                                |
 | `focus()`                                       | Move keyboard focus into the panel (the activity field). A Timeline calls it after Enter opens an Entry or a new block.                 |
+| `hasUnsavedEdits()`                             | Whether the panel holds something changed that has not been saved (see below). Asking it changes nothing.                               |
 | `reportSaveConflict(message)`                   | Show a save-time validation error (e.g. an overlapping Entry).                                                                          |
 
 This keeps the Timelines decoupled from DetailsPanel's actual method names — a rename on either side can't silently desync the other.
 
 DetailsPanel, in turn, receives (via props) `saveEntry(entry)`, `deleteEntry(id)`, and `findNextEntryAfter(offsetMins)`, which the coordinator routes to the current Dimension's Timeline, plus the `registerPanelActions` callback that completes the handshake.
+
+## Unsaved edits
+
+The panel records what it was **opened with** (its baseline): `openEntry` records the Entry as stored, `openNewEntry` the start and end it was given, and `reset()` forgets it. `hasUnsavedEdits()` is true when the start, end or activity now differ from that. So an Entry just opened is not unsaved, nor is a new block just dragged out and given nothing else (nothing the Respondent chose would be lost), and changing something back makes it not unsaved again. Several activities (a multiple-choice Dimension) compare as a set, in any order; no activity, an empty one and an empty list are the same.
+
+The [coordinator](detailsPanelCoordinator.js) parks and restores a draft across a Dimension switch through `getDraft()` / `restoreDraft()`, which carry the baseline with the state, so a restored draft is still known to be unsaved (or not). Nothing acts on `hasUnsavedEdits()` yet beyond reading it: asking before an edit is lost is a separate piece of work (#242).
+
+## Save when the entry is not complete
+
+Save is **`aria-disabled="true"`**, not `disabled`, and also faded (the `opaque` class). It stays focusable, so a keyboard user can find it, and a click on it is not swallowed. A hint (`.save-hint`, visible text, not an error) says what is missing, in words: "Choose an activity", "An entry must last at least 10 minutes", "Choose a start and end time", joined if there is more than one; Save's `aria-describedby` points at it (and at the panel's own message area, `.entry-error`, for save conflicts, while that has something to say). When the entry is complete the hint goes and Save works. Pressing it while incomplete saves nothing and takes focus to what needs doing: the activity field, else the end time (or the start time if times are missing). The hint and message ids include a per-panel number, as `aria-describedby` needs ids.
+
+The time and duration fields already tie their own error to the field with `aria-describedby` and announce it politely; a test keeps that from regressing.
 
 ## Keyboard
 

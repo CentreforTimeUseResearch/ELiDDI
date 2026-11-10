@@ -71,11 +71,31 @@ el-details-panel.active {
   transform: scale(0.95);
 }
 
+/* Save when the entry is not complete: faded, but still focusable and
+   pressable (aria-disabled, not disabled), so it can say why - see
+   DetailsPanel.focusFirstProblem */
 .opaque {
   opacity: 1;
   background-color: var(--color-hairline);
   color: var(--color-ink-muted-48);
-  pointer-events: none;
+  cursor: not-allowed;
+}
+
+.btn-save-btn[aria-disabled='true']:active {
+  transform: none;
+}
+
+/* what is missing, in words (not an error: nothing has gone wrong yet) */
+.save-hint {
+  margin: var(--space-sm) var(--space-md);
+  font-family: var(--font-text);
+  font-size: var(--text-fine-print-size);
+  color: var(--color-body-muted);
+  text-align: left;
+}
+
+.save-hint[hidden] {
+  display: none;
 }
 
 .btn-delete-btn {

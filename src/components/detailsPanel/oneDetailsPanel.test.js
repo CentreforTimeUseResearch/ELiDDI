@@ -69,6 +69,68 @@ describe.each([
     }
   });
 
+  // #232: whether the panel holds something unsaved, asked through a Timeline's panelActions
+  describe('unsaved edits', () => {
+    const entry = { id: 5, startOffsetMins: 60, endOffsetMins: 90, activity: 'sleeping' };
+    const actions = (dimensionIndex = 0) => timelines()[dimensionIndex].panelActions;
+
+    it('is known through a Timeline panelActions', () => {
+      actions().openEntry(entry);
+      expect(actions().hasUnsavedEdits()).toBe(false);
+
+      panel().setEndTime(100);
+
+      expect(actions().hasUnsavedEdits()).toBe(true);
+    });
+
+    it('is the same answer from every Dimension, as there is one panel', () => {
+      actions(0).openEntry(entry);
+      panel().setEndTime(100);
+
+      expect(actions(0).hasUnsavedEdits()).toBe(true);
+      expect(actions(0).hasUnsavedEdits()).toBe(actions(1).hasUnsavedEdits());
+    });
+
+    it('is still unsaved after switching Dimension and back, when it was before', () => {
+      actions(0).openEntry(entry);
+      panel().setEndTime(100);
+
+      switchTo(1);
+      expect(actions(1).hasUnsavedEdits()).toBe(false); // the panel is for the other Dimension now
+      switchTo(0);
+
+      expect(panel().state.endOffsetMins).toBe(100);
+      expect(actions(0).hasUnsavedEdits()).toBe(true);
+    });
+
+    it('is still clean after switching Dimension and back, when it was before', () => {
+      actions(0).openEntry(entry);
+
+      switchTo(1);
+      switchTo(0);
+
+      expect(actions(0).hasUnsavedEdits()).toBe(false);
+    });
+
+    it('is still clean for a new block, after switching Dimension and back', () => {
+      actions(0).openNewEntry(300, 330);
+
+      switchTo(2);
+      switchTo(0);
+
+      expect(actions(0).hasUnsavedEdits()).toBe(false);
+    });
+
+    it('is not carried to another day', () => {
+      actions(0).openEntry(entry);
+      panel().setEndTime(100);
+
+      appStore.dispatch({ type: SWITCH_DATE, payload: '2026-07-02' });
+
+      expect(actions(0).hasUnsavedEdits()).toBe(false);
+    });
+  });
+
   it('serves every Dimension with one panel, retargeted to the current one', () => {
     expect(document.querySelectorAll('el-details-panel')).toHaveLength(1);
 

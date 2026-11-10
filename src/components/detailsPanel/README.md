@@ -53,6 +53,8 @@ Nothing unsaved is dropped silently. The things that would drop it (opening anot
 - `scope` says what could be lost: `{ dimensionIndex }` (an open into that Dimension: the panel's own draft, or one parked for it) or `{ all: true }` (a change of day: every Dimension's draft). A Dimension switch is **not** asked about, since its draft is parked; a restored draft counts as unsaved. For a draft parked in another Dimension, that Dimension is brought forward first so the Respondent can see what is being asked about; with several, they are asked one at a time.
 - Callers do their own visible work only in `proceed` (the Timeline's selection and the new-Entry block change when the open goes ahead, and the day does not change until then), and undo anything done in advance in `onCancel` (the date picker puts its input back).
 
+The question itself — its markup, show/hide, answers and focus bookkeeping — is `LeavePromptFlow` (`leavePromptFlow.js`), a plain class the panel owns; the panel's `showLeavePrompt` cancels any pending delete question (only one shows at a time) and hands over to it.
+
 ## Save when the entry is not complete
 
 Save is **`aria-disabled="true"`**, not `disabled`, and also faded (the `opaque` class). It stays focusable, so a keyboard user can find it, and a click on it is not swallowed. A hint (`.save-hint`, visible text, not an error) says what is missing, in words: "Choose an activity", "An entry must last at least 10 minutes", "Choose a start and end time", joined if there is more than one; Save's `aria-describedby` points at it (and at the panel's own message area, `.entry-error`, for save conflicts, while that has something to say). When the entry is complete the hint goes and Save works. Pressing it while incomplete saves nothing and takes focus to what needs doing: the activity field, else the end time (or the start time if times are missing). The hint and message ids include a per-panel number, as `aria-describedby` needs ids.
@@ -68,6 +70,8 @@ Delete does not delete: it **asks first, in the panel** (no browser `confirm`, n
 - An unanswered question does not wait: it is dropped when another Entry is opened (`openEntry`), a new one is started or the panel is reset (a Dimension or day change, a save), or the panel is hidden, so it never comes back unasked. If the Entry turns out to have gone already, the question is put away rather than left on screen.
 - Only the Entry open in the panel can be asked about; a new, unsaved one has no Delete.
 
+The question itself is `DeleteConfirmFlow` (`deleteConfirmFlow.js`), a plain class the panel owns, injected with the three things it can't know: which Entry id is open, how to delete it, and where focus returns on Keep it.
+
 ## Keyboard
 
 Escape closes the panel, like its close button (`HIDE_PANEL`), except that when the activity list is open that Escape is for closing the list: the next one closes the panel. The list is only known to be open from its popover (`:popover-open`), because the combobox's `aria-expanded` is never set to true, and the list opens as soon as the field is focused, so the panel notes in the capture phase whether it was open, lets the list's own handling run, and closes the list itself if that left it open.
@@ -79,7 +83,7 @@ Escape closes the panel, like its close button (`HIDE_PANEL`), except that when 
 
 ## Behaviour notes
 
-- Times are stored internally as `startOffsetMins`/`endOffsetMins` (minutes since the Day boundary — see [ADR-0001](../../../docs/adr/0001-day-boundary-not-midnight.md)), but the time picker widgets work in absolute clock-time minutes; `dayBoundaryInMinutes` (derived from `GLOBALS.DATA.day_boundary`) is added/subtracted at the boundary between the two.
+- Times are stored internally as `startOffsetMins`/`endOffsetMins` (minutes since the Day boundary — see [ADR-0001](../../../docs/adr/0001-day-boundary-not-midnight.md)), but the time picker widgets work in absolute clock-time minutes; `dayBoundaryInMinutes` (the study config's `day_boundary`, via `utils/time.js`) is added/subtracted at the boundary between the two.
 - `getContinueToTarget(startTimeInMinutes)` implements the "continue this activity" checkbox in the time picker: it continues to the next chronological Entry if one exists after the given start time, otherwise to the end of the diary day.
 - The Save button only becomes enabled once `isEntryComplete()` is true (valid start/end time and at least one Activity selected).
 

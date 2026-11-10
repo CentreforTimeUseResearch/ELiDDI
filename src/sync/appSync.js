@@ -4,12 +4,13 @@
 
 import { appStore } from '../store/appStore';
 import { getBrowserStorage } from '../store/persistence';
-import { getAccounts, signOut } from '../auth/authClient';
+import { signOut } from '../auth/authClient';
+import { accounts as serverAccounts, studyConfig } from '../config/appConfig';
 import { appSession } from '../auth/session';
 import { createSync } from './syncManager';
 import { appSyncStatus, NOTICE_KIND } from './syncStatus';
 
-const accounts = getAccounts(globalThis.GLOBALS?.DATA);
+const accounts = serverAccounts();
 
 export const appSync = accounts.enabled
   ? createSync({
@@ -41,12 +42,12 @@ export async function requestLogout() {
     appSyncStatus.setNotice({ kind: NOTICE_KIND.UNSENT });
     return;
   }
-  await signOut({ session: appSession, config: globalThis.GLOBALS?.DATA });
+  await signOut({ session: appSession, config: studyConfig() });
 }
 
 // the Respondent chose to leave although changes could not be sent: they stay
 // on this device, hidden, and go to the server at their next login
 export async function logoutAnyway() {
   appSyncStatus.dismissNotice();
-  await signOut({ session: appSession, config: globalThis.GLOBALS?.DATA });
+  await signOut({ session: appSession, config: studyConfig() });
 }

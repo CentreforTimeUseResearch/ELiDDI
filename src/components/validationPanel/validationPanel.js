@@ -8,6 +8,7 @@ import { HIDE_PANEL, SET_COMPLETE } from '../../store/actionTypes';
 import { DIARY_STATUS } from '../../store/diaryStatus';
 import { canSubmit, validateDiary } from '../../validation/validateDiary';
 import { getSubmitTarget, submitDiary } from '../../submission/submitDiary';
+import { studyConfig, primaryRedirectUrl } from '../../config/appConfig';
 import { escapeHtml } from '../../utils/html';
 
 import './validationPanel.css';
@@ -128,7 +129,7 @@ export class ValidationPanel extends TinyBase {
   // the viewed day's Diary, checked against the rules the study has on
   getResults() {
     const { diaries, currentDate } = this.store.getState();
-    return validateDiary(diaries[currentDate], GLOBALS.DATA);
+    return validateDiary(diaries[currentDate], studyConfig());
   }
 
   renderResults() {
@@ -151,7 +152,7 @@ export class ValidationPanel extends TinyBase {
   // is in flight. Below it, what happened to the viewed day's submission.
   updateActions(results) {
     const { diaries, currentDate } = this.store.getState();
-    const hasSubmitUrl = getSubmitTarget(GLOBALS.DATA) !== null;
+    const hasSubmitUrl = getSubmitTarget(studyConfig()) !== null;
     const blocked = !canSubmit(results);
     this.completeButton.hidden = !hasSubmitUrl;
     this.completeButton.disabled = blocked || this.isSending;
@@ -198,12 +199,12 @@ export class ValidationPanel extends TinyBase {
     this.submitError = undefined;
     this.updateActions(this.getResults());
 
-    const result = await submitDiary({ diary: diaries[date], date, config: GLOBALS.DATA });
+    const result = await submitDiary({ diary: diaries[date], date, config: studyConfig() });
 
     this.isSending = false;
     if (result.ok) {
       this.store.dispatch({ type: SET_COMPLETE, payload: { date } });
-      const redirectUrl = GLOBALS.DATA.general?.primary_redirect_url;
+      const redirectUrl = primaryRedirectUrl();
       if (redirectUrl) this.redirect(redirectUrl);
     } else {
       this.submitError = { date, text: describeFailure(result) };

@@ -7,6 +7,7 @@ import { escapeHtml } from '../../utils/html';
 import { guardUnsavedEdits } from '../../utils/unsavedEdits';
 import { announce } from '../../utils/announce';
 import { MIN_ENTRY_DURATION_MINS } from '../timeline/timelineConstants';
+import { getDayBoundaryInMinutes } from '../../utils/time';
 
 const DIMENSION_INDEX = 'dimensionindex';
 const HEADING = 'heading';
@@ -31,19 +32,10 @@ export class DetailsPanel extends TinyBase {
   leaveReturnFocus; // where focus was when it was asked
   saveButton;
   saveHint;
-  dayBoundaryInMinutes;
+  dayBoundaryInMinutes = getDayBoundaryInMinutes();
 
   timelinePickerPanel;
   popoverElement;
-
-  constructor() {
-    super();
-    // set day boundary
-    const dayBoundary = GLOBALS.DATA.day_boundary;
-    const dayBoundaryHours = Number(dayBoundary.split(':')[0]);
-    const dayBoundaryMinutes = Number(dayBoundary.split(':')[1]);
-    this.dayBoundaryInMinutes = dayBoundaryHours * 60 + dayBoundaryMinutes;
-  }
 
   connectedCallback() {
     super.connectedCallback();

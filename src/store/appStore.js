@@ -1,7 +1,7 @@
 import { eliddiReducer } from './eliddiReducer';
 import { createStore } from './store';
 import { getBrowserStorage, loadPersistedState, persistStore } from './persistence';
-import { getAccounts } from '../auth/authClient';
+import { accounts } from '../config/appConfig';
 
 // The single app-wide store instance (a singleton via module pattern).
 //
@@ -15,7 +15,7 @@ import { getAccounts } from '../auth/authClient';
 // and saves it under that Respondent's own key. The single 'state' key is
 // ignored (and never deleted) because on a shared device it may belong to
 // anyone - see docs/adr/0007-server-sync-model.md.
-const accountsOn = getAccounts(globalThis.GLOBALS?.DATA).enabled;
+const accountsOn = accounts().enabled;
 const storage = accountsOn ? undefined : getBrowserStorage();
 export const appStore = createStore(eliddiReducer, storage && loadPersistedState(storage));
 

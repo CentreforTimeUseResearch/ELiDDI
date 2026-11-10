@@ -1,5 +1,6 @@
 import { SWITCH_DIMENSION, SHOW_PANEL } from '../../store/actionTypes';
 import { registerUnsavedEditsGuard } from '../../utils/unsavedEdits';
+import { dimension } from '../../config/appConfig';
 
 // The app has ONE <el-details-panel>, in both layouts (ADR 0005). Each stack
 // (TimelineStack on mobile, HorizontalTimelineStack on desktop) owns one of
@@ -155,10 +156,10 @@ export class DetailsPanelCoordinator {
   }
 
   applyDimension(dimensionIndex) {
-    const dimension = GLOBALS.DATA.timeline[dimensionIndex];
+    const dimensionData = dimension(dimensionIndex);
     this.panel?.setAttribute('dimensionindex', dimensionIndex);
-    this.panel?.setAttribute('heading', dimension?.description ?? '');
-    this.panel?.setAttribute('instruction', dimension?.instruction ?? '');
+    this.panel?.setAttribute('heading', dimensionData?.description ?? '');
+    this.panel?.setAttribute('instruction', dimensionData?.instruction ?? '');
   }
 
   // the panel's draft is what it holds and what it was opened with (so a

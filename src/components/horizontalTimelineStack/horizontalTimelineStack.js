@@ -4,6 +4,7 @@ import '../horizontalTimeline/horizontalTimeline';
 import '../detailsPanel/detailsPanel';
 import { DetailsPanelCoordinator } from '../detailsPanel/detailsPanelCoordinator';
 import { HIDE_PANEL, SWITCH_DIMENSION } from '../../store/actionTypes';
+import { dimension, dimensions } from '../../config/appConfig';
 import './horizontalTimelineStack.css';
 
 // The desktop layout: the shared axis, one HorizontalTimeline row per
@@ -16,7 +17,7 @@ export class HorizontalTimelineStack extends TinyBase {
   // see TinyBase.connectedCallback
   static renderOnce = true;
   store = super.getStore();
-  numTimelines = GLOBALS.DATA.timeline.length;
+  numTimelines = dimensions().length;
   rows = [];
   labels = [];
 
@@ -107,7 +108,7 @@ export class HorizontalTimelineStack extends TinyBase {
     label.tabIndex = -1;
     label.dataset.dimensionIndex = dimensionIndex;
     label.style.gridRow = gridRow;
-    label.textContent = GLOBALS.DATA.timeline[dimensionIndex].name;
+    label.textContent = dimension(dimensionIndex).name;
     label.addEventListener('click', () => this.selectDimension(dimensionIndex));
     return label;
   }

@@ -1,4 +1,5 @@
 import { getActivityColor } from '../../utils/activities';
+import { dimension } from '../../config/appConfig';
 import { SVGNS, XHTMLNS } from './timelineConstants';
 
 const LABEL_FONT_SIZE = 14; // DESIGN.md caption token
@@ -16,7 +17,7 @@ const LABEL_FONT_SIZE = 14; // DESIGN.md caption token
 // </g>
 export function renderEntryBlocks(layer, entries, dimensionIndex, placeEntry, options = {}) {
   layer.innerHTML = '';
-  const dimensionData = GLOBALS.DATA.timeline[dimensionIndex];
+  const dimensionData = dimension(dimensionIndex);
 
   entries.forEach((entry) => {
     const { block, label } = placeEntry(entry);

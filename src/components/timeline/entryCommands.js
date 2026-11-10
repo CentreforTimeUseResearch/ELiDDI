@@ -2,6 +2,7 @@ import { findOverlappingEntry, findNextEntry } from '../../utils/entries';
 import { formatOffsetAsClockTime } from '../../utils/time';
 import { ADD_ENTRY, UPDATE_ENTRY, DELETE_ENTRY } from '../../store/actionTypes';
 import { MIN_ENTRY_DURATION_MINS } from './timelineConstants';
+import { dimension } from '../../config/appConfig';
 
 // What a Timeline can do to its own Entries in the store, and the rules
 // that apply - id allocation, overlap validation - with no DOM. Shared by
@@ -19,7 +20,7 @@ export class EntryCommands {
   }
 
   get isSingleChoiceDimension() {
-    return GLOBALS.DATA.timeline[this.getDimensionIndex()].mode !== 'multiple-choice';
+    return dimension(this.getDimensionIndex()).mode !== 'multiple-choice';
   }
 
   // one past the highest id on this Timeline, not the count - ids of

@@ -20,7 +20,7 @@ function findInActivityList(activities, activityName) {
   return undefined;
 }
 
-// dimensionData is one entry of GLOBALS.DATA.timeline (a Dimension config object).
+// dimensionData is one Dimension config object (src/config/appConfig.js's dimension(i)).
 export function findActivityInDimension(dimensionData, activityName) {
   if (!dimensionData || typeof activityName !== 'string') {
     return undefined;

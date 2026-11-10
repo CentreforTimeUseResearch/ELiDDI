@@ -3,6 +3,7 @@ import { Timeline } from '../timeline/timeline';
 import '../detailsPanel/detailsPanel';
 import { DetailsPanelCoordinator } from '../detailsPanel/detailsPanelCoordinator';
 import { SWITCH_DIMENSION } from '../../store/actionTypes';
+import { dimensions } from '../../config/appConfig';
 
 import './timelineStack.css';
 
@@ -24,8 +25,8 @@ export class TimelineStack extends TinyBase {
   // see TinyBase.connectedCallback
   static renderOnce = true;
   store = super.getStore();
-  timelinesData = GLOBALS.DATA.timeline;
-  numTimelines = GLOBALS.DATA.timeline.length;
+  timelinesData = dimensions();
+  numTimelines = this.timelinesData.length;
   dimensionIndex = 0;
   scroller;
 

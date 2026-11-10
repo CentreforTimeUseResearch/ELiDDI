@@ -61,11 +61,15 @@ export class ValidationPanel extends TinyBase {
     this.submitStatus = this.querySelector('.validation-submit-status');
     this.softFailures = this.querySelector('.validation-soft-failures');
 
-    this.querySelector('.validation-header [data-close]').addEventListener('click', () =>
+    // via listen(), not a raw addEventListener: renderOnce keeps this markup
+    // across a disconnect/reconnect (a DOM move), so a listener bound here
+    // every connect would stack - one move, two submits (#251). listen() is
+    // torn down on disconnect, per the lifecycle rule in base.js.
+    this.listen(this.querySelector('.validation-header [data-close]'), 'click', () =>
       this.requestClose()
     );
-    this.completeButton.addEventListener('click', () => this.onCompleteClick());
-    this.querySelector('el-dialog').addEventListener('click', (event) => {
+    this.listen(this.completeButton, 'click', () => this.onCompleteClick());
+    this.listen(this.querySelector('el-dialog'), 'click', (event) => {
       if (event.target.closest('[data-confirm-submit]')) {
         this.confirmDialogActions.close();
         this.isConfirming = false;

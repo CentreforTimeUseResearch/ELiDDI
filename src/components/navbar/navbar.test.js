@@ -2,7 +2,18 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { appSession } from '../../auth/session';
 import { Navbar } from './navbar';
 import { appStore } from '../../store/appStore';
-import { SWITCH_DATE, DISMISS_ONBOARDING } from '../../store/actionTypes';
+import {
+  SWITCH_DATE,
+  SWITCH_DIMENSION,
+  SET_HORIZONTAL_ZOOM,
+  ADD_TIMELINE,
+  ADD_ENTRY,
+  SET_COMPLETE,
+  CLEAR_DIARY,
+  SHOW_PANEL,
+  HIDE_PANEL,
+  DISMISS_ONBOARDING,
+} from '../../store/actionTypes';
 
 describe('Navbar', () => {
   beforeEach(() => {
@@ -50,7 +61,7 @@ describe('Navbar', () => {
     const el = document.createElement('el-nav-bar');
     document.body.appendChild(el);
 
-    expect(el.querySelector('.date-indicator').textContent).toBe('Selected day: 05/01/2026 change');
+    expect(el.querySelector('.date-text').textContent).toBe('Selected day: 05/01/2026 change');
   });
 
   it('updates the date indicator when the store date changes', () => {
@@ -59,7 +70,338 @@ describe('Navbar', () => {
 
     el.store.dispatch({ type: SWITCH_DATE, payload: '2026-12-25' });
 
-    expect(el.querySelector('.date-indicator').textContent).toBe('Selected day: 25/12/2026 change');
+    expect(el.querySelector('.date-text').textContent).toBe('Selected day: 25/12/2026 change');
+  });
+
+  // #227: Previous day, Next day and Today beside the date button
+  describe('day controls', () => {
+    const TODAY = '2026-11-09'; // a Monday
+
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date(2026, 10, 9, 12, 0)); // noon: well after the 04:00 day boundary
+      appStore.dispatch({ type: HIDE_PANEL });
+      appStore.dispatch({ type: SWITCH_DIMENSION, payload: 0 });
+      appStore.dispatch({ type: SWITCH_DATE, payload: TODAY });
+      // the store is shared: start each test with these days empty
+      ['2026-11-08', TODAY].forEach((date) =>
+        appStore.dispatch({ type: CLEAR_DIARY, payload: { date } })
+      );
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+      vi.restoreAllMocks();
+    });
+
+    function mount() {
+      const el = document.createElement('el-nav-bar');
+      document.body.appendChild(el);
+      return el;
+    }
+
+    const previous = (el) => el.querySelector('.previous-day-button');
+    const next = (el) => el.querySelector('.next-day-button');
+    const today = (el) => el.querySelector('.today-button');
+    const currentDate = () => appStore.getState().currentDate;
+    const isDisabled = (button) => button.getAttribute('aria-disabled') === 'true';
+    const reasonOf = (el, button) =>
+      el.querySelector(`#${button.getAttribute('aria-describedby')}`)?.textContent;
+
+    it('has the three buttons in a group with the date button', () => {
+      const el = mount();
+
+      const group = el.querySelector('.day-controls');
+      expect(group.getAttribute('role')).toBe('group');
+      expect(group.getAttribute('aria-label')).toBe('Change day');
+      expect(group.contains(previous(el))).toBe(true);
+      expect(group.contains(next(el))).toBe(true);
+      expect(group.contains(today(el))).toBe(true);
+      expect(group.contains(el.querySelector('.change-date-button'))).toBe(true);
+    });
+
+    it('names each button for the day it goes to', () => {
+      appStore.dispatch({ type: SWITCH_DATE, payload: '2026-11-08' }); // Sunday
+
+      const el = mount();
+
+      expect(previous(el).getAttribute('aria-label')).toBe('Previous day, Saturday 7 November');
+      expect(next(el).getAttribute('aria-label')).toBe('Next day, Monday 9 November');
+      expect(today(el).getAttribute('aria-label')).toBe('Today, Monday 9 November');
+    });
+
+    it('keeps those names up to date as the day changes', () => {
+      const el = mount();
+
+      previous(el).click();
+
+      expect(previous(el).getAttribute('aria-label')).toBe('Previous day, Saturday 7 November');
+      expect(next(el).getAttribute('aria-label')).toBe('Next day, Monday 9 November');
+    });
+
+    describe('Previous day', () => {
+      it('goes back one day, closing the panel first like the date picker does', () => {
+        const el = mount();
+        const dispatch = vi.spyOn(appStore, 'dispatch');
+
+        previous(el).click();
+
+        expect(currentDate()).toBe('2026-11-08');
+        expect(dispatch.mock.calls.map(([action]) => action.type)).toEqual([
+          HIDE_PANEL,
+          SWITCH_DATE,
+        ]);
+      });
+
+      it('crosses a month end', () => {
+        appStore.dispatch({ type: SWITCH_DATE, payload: '2026-11-01' });
+        const el = mount();
+
+        previous(el).click();
+
+        expect(currentDate()).toBe('2026-10-31');
+      });
+
+      it('never lands on a future day, even from one', () => {
+        appStore.dispatch({ type: SWITCH_DATE, payload: '2026-11-12' }); // not possible by any control
+        const el = mount();
+
+        previous(el).click();
+
+        expect(currentDate()).toBe(TODAY);
+      });
+    });
+
+    describe('Next day', () => {
+      it('goes on one day', () => {
+        appStore.dispatch({ type: SWITCH_DATE, payload: '2026-11-05' });
+        const el = mount();
+
+        next(el).click();
+
+        expect(currentDate()).toBe('2026-11-06');
+      });
+
+      it('can reach today, but is disabled there, with the reason as text', () => {
+        appStore.dispatch({ type: SWITCH_DATE, payload: '2026-11-08' });
+        const el = mount();
+        expect(isDisabled(next(el))).toBe(false);
+
+        next(el).click();
+
+        expect(currentDate()).toBe(TODAY);
+        expect(isDisabled(next(el))).toBe(true);
+        expect(next(el).getAttribute('aria-label')).toBe('Next day');
+        expect(reasonOf(el, next(el))).toBe("You can't fill in days that haven't happened");
+        expect(next(el).title).toBe("You can't fill in days that haven't happened");
+      });
+
+      it('does nothing when disabled, however it is activated', () => {
+        const el = mount();
+        const dispatch = vi.spyOn(appStore, 'dispatch');
+
+        next(el).click();
+        next(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+        expect(dispatch).not.toHaveBeenCalled();
+        expect(currentDate()).toBe(TODAY);
+      });
+
+      it('stays focusable when disabled, so its reason can be found by keyboard', () => {
+        const el = mount();
+
+        expect(next(el).hasAttribute('disabled')).toBe(false);
+        expect(next(el).tabIndex).toBe(0);
+      });
+
+      it('drops its reason and title when it is enabled again', () => {
+        const el = mount();
+
+        previous(el).click();
+
+        expect(isDisabled(next(el))).toBe(false);
+        expect(next(el).title).toBe('');
+        expect(reasonOf(el, next(el))).toBe('');
+      });
+
+      it('is disabled, and never passes today, even if the stored day is in the future', () => {
+        appStore.dispatch({ type: SWITCH_DATE, payload: '2026-11-12' });
+        const el = mount();
+
+        next(el).click();
+
+        expect(isDisabled(next(el))).toBe(true);
+        expect(currentDate()).toBe('2026-11-12');
+      });
+    });
+
+    describe('Today', () => {
+      it('is disabled on today, with the reason as text', () => {
+        const el = mount();
+
+        expect(isDisabled(today(el))).toBe(true);
+        expect(reasonOf(el, today(el))).toBe('Already showing today');
+        expect(today(el).title).toBe('Already showing today');
+        const dispatch = vi.spyOn(appStore, 'dispatch');
+        today(el).click();
+        expect(dispatch).not.toHaveBeenCalled();
+      });
+
+      it('returns to today from another day', () => {
+        appStore.dispatch({ type: SWITCH_DATE, payload: '2026-10-01' });
+        const el = mount();
+        expect(isDisabled(today(el))).toBe(false);
+
+        today(el).click();
+
+        expect(currentDate()).toBe(TODAY);
+        expect(isDisabled(today(el))).toBe(true);
+      });
+    });
+
+    describe('around the 04:00 day boundary', () => {
+      beforeEach(() => {
+        vi.setSystemTime(new Date(2026, 10, 9, 2, 0)); // 02:00 on the 9th: still the 8th's Diary day
+      });
+
+      it('counts the previous date as today until 04:00', () => {
+        appStore.dispatch({ type: SWITCH_DATE, payload: '2026-11-05' });
+        const el = mount();
+
+        today(el).click();
+
+        expect(currentDate()).toBe('2026-11-08');
+      });
+
+      it('has no Next day, nor Today, on that day', () => {
+        appStore.dispatch({ type: SWITCH_DATE, payload: '2026-11-08' });
+        const el = mount();
+
+        expect(isDisabled(next(el))).toBe(true);
+        expect(isDisabled(today(el))).toBe(true);
+        expect(previous(el).getAttribute('aria-label')).toBe('Previous day, Saturday 7 November');
+      });
+
+      it('does not offer the 9th, which has not begun', () => {
+        appStore.dispatch({ type: SWITCH_DATE, payload: '2026-11-07' });
+        const el = mount();
+
+        next(el).click();
+        next(el).click();
+
+        expect(currentDate()).toBe('2026-11-08');
+      });
+
+      it('moves on to the 9th once 04:00 has passed', () => {
+        appStore.dispatch({ type: SWITCH_DATE, payload: '2026-11-08' });
+        const el = mount();
+        vi.setSystemTime(new Date(2026, 10, 9, 4, 0));
+
+        next(el).click(); // it re-checks "today" when pressed, not only when drawn
+
+        expect(currentDate()).toBe('2026-11-09');
+      });
+    });
+
+    it('keeps everything entered on both days', () => {
+      appStore.dispatch({ type: ADD_TIMELINE, payload: { dimensionIndex: 0, date: TODAY } });
+      appStore.dispatch({
+        type: ADD_ENTRY,
+        payload: {
+          dimensionIndex: 0,
+          date: TODAY,
+          id: 0,
+          startOffsetMins: 0,
+          endOffsetMins: 30,
+          activity: 'sleeping',
+        },
+      });
+      const before = appStore.getState().diaries[TODAY];
+      const el = mount();
+
+      previous(el).click();
+      next(el).click();
+
+      expect(currentDate()).toBe(TODAY);
+      expect(appStore.getState().diaries[TODAY]).toBe(before);
+    });
+
+    it('keeps the selected Dimension and the zoom', () => {
+      appStore.dispatch({ type: SWITCH_DIMENSION, payload: 3 });
+      appStore.dispatch({ type: SET_HORIZONTAL_ZOOM, payload: 2 });
+      const el = mount();
+
+      previous(el).click();
+
+      expect(appStore.getState().currentDimensionIndex).toBe(3);
+      expect(appStore.getState().horizontalZoomLevel).toBe(2);
+    });
+
+    it('moves one day per activation, with no repeat while held', () => {
+      vi.useFakeTimers(); // all timers this time
+      const el = mount();
+
+      previous(el).dispatchEvent(new Event('pointerdown', { bubbles: true }));
+      vi.advanceTimersByTime(5000);
+
+      expect(currentDate()).toBe(TODAY);
+
+      previous(el).click();
+      expect(currentDate()).toBe('2026-11-08');
+    });
+
+    it('still opens the date dialog from the date button', () => {
+      const el = mount();
+
+      el.querySelector('.change-date-button').click();
+
+      expect(appStore.getState().uipanel).toBe('date');
+      appStore.dispatch({ type: SHOW_PANEL, payload: 'details' });
+    });
+
+    describe("shows the day's status on the date button", () => {
+      const status = (el) => el.querySelector('.day-status').textContent;
+
+      it('is "Not started" until something is entered', () => {
+        const el = mount();
+
+        expect(status(el)).toBe('Not started');
+      });
+
+      it('is "In progress" once an Entry exists, and updates live', () => {
+        const el = mount();
+        appStore.dispatch({ type: ADD_TIMELINE, payload: { dimensionIndex: 0, date: TODAY } });
+        appStore.dispatch({
+          type: ADD_ENTRY,
+          payload: {
+            dimensionIndex: 0,
+            date: TODAY,
+            id: 0,
+            startOffsetMins: 0,
+            endOffsetMins: 30,
+            activity: 'sleeping',
+          },
+        });
+
+        expect(status(el)).toBe('In progress');
+      });
+
+      it('is "Complete" once submitted', () => {
+        const el = mount();
+        appStore.dispatch({ type: ADD_TIMELINE, payload: { dimensionIndex: 0, date: TODAY } });
+        appStore.dispatch({ type: SET_COMPLETE, payload: { date: TODAY } });
+
+        expect(status(el)).toBe('Complete');
+      });
+
+      it('follows the day shown', () => {
+        const el = mount();
+
+        previous(el).click();
+
+        expect(status(el)).toBe('Not started');
+      });
+    });
   });
 
   // #115

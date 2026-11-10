@@ -396,6 +396,224 @@ describe('DetailsPanel', () => {
     });
   });
 
+  // #243: Delete asks first, inside the panel
+  describe('Delete confirmation', () => {
+    const ENTRY = { id: 7, startOffsetMins: 60, endOffsetMins: 90, activity: 'sleeping' };
+
+    function mountPanel() {
+      const harness = document.createElement('test-harness-detailspanel');
+      const deleteEntry = vi.fn();
+      const key = harness.setProps(
+        { findNextEntryAfter: () => undefined, saveEntry: vi.fn(), deleteEntry },
+        true
+      );
+      const el = document.createElement('el-details-panel');
+      el.setAttribute('key', key);
+      el.setAttribute('dimensionindex', '0');
+      el.setAttribute('heading', 'Heading');
+      el.setAttribute('instruction', 'Instruction');
+      document.body.appendChild(el);
+      appStore.dispatch({ type: SHOW_PANEL, payload: 'details' });
+      return { el, deleteEntry };
+    }
+    const deleteButton = (el) => el.querySelector('.btn-delete-btn');
+    const group = (el) => el.querySelector('.delete-confirm');
+    const confirmButton = (el) => el.querySelector('.btn-confirm-delete-btn');
+    const keepButton = (el) => el.querySelector('.btn-keep-btn');
+    const isAsking = (el) => !group(el).hasAttribute('hidden');
+    const visible = (button) => !button.closest('[hidden]') && !button.classList.contains('hide');
+
+    beforeEach(() => {
+      HTMLElement.prototype.showPopover = vi.fn(); // jsdom has no Popover API
+      appStore.dispatch({ type: HIDE_PANEL });
+    });
+
+    afterEach(() => {
+      delete HTMLElement.prototype.showPopover;
+      appStore.dispatch({ type: HIDE_PANEL });
+    });
+
+    it('is not asking, and does not show its question, until Delete is pressed', () => {
+      const { el } = mountPanel();
+      el.openEntry(ENTRY);
+
+      expect(isAsking(el)).toBe(false);
+    });
+
+    it('asks, instead of deleting, when Delete is pressed', () => {
+      const { el, deleteEntry } = mountPanel();
+      el.openEntry(ENTRY);
+
+      deleteButton(el).click();
+
+      expect(deleteEntry).not.toHaveBeenCalled();
+      expect(isAsking(el)).toBe(true);
+      expect(group(el).textContent).toContain("Delete this entry? This can't be undone.");
+    });
+
+    it('is a labelled group, not a browser dialog, and never uses window.confirm', () => {
+      const confirm = vi.spyOn(window, 'confirm');
+      const { el } = mountPanel();
+      el.openEntry(ENTRY);
+
+      deleteButton(el).click();
+
+      expect(group(el).getAttribute('role')).toBe('group');
+      const label = el.querySelector(`#${group(el).getAttribute('aria-labelledby')}`);
+      expect(label.textContent).toContain('Delete this entry?');
+      expect(confirm).not.toHaveBeenCalled();
+      expect(document.querySelector('dialog[open]')).toBeNull();
+    });
+
+    it('moves focus to Keep it, the safe choice', () => {
+      const { el } = mountPanel();
+      el.openEntry(ENTRY);
+      deleteButton(el).focus();
+
+      deleteButton(el).click();
+
+      expect(document.activeElement).toBe(keepButton(el));
+    });
+
+    it('describes the safe choice by the question, so it is heard with it', () => {
+      const { el } = mountPanel();
+      el.openEntry(ENTRY);
+      deleteButton(el).click();
+
+      const describedBy = keepButton(el).getAttribute('aria-describedby');
+
+      expect(el.querySelector(`#${describedBy}`).textContent).toContain('Delete this entry?');
+    });
+
+    it('puts Save and Delete out of the way while it asks, so there is one question', () => {
+      const { el } = mountPanel();
+      el.openEntry(ENTRY);
+
+      deleteButton(el).click();
+
+      expect(el.hasAttribute('data-confirming-delete')).toBe(true);
+      expect(visible(confirmButton(el))).toBe(true);
+      expect(visible(keepButton(el))).toBe(true);
+    });
+
+    it('deletes that Entry, once, when confirmed', () => {
+      const { el, deleteEntry } = mountPanel();
+      el.openEntry(ENTRY);
+      deleteButton(el).click();
+
+      confirmButton(el).click();
+      confirmButton(el).click(); // a second press, or a double-click
+
+      expect(deleteEntry).toHaveBeenCalledOnce();
+      expect(deleteEntry).toHaveBeenCalledWith(7);
+    });
+
+    it('goes back, with nothing deleted and focus on Delete, when Keep it is pressed', () => {
+      const { el, deleteEntry } = mountPanel();
+      el.openEntry(ENTRY);
+      deleteButton(el).click();
+
+      keepButton(el).click();
+
+      expect(deleteEntry).not.toHaveBeenCalled();
+      expect(isAsking(el)).toBe(false);
+      expect(el.hasAttribute('data-confirming-delete')).toBe(false);
+      expect(document.activeElement).toBe(deleteButton(el));
+      expect(visible(deleteButton(el))).toBe(true);
+    });
+
+    it('goes back on Escape, and the panel stays open', () => {
+      const { el, deleteEntry } = mountPanel();
+      el.openEntry(ENTRY);
+      deleteButton(el).click();
+
+      const escape = new KeyboardEvent('keydown', {
+        key: 'Escape',
+        bubbles: true,
+        cancelable: true,
+      });
+      keepButton(el).dispatchEvent(escape);
+
+      expect(escape.defaultPrevented).toBe(true);
+      expect(deleteEntry).not.toHaveBeenCalled();
+      expect(isAsking(el)).toBe(false);
+      expect(document.activeElement).toBe(deleteButton(el));
+      expect(appStore.getState().uipanel).toBe('details');
+    });
+
+    it('closes the panel on the next Escape, as before', () => {
+      const { el } = mountPanel();
+      el.openEntry(ENTRY);
+      deleteButton(el).click();
+      keepButton(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+
+      deleteButton(el).dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+      );
+
+      expect(appStore.getState().uipanel).not.toBe('details');
+    });
+
+    it('is forgotten, unanswered, when another Entry is opened', () => {
+      const { el, deleteEntry } = mountPanel();
+      el.openEntry(ENTRY);
+      deleteButton(el).click();
+
+      el.openEntry({ id: 8, startOffsetMins: 120, endOffsetMins: 150, activity: 'resting' });
+
+      expect(isAsking(el)).toBe(false);
+      expect(el.hasAttribute('data-confirming-delete')).toBe(false);
+      expect(deleteEntry).not.toHaveBeenCalled();
+    });
+
+    it('is forgotten when a new Entry is started, and when the panel is reset', () => {
+      const { el } = mountPanel();
+      el.openEntry(ENTRY);
+      deleteButton(el).click();
+      el.openNewEntry(300, 330);
+      expect(isAsking(el)).toBe(false);
+
+      el.openEntry(ENTRY);
+      deleteButton(el).click();
+      el.reset();
+      expect(isAsking(el)).toBe(false);
+      expect(el.hasAttribute('data-confirming-delete')).toBe(false);
+    });
+
+    it('is forgotten when the panel is hidden, and does not come back with it', () => {
+      const { el } = mountPanel();
+      el.openEntry(ENTRY);
+      deleteButton(el).click();
+
+      appStore.dispatch({ type: HIDE_PANEL });
+      appStore.dispatch({ type: SHOW_PANEL, payload: 'details' });
+
+      expect(isAsking(el)).toBe(false);
+    });
+
+    it('can be asked again after a Keep it', () => {
+      const { el, deleteEntry } = mountPanel();
+      el.openEntry(ENTRY);
+      deleteButton(el).click();
+      keepButton(el).click();
+
+      deleteButton(el).click();
+      confirmButton(el).click();
+
+      expect(deleteEntry).toHaveBeenCalledOnce();
+    });
+
+    it('cannot delete anything when no Entry is open (a new one)', () => {
+      const { el, deleteEntry } = mountPanel();
+      el.openNewEntry(60, 90);
+
+      deleteButton(el).click();
+
+      expect(isAsking(el)).toBe(false);
+      expect(deleteEntry).not.toHaveBeenCalled();
+    });
+  });
+
   // #232: the field-level wiring is already right; this keeps it that way
   describe('validation messages stay tied to their fields', () => {
     it('points every time and duration field at a hint and an error that exist', () => {

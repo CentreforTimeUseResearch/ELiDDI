@@ -125,6 +125,60 @@ el-details-panel.active {
   display: none;
 }
 
+/* Delete's question, in the panel in place of Save and Delete. Keep it, the safe
+   answer, is the filled button and has focus; Delete is the outlined danger one */
+el-details-panel[data-confirming-delete] .btn-save-btn,
+el-details-panel[data-confirming-delete] .btn-delete-btn,
+el-details-panel[data-confirming-delete] .save-hint,
+el-details-panel[data-confirming-delete] .entry-error {
+  display: none;
+}
+
+.delete-confirm[hidden] {
+  display: none;
+}
+
+.delete-confirm-question {
+  margin: var(--space-sm) var(--space-md);
+  font-family: var(--font-text);
+  font-size: var(--text-body-size);
+  font-weight: var(--text-caption-strong-weight);
+  color: var(--color-on-dark);
+  text-align: center;
+}
+
+.btn-confirm-delete-btn {
+  margin: var(--space-sm) var(--space-md) 0;
+  width: calc(100% - (var(--space-md) * 2));
+  background-color: transparent;
+  color: var(--color-danger);
+  font-family: var(--font-text);
+  font-size: var(--text-body-size);
+  padding: 11px 22px;
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--color-danger);
+  cursor: pointer;
+}
+
+.btn-keep-btn {
+  margin: var(--space-sm) var(--space-md) 0;
+  width: calc(100% - (var(--space-md) * 2));
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+  font-family: var(--font-text);
+  font-size: var(--text-body-size);
+  padding: 11px 22px;
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--color-primary);
+  cursor: pointer;
+}
+
+.btn-confirm-delete-btn:focus-visible,
+.btn-keep-btn:focus-visible {
+  outline: 2px solid var(--color-primary-focus);
+  outline-offset: 2px;
+}
+
 .entry-error {
   margin: var(--space-sm) var(--space-md);
   font-family: var(--font-text);

@@ -3,7 +3,13 @@ import { installSvgTemplates } from '../../testing/svgTemplates';
 import '../timelineStack/timelineStack';
 import '../horizontalTimelineStack/horizontalTimelineStack';
 import { appStore } from '../../store/appStore';
-import { HIDE_PANEL, SWITCH_DATE, SWITCH_DIMENSION, ADD_TIMELINE } from '../../store/actionTypes';
+import {
+  HIDE_PANEL,
+  SWITCH_DATE,
+  SWITCH_DIMENSION,
+  ADD_TIMELINE,
+  ADD_ENTRY,
+} from '../../store/actionTypes';
 import { getActivityDisplayName } from '../../utils/activities';
 
 // #151 / ADR 0005: one details panel in every layout, routed to the
@@ -128,6 +134,129 @@ describe.each([
       appStore.dispatch({ type: SWITCH_DATE, payload: '2026-07-02' });
 
       expect(actions(0).hasUnsavedEdits()).toBe(false);
+    });
+  });
+
+  // #243: Delete asks first, then deletes only that Entry and puts focus on the
+  // empty slot where it was, however the panel was opened
+  describe('deleting an Entry', () => {
+    const entries = [
+      { id: 0, startOffsetMins: 60, endOffsetMins: 90, activity: 'sleeping' },
+      { id: 1, startOffsetMins: 120, endOffsetMins: 150, activity: 'resting' },
+    ];
+
+    beforeEach(() => {
+      HTMLElement.prototype.showPopover = vi.fn(); // jsdom has no Popover API
+      stack.remove();
+      appStore.dispatch({ type: SWITCH_DATE, payload: '2026-07-03' });
+      DIMENSIONS.forEach((__, dimensionIndex) =>
+        appStore.dispatch({
+          type: ADD_TIMELINE,
+          payload: { dimensionIndex, date: '2026-07-03' },
+        })
+      );
+      entries.forEach((entry) =>
+        appStore.dispatch({
+          type: ADD_ENTRY,
+          payload: { dimensionIndex: 0, date: '2026-07-03', ...entry },
+        })
+      );
+      stack = document.createElement(stackTag);
+      document.body.appendChild(stack);
+    });
+
+    afterEach(() => {
+      delete HTMLElement.prototype.showPopover;
+    });
+
+    const stored = () => appStore.getState().diaries['2026-07-03'].timelines[0];
+    const openByMouse = (id) =>
+      timelines()[0].onTimelineClick({ target: { dataset: { id: String(id) } } });
+    const openByKeyboard = (id) => {
+      const block = timelines()[0].querySelector(`[data-part="events"] rect[data-id="${id}"]`);
+      block.focus();
+      block.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })
+      );
+    };
+    const del = () => panel().querySelector('.btn-delete-btn');
+    const confirm = () => panel().querySelector('.btn-confirm-delete-btn');
+    const keep = () => panel().querySelector('.btn-keep-btn');
+
+    it('does not delete when Delete is pressed, only asks', () => {
+      openByMouse(0);
+      const before = stored();
+
+      del().click();
+
+      expect(stored()).toBe(before);
+      expect(panel().querySelector('.delete-confirm').hasAttribute('hidden')).toBe(false);
+    });
+
+    it('deletes only that Entry, in one change, when confirmed', () => {
+      openByMouse(0);
+      del().click();
+      const listener = vi.fn();
+      appStore.subscribe(listener);
+      const dispatch = vi.spyOn(appStore, 'dispatch');
+
+      confirm().click();
+
+      expect(stored().map((entry) => entry.id)).toEqual([1]);
+      expect(dispatch.mock.calls.filter(([action]) => action.type === 'DELETE_ENTRY')).toHaveLength(
+        1
+      );
+    });
+
+    it.each([
+      ['a mouse-opened panel', openByMouse],
+      ['a keyboard-opened panel', openByKeyboard],
+    ])('puts focus on the empty slot where it was, for %s', async (_, open) => {
+      open(0);
+      del().click();
+
+      confirm().click();
+      await Promise.resolve();
+
+      expect(stored().map((entry) => entry.id)).toEqual([1]);
+      expect(document.activeElement).toBe(timelines()[0].querySelector('[data-part="slot"]'));
+      expect(document.activeElement.getAttribute('aria-label')).toBe(
+        `Add entry at 05:00, ${DIMENSIONS[0].name}`
+      );
+    });
+
+    it('leaves the Entry, the panel and focus on Delete when Keep it is pressed', () => {
+      openByMouse(0);
+      del().click();
+
+      keep().click();
+
+      expect(stored().map((entry) => entry.id)).toEqual([0, 1]);
+      expect(document.activeElement).toBe(del());
+      expect(appStore.getState().uipanel).toBe('details');
+    });
+
+    it('forgets the question when another Entry is opened, and asks again for that one', () => {
+      openByMouse(0);
+      del().click();
+
+      openByMouse(1);
+
+      expect(panel().querySelector('.delete-confirm').hasAttribute('hidden')).toBe(true);
+      del().click();
+      confirm().click();
+      expect(stored().map((entry) => entry.id)).toEqual([0]);
+    });
+
+    it('does not let a second press delete a different Entry', () => {
+      openByMouse(0);
+      del().click();
+      const button = confirm();
+
+      button.click();
+      button.click();
+
+      expect(stored().map((entry) => entry.id)).toEqual([1]);
     });
   });
 

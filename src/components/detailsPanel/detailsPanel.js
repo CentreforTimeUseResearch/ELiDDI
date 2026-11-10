@@ -24,6 +24,7 @@ export class DetailsPanel extends TinyBase {
   open = false;
   instanceId = ++instanceCount;
   baseline; // what the panel was opened with, to tell when something is unsaved
+  confirmingDelete = false; // Delete has been pressed and the question is showing
   saveButton;
   saveHint;
   dayBoundaryInMinutes;
@@ -78,6 +79,9 @@ export class DetailsPanel extends TinyBase {
     this.saveButton = this.querySelector('.btn-save-btn');
     this.saveHint = this.querySelector('.save-hint');
     this.deleteButton = this.querySelector('.btn-delete-btn');
+    this.deleteConfirm = this.querySelector('.delete-confirm');
+    this.confirmDeleteButton = this.querySelector('.btn-confirm-delete-btn');
+    this.keepButton = this.querySelector('.btn-keep-btn');
     this.errorDisplay = this.querySelector('.entry-error');
     this.openCloseButton = this.querySelector('[data-openCloseButton]');
   }
@@ -85,6 +89,10 @@ export class DetailsPanel extends TinyBase {
   assignEventHandlers() {
     this.saveButton.addEventListener('click', () => this.onSaveButtonClick());
     this.deleteButton.addEventListener('click', () => this.onDeleteButtonClick());
+    this.confirmDeleteButton.addEventListener('click', () => this.onConfirmDelete());
+    this.keepButton.addEventListener('click', () =>
+      this.cancelDeleteConfirmation({ returnFocus: true })
+    );
     this.openCloseButton.addEventListener('click', () => {
       if (this.open) {
         this.store.dispatch({
@@ -214,6 +222,8 @@ export class DetailsPanel extends TinyBase {
   reset() {
     this.state = {};
     this.baseline = undefined;
+    this.confirmingDelete = false;
+    this.removeAttribute('data-confirming-delete');
     this.render();
     this.getChildElementReferences();
     this.assignEventHandlers();
@@ -228,6 +238,7 @@ export class DetailsPanel extends TinyBase {
   hidePanel() {
     this.open = false;
     this.classList.remove('active');
+    this.cancelDeleteConfirmation(); // an unanswered question does not wait for the panel to come back
   }
 
   // keyboard: the way in after opening an Entry from a Timeline
@@ -246,6 +257,12 @@ export class DetailsPanel extends TinyBase {
   // for itself when it was opened by typing, but not when opened by focus)
   onKeyDown(e) {
     if (e.key !== 'Escape' || !this.open) {
+      return;
+    }
+    if (this.confirmingDelete) {
+      // Escape answers the question (Keep it); it does not also close the panel
+      e.preventDefault();
+      this.cancelDeleteConfirmation({ returnFocus: true });
       return;
     }
     if (this.listWasOpenOnEscape) {
@@ -276,6 +293,7 @@ export class DetailsPanel extends TinyBase {
   // part of the panelActions contract handed to Timeline via
   // registerPanelActions - pre-fills the panel for editing an existing entry
   openEntry(entry) {
+    this.cancelDeleteConfirmation(); // a question about the last Entry is not about this one
     this.setStartTime(entry.startOffsetMins);
     this.setEndTime(entry.endOffsetMins);
     this.setActivity(entry.activity);
@@ -408,9 +426,44 @@ export class DetailsPanel extends TinyBase {
     }
   }
 
+  // Delete does not delete: it asks, here in the panel (not a browser dialog),
+  // with the safe answer focused. Only the Entry that is open can be asked about
   onDeleteButtonClick() {
     if (this.state.id === undefined) return;
-    this.props.deleteEntry(this.state.id);
+    this.confirmingDelete = true;
+    this.deleteConfirm.removeAttribute('hidden');
+    this.setAttribute('data-confirming-delete', '');
+    this.keepButton.focus();
+  }
+
+  onConfirmDelete() {
+    if (!this.confirmingDelete || this.state.id === undefined) return;
+    const id = this.state.id;
+    // answered: a second press, or a double-click, cannot delete again
+    this.confirmingDelete = false;
+    this.props.deleteEntry(id);
+    // a successful delete resets the panel (the Timeline closes it); if the
+    // Entry was already gone it does not, and the question must not be left up
+    if (this.state.id === id) {
+      this.hideDeleteConfirmation();
+    }
+  }
+
+  // Keep it, Escape, or the panel moving on to something else. Focus goes back
+  // to Delete only when the Respondent answered (it would be taken from wherever
+  // it is going otherwise)
+  cancelDeleteConfirmation({ returnFocus = false } = {}) {
+    if (!this.confirmingDelete) return;
+    this.confirmingDelete = false;
+    this.hideDeleteConfirmation();
+    if (returnFocus) {
+      this.deleteButton.focus();
+    }
+  }
+
+  hideDeleteConfirmation() {
+    this.deleteConfirm?.setAttribute('hidden', '');
+    this.removeAttribute('data-confirming-delete');
   }
 
   showSaveButton() {
@@ -519,6 +572,11 @@ export class DetailsPanel extends TinyBase {
               <p class="save-hint" id="save-hint-${this.instanceId}" hidden></p>
               <button class="btn btn-save-btn opaque" aria-disabled="true">Save</button>
               <button class="btn btn-delete-btn hide">Delete</button>
+              <div class="delete-confirm" role="group" aria-labelledby="delete-confirm-question-${this.instanceId}" hidden>
+                <p class="delete-confirm-question" id="delete-confirm-question-${this.instanceId}">Delete this entry? This can't be undone.</p>
+                <button type="button" class="btn btn-confirm-delete-btn">Delete</button>
+                <button type="button" class="btn btn-keep-btn" aria-describedby="delete-confirm-question-${this.instanceId}">Keep it</button>
+              </div>
             </div>
             `;
   }

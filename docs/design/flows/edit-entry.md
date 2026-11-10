@@ -33,7 +33,7 @@ The Respondent changes the control on the relevant card(s) and resubmits the for
 - Each Entry block is a button-like element with an accessible name: "Eating, 12:30 to 13:00, Primary activity".
 - Selected state exposed via `aria-pressed` or `aria-current`; the panel is a labelled `region` (or `dialog` when modal on narrow screens).
 - Focus moves into the panel on open (first field), returns to the Entry block on close; after Delete, focus moves to the gap slot where the Entry was.
-- Validation messages are associated with fields (`aria-describedby`) and announced politely; Save's disabled reason is available as text, not colour alone.
+- Validation messages are associated with fields (`aria-describedby`) and announced politely. When the entry is not complete, Save is `aria-disabled` (still focusable) and a visible hint says what is missing, tied to it by `aria-describedby`; pressing it takes focus to what needs doing.
 - Escape closes the panel; Tab order: block, panel fields, Save, Cancel, Delete.
 
 ## Acceptance criteria

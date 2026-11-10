@@ -10,6 +10,10 @@ const DIMENSION_INDEX = 'dimensionindex';
 const HEADING = 'heading';
 const INSTRUCTION = 'instruction';
 
+// each panel's description elements get their own ids (aria-describedby needs
+// ids, and a page, or a test, may hold more than one panel)
+let instanceCount = 0;
+
 export class DetailsPanel extends TinyBase {
   static observedAttributes = [DIMENSION_INDEX, HEADING, INSTRUCTION];
 
@@ -18,7 +22,10 @@ export class DetailsPanel extends TinyBase {
   key;
   props;
   open = false;
+  instanceId = ++instanceCount;
+  baseline; // what the panel was opened with, to tell when something is unsaved
   saveButton;
+  saveHint;
   dayBoundaryInMinutes;
 
   timelinePickerPanel;
@@ -43,6 +50,7 @@ export class DetailsPanel extends TinyBase {
       openNewEntry: (startOffsetMins, endOffsetMins) =>
         this.openNewEntry(startOffsetMins, endOffsetMins),
       close: () => this.reset(),
+      hasUnsavedEdits: () => this.hasUnsavedEdits(),
       reportSaveConflict: (message) => this.showError(message),
       focus: () => this.focusActivity(),
     });
@@ -54,6 +62,7 @@ export class DetailsPanel extends TinyBase {
     this.registerCleanup(this.store.subscribe(this.onStoreUpdate.bind(this)));
     this.getChildElementReferences();
     this.assignEventHandlers();
+    this.updateSaveState();
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
@@ -67,6 +76,7 @@ export class DetailsPanel extends TinyBase {
     this.timelinePickerPanel = this.querySelector('el-time-picker-panel');
     this.activityPicker = this.querySelector('el-activity-picker');
     this.saveButton = this.querySelector('.btn-save-btn');
+    this.saveHint = this.querySelector('.save-hint');
     this.deleteButton = this.querySelector('.btn-delete-btn');
     this.errorDisplay = this.querySelector('.entry-error');
     this.openCloseButton = this.querySelector('[data-openCloseButton]');
@@ -102,25 +112,112 @@ export class DetailsPanel extends TinyBase {
     );
   }
 
+  // why the entry cannot be saved yet, as phrases (none when it can)
+  getIncompleteReasons() {
+    const { startOffsetMins, endOffsetMins } = this.state;
+    const reasons = [];
+    const hasActivity = Array.isArray(this.state.activity)
+      ? this.state.activity.length > 0
+      : !!this.state.activity;
+    if (typeof startOffsetMins !== 'number' || typeof endOffsetMins !== 'number') {
+      reasons.push('Choose a start and end time');
+    }
+    if (!hasActivity) {
+      reasons.push('Choose an activity');
+    }
+    if (
+      typeof startOffsetMins === 'number' &&
+      typeof endOffsetMins === 'number' &&
+      endOffsetMins - startOffsetMins < MIN_ENTRY_DURATION_MINS
+    ) {
+      reasons.push(`An entry must last at least ${MIN_ENTRY_DURATION_MINS} minutes`);
+    }
+    return reasons;
+  }
+
   updateState(newState) {
     // any field change is an attempt to fix things, so clear a stale
     // rejection message from a previous save attempt
     this.clearError();
     this.state = newState;
-    // both ways: an Entry can become incomplete again, e.g. shortened below
-    // the minimum duration (#162)
-    if (this.isEntryComplete()) {
+    this.updateSaveState();
+  }
+
+  // Save is on or off (both ways: an Entry can become incomplete again, e.g.
+  // shortened below the minimum duration (#162)), and when it is off, the
+  // reason is text beside it, tied to it
+  updateSaveState() {
+    const reasons = this.getIncompleteReasons();
+    if (reasons.length === 0) {
       this.showSaveButton();
     } else {
       this.hideSaveButton();
     }
+    if (this.saveHint) {
+      this.saveHint.textContent = reasons.join('. ');
+      this.saveHint.toggleAttribute('hidden', reasons.length === 0);
+    }
+    this.updateSaveDescription();
+  }
+
+  // Save is described by the reason it is off, and by the panel's message while
+  // that has something to say (a save conflict)
+  updateSaveDescription() {
+    if (!this.saveButton) {
+      return;
+    }
+    const described = [this.saveHint, this.errorDisplay]
+      .filter((element) => element && !element.hasAttribute('hidden'))
+      .map((element) => element.id);
+    if (described.length > 0) {
+      this.saveButton.setAttribute('aria-describedby', described.join(' '));
+    } else {
+      this.saveButton.removeAttribute('aria-describedby');
+    }
+  }
+
+  // --- unsaved edits ----------------------------------------------------
+
+  // the part of the panel's state that the Respondent can change, in a form
+  // that compares: several activities are a set (the order they were picked in
+  // does not matter), and none, an empty one and an empty list are the same
+  basisOf({ startOffsetMins, endOffsetMins, activity }) {
+    const chosen = Array.isArray(activity) ? [...activity].sort() : activity ? [activity] : [];
+    return JSON.stringify([startOffsetMins, endOffsetMins, chosen]);
+  }
+
+  // whether the panel holds something changed that has not been saved. What it
+  // was opened with is the baseline: an Entry as stored, or the start and end of
+  // a block just made. A block dragged out and given nothing else is not
+  // unsaved - nothing the Respondent chose would be lost
+  hasUnsavedEdits() {
+    return this.baseline !== undefined && this.basisOf(this.state) !== this.baseline;
+  }
+
+  // the panel's state and what it was opened with, to park while another
+  // Dimension is current -> undefined when nothing is open
+  getDraft() {
+    if (Object.keys(this.state).length === 0) {
+      return undefined;
+    }
+    return { state: { ...this.state }, baseline: this.baseline };
+  }
+
+  restoreDraft({ state, baseline }) {
+    if (typeof state.startOffsetMins === 'number') this.setStartTime(state.startOffsetMins);
+    if (typeof state.endOffsetMins === 'number') this.setEndTime(state.endOffsetMins);
+    if (state.activity !== undefined) this.setActivity(state.activity);
+    if (state.id !== undefined) this.setEntryId(state.id);
+    this.baseline = baseline;
   }
 
   reset() {
     this.state = {};
+    this.baseline = undefined;
     this.render();
     this.getChildElementReferences();
     this.assignEventHandlers();
+    this.updateSaveState();
   }
 
   showPanel() {
@@ -183,6 +280,7 @@ export class DetailsPanel extends TinyBase {
     this.setEndTime(entry.endOffsetMins);
     this.setActivity(entry.activity);
     this.setEntryId(entry.id);
+    this.baseline = this.basisOf(this.state);
   }
 
   // part of the panelActions contract handed to Timeline via
@@ -192,6 +290,7 @@ export class DetailsPanel extends TinyBase {
     this.reset();
     this.setStartTime(startOffsetMins);
     this.setEndTime(endOffsetMins);
+    this.baseline = this.basisOf(this.state);
   }
 
   setStartTime(starttime) {
@@ -285,8 +384,28 @@ export class DetailsPanel extends TinyBase {
   // make any of it async without re-checking this guarantee.
   onSaveButtonClick() {
     //create a new entry.
-    if (!this.isEntryComplete()) return;
+    if (!this.isEntryComplete()) {
+      this.focusFirstProblem();
+      return;
+    }
     this.props.saveEntry(this.state);
+  }
+
+  // Save does nothing when the entry is not complete, but pressing it takes
+  // the Respondent to what needs doing: the activity, else the time that is wrong
+  focusFirstProblem() {
+    const { startOffsetMins, endOffsetMins } = this.state;
+    const timesMissing = typeof startOffsetMins !== 'number' || typeof endOffsetMins !== 'number';
+    const hasActivity = Array.isArray(this.state.activity)
+      ? this.state.activity.length > 0
+      : !!this.state.activity;
+    if (timesMissing) {
+      this.querySelector('el-time-picker[input-id="startTime"] input')?.focus();
+    } else if (!hasActivity) {
+      this.focusActivity();
+    } else {
+      this.querySelector('el-time-picker[input-id="endTime"] input')?.focus();
+    }
   }
 
   onDeleteButtonClick() {
@@ -296,10 +415,14 @@ export class DetailsPanel extends TinyBase {
 
   showSaveButton() {
     this.saveButton.classList.remove('opaque');
+    this.saveButton.removeAttribute('aria-disabled');
   }
 
+  // aria-disabled, not disabled: a disabled button cannot be focused, so a
+  // keyboard user could never reach it to find out why
   hideSaveButton() {
     this.saveButton.classList.add('opaque');
+    this.saveButton.setAttribute('aria-disabled', 'true');
   }
 
   showDeleteButton() {
@@ -313,11 +436,13 @@ export class DetailsPanel extends TinyBase {
   showError(message) {
     this.errorDisplay.textContent = message;
     this.errorDisplay.removeAttribute('hidden');
+    this.updateSaveDescription();
   }
 
   clearError() {
     this.errorDisplay.textContent = '';
     this.errorDisplay.setAttribute('hidden', '');
+    this.updateSaveDescription();
   }
 
   onFocusCallback() {
@@ -390,8 +515,9 @@ export class DetailsPanel extends TinyBase {
                 ${this.setProps({ onFocusCallback: () => this.onFocusCallback(), onSetActivityOnSelectedEntry: (activity) => this.onSetActivityOnSelectedEntry(activity), onSetActivitiesOnSelectedEntry: (activities) => this.onSetActivitiesOnSelectedEntry(activities) })}
               ></el-activity-picker>
               <el-time-picker-panel ${this.setProps({ onTimeSet: (setTimeProps) => this.onSetOffsetMins(setTimeProps), getContinueToTarget: (startTimeInMinutes) => this.getContinueToTarget(startTimeInMinutes) })} day-boundary="${this.dayBoundaryInMinutes}"></el-time-picker-panel>
-              <div class="entry-error" aria-live="polite" hidden></div>
-              <button class="btn btn-save-btn opaque">Save</button>
+              <div class="entry-error" id="entry-error-${this.instanceId}" aria-live="polite" hidden></div>
+              <p class="save-hint" id="save-hint-${this.instanceId}" hidden></p>
+              <button class="btn btn-save-btn opaque" aria-disabled="true">Save</button>
               <button class="btn btn-delete-btn hide">Delete</button>
             </div>
             `;

@@ -52,7 +52,6 @@ export class TimePickerPanel extends TinyBase {
 
   connectedCallback() {
     super.connectedCallback();
-    // this.store.subscribe(()=>this.onStateUpdate()));
     this.assignEventHandlers();
   }
 

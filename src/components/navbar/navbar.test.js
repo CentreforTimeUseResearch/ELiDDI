@@ -404,6 +404,119 @@ describe('Navbar', () => {
     });
   });
 
+  // #231: what is said, and where focus is, when the day changes
+  describe('announcing the day', () => {
+    const TODAY = '2026-11-09'; // a Monday
+    const YESTERDAY = '2026-11-08';
+    const TOTAL = GLOBALS.DATA.timeline.length;
+
+    beforeEach(() => {
+      document.body.innerHTML = '';
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date(2026, 10, 9, 12, 0));
+      appStore.dispatch({ type: HIDE_PANEL });
+      appStore.dispatch({ type: SWITCH_DATE, payload: TODAY });
+      [YESTERDAY, TODAY].forEach((date) =>
+        appStore.dispatch({ type: CLEAR_DIARY, payload: { date } })
+      );
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+      vi.restoreAllMocks();
+    });
+
+    const mount = () => {
+      const el = document.createElement('el-nav-bar');
+      document.body.appendChild(el);
+      return el;
+    };
+    const said = () =>
+      (document.querySelector('.announcer')?.textContent ?? '').replace(/\u00a0/g, '');
+    const addEntry = (date, dimensionIndex) => {
+      appStore.dispatch({ type: ADD_TIMELINE, payload: { dimensionIndex, date } });
+      appStore.dispatch({
+        type: ADD_ENTRY,
+        payload: {
+          dimensionIndex,
+          date,
+          id: 0,
+          startOffsetMins: 0,
+          endOffsetMins: 30,
+          activity: 'sleeping',
+        },
+      });
+    };
+
+    it('says nothing when it is first shown', () => {
+      mount();
+
+      expect(said()).toBe('');
+    });
+
+    it('says which day is showing, and how many of the timelines have something in them', () => {
+      const el = mount();
+
+      el.querySelector('.previous-day-button').click();
+
+      expect(said()).toBe(`Showing Sunday 8 November, 0 of ${TOTAL} timelines started`);
+    });
+
+    it('counts a timeline once it has an Entry', () => {
+      addEntry(YESTERDAY, 0);
+      addEntry(YESTERDAY, 2);
+      const el = mount();
+
+      el.querySelector('.previous-day-button').click();
+
+      expect(said()).toBe(`Showing Sunday 8 November, 2 of ${TOTAL} timelines started`);
+    });
+
+    it('says a submitted day is complete, instead of counting', () => {
+      appStore.dispatch({ type: ADD_TIMELINE, payload: { dimensionIndex: 0, date: YESTERDAY } });
+      appStore.dispatch({ type: SET_COMPLETE, payload: { date: YESTERDAY } });
+      const el = mount();
+
+      el.querySelector('.previous-day-button').click();
+
+      expect(said()).toBe('Showing Sunday 8 November, diary complete');
+    });
+
+    it('says it however the day changes: the buttons, the date picker, or anything else', () => {
+      const el = mount();
+
+      el.querySelector('.previous-day-button').click();
+      expect(said()).toContain('Sunday 8 November');
+      el.querySelector('.today-button').click();
+      expect(said()).toContain('Monday 9 November');
+      appStore.dispatch({ type: SWITCH_DATE, payload: '2026-11-03' });
+      expect(said()).toContain('Tuesday 3 November');
+    });
+
+    it('says nothing when something other than the day changes', () => {
+      const el = mount();
+      el.querySelector('.previous-day-button').click();
+      const before = document.querySelector('.announcer').textContent;
+
+      addEntry(YESTERDAY, 1);
+      appStore.dispatch({ type: SHOW_PANEL, payload: 'details' });
+      appStore.dispatch({ type: SWITCH_DIMENSION, payload: 3 });
+
+      expect(document.querySelector('.announcer').textContent).toBe(before);
+    });
+
+    it('leaves focus on the button that was pressed, so it can be pressed again', () => {
+      const el = mount();
+
+      for (const selector of ['.previous-day-button', '.next-day-button', '.today-button']) {
+        const button = el.querySelector(selector);
+        button.focus();
+        button.click();
+        expect(document.activeElement).toBe(button);
+      }
+    });
+  });
+
   // #115
   const MENU_LABELS = ['Instructions', 'Reset (clears this day)', 'View stats', 'About this study'];
   const labelsIn = (el, listSelector) =>

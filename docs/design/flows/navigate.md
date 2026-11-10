@@ -32,10 +32,10 @@ The page is a single form for one day. Chunk anchors (8 blocks of 3 hours) and p
 ## Accessibility
 
 - Day controls are real buttons with names ("Previous day, Saturday 7 November"); disabled states have a text reason.
-- Changing day moves focus to the day heading and announces "Showing Sunday 8 November, 3 of 6 timelines started" through a live region.
+- Changing day announces "Showing Sunday 8 November, 3 of 6 timelines started" (or "..., diary complete") through a polite live region, however the day was changed. **Focus is not moved** by the day buttons: it stays on the one pressed, so Previous or Next can be pressed again without finding them each time. (An earlier version of this flow moved focus to a day heading; with repeated stepping that ejects the keyboard user from the control on every press.) After the date dialog, focus returns to the date button.
 - The date dialog is a native `<dialog>` with Escape to close and focus return to the date button.
-- Dimension tabs use `role="tablist"` / `tab` with arrow-key movement; the active tab has `aria-selected`.
-- Zoom buttons announce the new level.
+- Desktop: the Dimension row labels are a vertical `role="tablist"` named "Dimensions"; the current Dimension's `tab` is `aria-selected` and the one Tab stop; Down/Up move and select (wrapping), Home/End go to the ends. Narrow screens: the Dimension picker is a native `<select>` named "Dimension", which already exposes its role and value and the arrow keys; it keeps keyboard focus as the Dimension changes (a tab list would not fit six names on a phone).
+- Zoom buttons announce the new level ("Zoom 125%"; at the limits, "the closest view" / "the whole day is showing"), and hand focus to the other button when the one pressed disables itself at a limit.
 
 ## Acceptance criteria
 
@@ -45,5 +45,5 @@ The page is a single form for one day. Chunk anchors (8 blocks of 3 hours) and p
 - [ ] Unsaved edits are never lost silently by navigating.
 - [ ] Dimension switching works by swipe, picker and keyboard on narrow screens, and by row label on desktop.
 - [ ] Zoom keeps the visible centre of the axis.
-- [ ] Focus and announcements follow every navigation change.
+- [ ] Every day change is announced; focus stays on the button used, and returns to the date button after the date dialog.
 - [ ] Without JavaScript, chunk anchors and skip links move through the whole day.

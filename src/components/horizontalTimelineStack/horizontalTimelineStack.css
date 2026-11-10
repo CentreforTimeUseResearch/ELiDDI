@@ -69,7 +69,7 @@ el-horizontal-timeline-stack {
     overflow-wrap: anywhere;
     cursor: pointer;
 
-    &[aria-current='true'] {
+    &[aria-selected='true'] {
       font-weight: 600;
       color: var(--color-primary);
     }
@@ -116,4 +116,10 @@ el-horizontal-timeline-stack {
       overflow-y: auto;
     }
   }
+}
+
+/* the Dimensions tab list has no box of its own: each tab is still placed in
+   its own grid row, beside its Timeline */
+.dimension-tabs {
+  display: contents;
 }

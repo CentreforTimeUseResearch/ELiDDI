@@ -52,17 +52,19 @@ describe('HorizontalTimelineStack', () => {
   it('mounts one axis, a label and a row per Dimension, and one shared details panel, in order', () => {
     const el = createStack();
 
-    expect(el.children.length).toBe(DIMENSION_COUNT * 2 + 2); // axis + 6 label/row pairs + panel
+    expect(el.children.length).toBe(DIMENSION_COUNT + 3); // axis + the tablist of labels + 6 rows + panel
     expect(el.children[0].tagName.toLowerCase()).toBe('el-horizontal-timeline-axis');
+    const tablist = el.children[1];
+    expect(tablist.getAttribute('role')).toBe('tablist');
     for (let i = 0; i < DIMENSION_COUNT; i++) {
-      const label = el.children[i * 2 + 1];
-      const row = el.children[i * 2 + 2];
+      const label = tablist.children[i];
+      const row = el.children[i + 2];
       expect(label.tagName).toBe('BUTTON');
       expect(label.dataset.dimensionIndex).toBe(String(i));
       expect(row.tagName.toLowerCase()).toBe('el-horizontal-timeline');
       expect(row.getAttribute('index')).toBe(String(i));
     }
-    expect(el.children[DIMENSION_COUNT * 2 + 1].tagName.toLowerCase()).toBe('el-details-panel');
+    expect(el.children[DIMENSION_COUNT + 2].tagName.toLowerCase()).toBe('el-details-panel');
   });
 
   describe('Dimension labels', () => {
@@ -106,7 +108,7 @@ describe('HorizontalTimelineStack', () => {
       const el = createStack();
       const current = () =>
         [...el.querySelectorAll('.dimension-label')]
-          .filter((label) => label.getAttribute('aria-current') === 'true')
+          .filter((label) => label.getAttribute('aria-selected') === 'true')
           .map((label) => label.dataset.dimensionIndex);
 
       expect(current()).toEqual(['1']);
@@ -114,6 +116,151 @@ describe('HorizontalTimelineStack', () => {
       appStore.dispatch({ type: SWITCH_DIMENSION, payload: 4 });
 
       expect(current()).toEqual(['4']);
+    });
+  });
+
+  // #231: the labels are the tabs of a vertical tab list, with arrow keys
+  describe('Dimension tabs', () => {
+    const tabs = (el) => [...el.querySelectorAll('.dimension-label')];
+    const key = (target, name, init = {}) => {
+      const event = new KeyboardEvent('keydown', {
+        key: name,
+        bubbles: true,
+        cancelable: true,
+        ...init,
+      });
+      target.dispatchEvent(event);
+      return event;
+    };
+
+    beforeEach(() => {
+      appStore.dispatch({ type: SWITCH_DIMENSION, payload: 0 });
+    });
+
+    it('are the tabs of a tab list named "Dimensions", running down the page', () => {
+      const el = createStack();
+
+      const tablist = el.querySelector('[role="tablist"]');
+      expect(tablist.getAttribute('aria-label')).toBe('Dimensions');
+      expect(tablist.getAttribute('aria-orientation')).toBe('vertical');
+      expect(tabs(el)).toHaveLength(DIMENSION_COUNT);
+      tabs(el).forEach((tab) => {
+        expect(tab.getAttribute('role')).toBe('tab');
+        expect(tablist.contains(tab)).toBe(true);
+      });
+    });
+
+    it('has the current Dimension selected, and only that one', () => {
+      appStore.dispatch({ type: SWITCH_DIMENSION, payload: 2 });
+      const el = createStack();
+
+      expect(tabs(el).map((tab) => tab.getAttribute('aria-selected'))).toEqual(
+        tabs(el).map((_, i) => (i === 2 ? 'true' : 'false'))
+      );
+    });
+
+    it('no longer uses aria-current, which aria-selected says better', () => {
+      const el = createStack();
+
+      expect(el.querySelector('[aria-current]')).toBeNull();
+    });
+
+    it('has one Tab stop: the selected tab', () => {
+      appStore.dispatch({ type: SWITCH_DIMENSION, payload: 3 });
+      const el = createStack();
+
+      expect(tabs(el).map((tab) => tab.tabIndex)).toEqual(
+        tabs(el).map((_, i) => (i === 3 ? 0 : -1))
+      );
+    });
+
+    it('moves the Tab stop with the selection, however it changes', () => {
+      const el = createStack();
+
+      appStore.dispatch({ type: SWITCH_DIMENSION, payload: 4 });
+
+      expect(tabs(el).filter((tab) => tab.tabIndex === 0)).toEqual([tabs(el)[4]]);
+    });
+
+    it('selects and focuses the next tab with the Down arrow, and the previous with Up', () => {
+      const el = createStack();
+      tabs(el)[0].focus();
+
+      const down = key(tabs(el)[0], 'ArrowDown');
+
+      expect(down.defaultPrevented).toBe(true);
+      expect(appStore.getState().currentDimensionIndex).toBe(1);
+      expect(document.activeElement).toBe(tabs(el)[1]);
+      expect(tabs(el)[1].getAttribute('aria-selected')).toBe('true');
+
+      key(tabs(el)[1], 'ArrowUp');
+      expect(appStore.getState().currentDimensionIndex).toBe(0);
+      expect(document.activeElement).toBe(tabs(el)[0]);
+    });
+
+    it('wraps from the last tab to the first, and back', () => {
+      appStore.dispatch({ type: SWITCH_DIMENSION, payload: DIMENSION_COUNT - 1 });
+      const el = createStack();
+      tabs(el)[DIMENSION_COUNT - 1].focus();
+
+      key(tabs(el)[DIMENSION_COUNT - 1], 'ArrowDown');
+      expect(appStore.getState().currentDimensionIndex).toBe(0);
+
+      key(tabs(el)[0], 'ArrowUp');
+      expect(appStore.getState().currentDimensionIndex).toBe(DIMENSION_COUNT - 1);
+    });
+
+    it('goes to the first and last tab with Home and End', () => {
+      appStore.dispatch({ type: SWITCH_DIMENSION, payload: 2 });
+      const el = createStack();
+      tabs(el)[2].focus();
+
+      key(tabs(el)[2], 'End');
+      expect(appStore.getState().currentDimensionIndex).toBe(DIMENSION_COUNT - 1);
+      expect(document.activeElement).toBe(tabs(el)[DIMENSION_COUNT - 1]);
+
+      key(tabs(el)[DIMENSION_COUNT - 1], 'Home');
+      expect(appStore.getState().currentDimensionIndex).toBe(0);
+    });
+
+    it('hides the details panel when it changes Dimension, as a click does', () => {
+      const el = createStack();
+      appStore.dispatch({ type: SHOW_PANEL, payload: 'details' });
+
+      key(tabs(el)[0], 'ArrowDown');
+
+      expect(appStore.getState().uipanel).not.toBe('details');
+    });
+
+    it('leaves other keys, and modified arrows, alone', () => {
+      const el = createStack();
+      tabs(el)[0].focus();
+
+      const others = [
+        key(tabs(el)[0], 'a'),
+        key(tabs(el)[0], 'ArrowRight'),
+        key(tabs(el)[0], 'ArrowDown', { ctrlKey: true }),
+        key(tabs(el)[0], 'ArrowDown', { altKey: true }),
+        key(tabs(el)[0], 'ArrowDown', { shiftKey: true }),
+      ];
+
+      expect(others.map((event) => event.defaultPrevented)).toEqual([
+        false,
+        false,
+        false,
+        false,
+        false,
+      ]);
+      expect(appStore.getState().currentDimensionIndex).toBe(0);
+    });
+
+    it('still selects a tab on a click', () => {
+      const el = createStack();
+
+      tabs(el)[3].click();
+
+      expect(appStore.getState().currentDimensionIndex).toBe(3);
+      expect(tabs(el)[3].getAttribute('aria-selected')).toBe('true');
     });
   });
 

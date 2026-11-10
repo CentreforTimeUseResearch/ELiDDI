@@ -10,6 +10,7 @@ import {
   addDaysToDateKey,
   getCurrentDiaryDateKey,
 } from '../../utils/time';
+import { announce, ensureAnnouncer } from '../../utils/announce';
 import { getAccounts } from '../../auth/authClient';
 import { requestLogout } from '../../sync/appSync';
 import './navbar.css';
@@ -47,6 +48,19 @@ export function getDayStatus(diary) {
 // ids, and a page - or a test - may hold more than one Navbar)
 let instanceCount = 0;
 
+// what is said when the day changes: which day, and how far on it is
+export function getDayAnnouncement(dateKey, diary) {
+  const day = formatDateKeyAsLongDate(dateKey);
+  if (diary?.status === DIARY_STATUS.COMPLETE) {
+    return `Showing ${day}, diary complete`;
+  }
+  const total = GLOBALS.DATA.timeline.length;
+  const started = (diary?.timelines ?? []).filter(
+    (timeline) => Array.isArray(timeline) && timeline.length > 0
+  ).length;
+  return `Showing ${day}, ${started} of ${total} timelines started`;
+}
+
 export class Navbar extends TinyBase {
   ready = false;
   instanceId = ++instanceCount;
@@ -55,8 +69,10 @@ export class Navbar extends TinyBase {
 
   connectedCallback() {
     super.connectedCallback();
+    ensureAnnouncer(); // before its first message, so a screen reader is already listening
     this.assignEventHandlers();
     this.dateIndicator = this.querySelector('.date-indicator');
+    this.shownDate = this.store.getState().currentDate; // not announced: it is only being shown
     this.registerCleanup(this.store.subscribe(() => this.updateDateIndicator()));
     this.updateDateIndicator();
   }
@@ -71,6 +87,13 @@ export class Navbar extends TinyBase {
       `<span class="date-label">Selected day: </span>${formatDateKeyAsDDMMYYYY(currentDate)} <u>change</u>`;
     this.querySelector('.day-status').textContent = getDayStatus(diaries[currentDate]);
     this.updateDayButtons(currentDate, getCurrentDiaryDateKey());
+    // however the day changed (a button, the date picker, anything else) it is
+    // said, as focus stays where it was: the buttons stay in reach to be
+    // pressed again, and the picker's dialog returns focus to the date button
+    if (this.shownDate !== currentDate) {
+      this.shownDate = currentDate;
+      announce(getDayAnnouncement(currentDate, diaries[currentDate]));
+    }
   }
 
   // the day Previous goes to: one back, but never to a day that has not begun

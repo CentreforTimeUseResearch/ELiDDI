@@ -9,9 +9,8 @@ import { SET_HORIZONTAL_ZOOM } from '../../store/actionTypes';
 import { announce, ensureAnnouncer } from '../../utils/announce';
 import { NATIVE_ZOOM, MAX_ZOOM, ZOOM_STEP, getEffectivePxPerMinute } from './zoomConstants';
 import { renderGridLines } from './gridLines';
+import { onHalfMinuteTick } from '../../utils/nowTicker';
 import './horizontalTimelineAxis.css';
-
-const FUTURE_OVERLAY_REFRESH_MS = 30000; // matches Timeline.updateFutureOverlay's interval
 const AXIS_HEIGHT = 40; // matches #svg-horizontal-timeline-axis's viewBox height in index.html
 const GRID_TICK_TOP = 28;
 const HOUR_LABEL_Y = 14;
@@ -53,11 +52,7 @@ export class HorizontalTimelineAxis extends TinyBase {
     this.renderAxis();
     this.updateFutureOverlay();
     this.updateButtonDisabledState();
-    const futureOverlayIntervalId = setInterval(
-      this.updateFutureOverlay.bind(this),
-      FUTURE_OVERLAY_REFRESH_MS
-    );
-    this.registerCleanup(() => clearInterval(futureOverlayIntervalId));
+    this.registerCleanup(onHalfMinuteTick(() => this.updateFutureOverlay()));
   }
 
   getChildElementReferences() {

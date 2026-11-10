@@ -32,7 +32,12 @@ Along the time axis (Up/Down on vertical Timelines, Left/Right on horizontal; th
 | `,` / `.`          | Previous / next day               | same                         |                                  |
 | `t`                | Today                             | same                         |                                  |
 
-No key is single-character-only without a modifier unless it can be turned off or remapped (WCAG 2.1.4); the letter and punctuation shortcuts above apply only while a Timeline has focus.
+No key is single-character-only without a modifier unless it can be turned off or remapped (WCAG 2.1.4); the letter and punctuation shortcuts above apply only while a Timeline has focus (its slots and Entries): never in a text field, the activity list or the details panel, and not while an Entry is grabbed.
+
+- `[` / `]` go from the Timeline that has focus (wrapping round), close the details panel as choosing a Dimension does, and move focus to the new Dimension's Timeline.
+- `,` / `.` / `t` do exactly what Previous day, Next day and Today do (including never reaching a day that has not begun, and following the 04:00 boundary), and leave focus on the Timeline, at the same time of day.
+- They are not available with Ctrl, Alt or Meta held, and not as Shift+`t`. On a keyboard layout where `[` or `]` needs AltGr, they are not available either; the buttons and the Dimension tabs always are.
+- All of them, and the rest of the keyboard help, are listed in the nav menu's "Keyboard shortcuts" dialog.
 
 ## Baseline behaviour without JavaScript
 

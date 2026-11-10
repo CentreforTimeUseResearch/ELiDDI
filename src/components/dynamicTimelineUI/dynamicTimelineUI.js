@@ -5,6 +5,7 @@ import '../timelineStack/timelineStack';
 import '../horizontalTimelineStack/horizontalTimelineStack';
 import '../onboarding/onboarding';
 import '../datePicker/datePicker';
+import '../keyboardHelp/keyboardHelp';
 import '../validationPanel/validationPanel';
 import '../login/login';
 import '../syncNotice/syncNotice';
@@ -27,6 +28,7 @@ export class DynamicTimelineUI extends TinyBase {
   store = super.getStore();
   onboardingDialogActions;
   dateDialogActions;
+  shortcutsDialogActions;
   resetDialogActions;
   loginDialogActions;
   accounts = getAccounts(globalThis.GLOBALS?.DATA);
@@ -87,6 +89,12 @@ export class DynamicTimelineUI extends TinyBase {
       this.dateDialogActions.open();
     } else {
       this.dateDialogActions.close();
+    }
+
+    if (uipanel === 'shortcuts') {
+      this.shortcutsDialogActions.open();
+    } else {
+      this.shortcutsDialogActions.close();
     }
 
     if (uipanel === 'reset') {
@@ -163,6 +171,13 @@ export class DynamicTimelineUI extends TinyBase {
                 this.dateDialogActions = actions;
               },
               content: '<el-date-picker></el-date-picker>',
+              onRequestClose: () => this.store.dispatch({ type: HIDE_PANEL }),
+            })}></el-dialog>
+            <el-dialog id="shortcuts-dialog" ${this.setProps({
+              registerDialogActions: (actions) => {
+                this.shortcutsDialogActions = actions;
+              },
+              content: '<el-keyboard-help></el-keyboard-help>',
               onRequestClose: () => this.store.dispatch({ type: HIDE_PANEL }),
             })}></el-dialog>
             ${this.renderLoginDialog()}

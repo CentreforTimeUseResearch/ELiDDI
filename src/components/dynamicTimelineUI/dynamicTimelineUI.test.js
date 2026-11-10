@@ -36,6 +36,7 @@ describe('DynamicTimelineUI', () => {
     expect(el.innerHTML).toContain('id="stack-container"');
     expect(el.innerHTML).toContain('id="dialog"');
     expect(el.innerHTML).toContain('id="date-dialog"');
+    expect(el.innerHTML).toContain('id="shortcuts-dialog"');
     expect(el.stackContainer).not.toBeNull();
   });
 
@@ -113,6 +114,7 @@ describe('DynamicTimelineUI', () => {
       el.onboardingDialogActions = { open: vi.fn(), close: vi.fn() };
       el.dateDialogActions = { open: vi.fn(), close: vi.fn() };
       el.resetDialogActions = { open: vi.fn(), close: vi.fn() };
+      el.shortcutsDialogActions = { open: vi.fn(), close: vi.fn() };
       el.stackContainer = document.createElement('div');
       return el;
     }
@@ -157,6 +159,19 @@ describe('DynamicTimelineUI', () => {
       appStore.dispatch({ type: HIDE_PANEL });
       el.onStoreUpdate();
       expect(el.resetDialogActions.close).toHaveBeenCalledOnce();
+    });
+
+    it('opens the keyboard shortcuts dialog when uipanel is "shortcuts", and closes it otherwise', () => {
+      const el = createUnmounted();
+
+      appStore.dispatch({ type: SHOW_PANEL, payload: 'shortcuts' });
+      el.onStoreUpdate();
+      expect(el.shortcutsDialogActions.open).toHaveBeenCalledOnce();
+      expect(el.shortcutsDialogActions.close).not.toHaveBeenCalled();
+
+      appStore.dispatch({ type: HIDE_PANEL });
+      el.onStoreUpdate();
+      expect(el.shortcutsDialogActions.close).toHaveBeenCalledOnce();
     });
 
     it('closes the date dialog when uipanel is anything else', () => {
@@ -225,6 +240,7 @@ describe('DynamicTimelineUI', () => {
       el.onboardingDialogActions = { open: vi.fn(), close: vi.fn() };
       el.dateDialogActions = { open: vi.fn(), close: vi.fn() };
       el.resetDialogActions = { open: vi.fn(), close: vi.fn() };
+      el.shortcutsDialogActions = { open: vi.fn(), close: vi.fn() };
       el.loginDialogActions = { open: vi.fn(), close: vi.fn() };
       el.stackContainer = document.createElement('div');
       return el;

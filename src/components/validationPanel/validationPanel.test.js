@@ -64,6 +64,35 @@ describe('ValidationPanel', () => {
     vi.restoreAllMocks();
   });
 
+  describe('after a DOM move (disconnect and reconnect)', () => {
+    // renderOnce keeps the markup across a move, so listeners bound on
+    // connect would stack - one click, two submits (#251)
+    it('does not stack listeners: one click still means one action', () => {
+      const newHome = document.createElement('div');
+      document.body.appendChild(newHome);
+      newHome.appendChild(panelEl); // disconnects and reconnects the same instance
+
+      const complete = vi.spyOn(panelEl, 'onCompleteClick').mockImplementation(() => {});
+      panelEl.querySelector('.validation-complete').click();
+      expect(complete).toHaveBeenCalledTimes(1);
+
+      const close = vi.spyOn(panelEl, 'requestClose').mockImplementation(() => {});
+      panelEl.querySelector('.validation-header [data-close]').click();
+      expect(close).toHaveBeenCalledTimes(1);
+    });
+
+    it('still works at all after a move: the close button closes the open panel', () => {
+      const newHome = document.createElement('div');
+      document.body.appendChild(newHome);
+      newHome.appendChild(panelEl);
+
+      open();
+      expect(isOpen()).toBe(true);
+      panelEl.querySelector('.validation-header [data-close]').click();
+      expect(isOpen()).toBe(false);
+    });
+  });
+
   describe('opening and closing', () => {
     it('is closed to begin with, and out of the tab order', () => {
       expect(isOpen()).toBe(false);

@@ -1,8 +1,7 @@
 import { formatOffsetAsClockTime } from '../../utils/time';
 import { SVGNS } from './timelineConstants';
-import { computeMove } from './moveSpan';
-import { computeResize } from './resizeSpan';
-import { getNowLimitOffsetMins } from './createSpan';
+import { LongPressRecognizer } from './longPressRecognizer';
+import { DragSession } from './dragSession';
 
 // Phase 10.6: which SVG attributes carry "position along the timeline axis"
 // vs "fixed cross-axis center" - everything else in this controller already
@@ -40,26 +39,28 @@ export const X_AXIS = {
   nextKey: 'ArrowRight',
 };
 
-const LONG_PRESS_MS = 500;
-const LONG_PRESS_CANCEL_DISTANCE_PX = 10; // pointer movement past this before the timer fires reads as a scroll/mis-tap, not a long-press
 const LIMIT_FLASH_MS = 300;
 
 // Owns the long-press -> reveal handles -> drag -> live-resize -> commit/cancel
 // pipeline for a Timeline's entries, and the drag of a whole Entry by its body
-// (a move: an edge drag with `edge: 'body'`, see startMoveDrag). Pulled out of Timeline because this
-// pipeline runs almost entirely on its own state (activeDrag,
-// activeHandleEntryId, the pending long-press) and only needs to reach back
-// into its host Timeline at the one point a resize becomes a real store
+// (a move: an edge drag with `edge: 'body'`). Pulled out of Timeline because
+// this pipeline runs almost entirely on its own state and only needs to reach
+// back into its host Timeline at the one point a resize becomes a real store
 // update - see onCommitResize.
+//
+// The pipeline's two state machines live beside it, each in its own file:
+//   - LongPressRecognizer: a press becomes a long-press (reveal handles) or
+//     the start of a move - pointers, distance and time, nothing else
+//   - DragSession: one drag from start to commit/cancel - its state, pointer
+//     capture and the span computation on every tick
+// What stays here is everything they report into: the SVG work (handles,
+// readouts, live feedback, the limit flash), the store commit, and the
+// click suppression that keeps a drag's trailing click from opening the panel.
 export class EntryResizeController {
   activeHandleEntryId;
-  activeDrag; // { entryId, edge, pointerId, currentStart, currentEnd, neighbours, captureElement, wasAtLimit, atLimit } while a handle is being dragged
-  longPressTimer;
-  longPressCandidate; // { entryId, pointerId, startX, startY } while a press is pending
   suppressNextClick = false; // set when a long-press fires, so the click it also triggers doesn't open the panel
   limitFlashTimer;
   suppressClickResetTimer;
-  moveArmed; // { entryId, pointerId, startX, startY } once a long-press has fired and its pointer is still down: moving it now moves the Entry
   ignoredPointerId; // a move cancelled with Escape: its pointer is ignored until it is released
 
   constructor({
@@ -81,15 +82,34 @@ export class EntryResizeController {
     this.entriesLayer = entriesLayer;
     this.handlesLayer = handlesLayer;
     this.getEntries = getEntries;
-    this.isSingleChoiceDimension = isSingleChoiceDimension;
-    this.getCurrentDate = getCurrentDate;
     this.isPanelOpen = isPanelOpen;
     this.clientToSvgCoord = clientToSvgCoord;
-    this.calculateTheTimeSlotClicked = calculateTheTimeSlotClicked;
     this.onCommitResize = onCommitResize;
     this.axis = axis;
     this.getPxPerMinute = getPxPerMinute;
     this.crossAxisCenter = crossAxisCenter;
+    this.recognizer = new LongPressRecognizer({
+      onFired: (candidate) => this.onLongPressFired(candidate),
+      onMoveStart: (e, source) => this.onMoveStart(e, source),
+    });
+    this.session = new DragSession({
+      svg,
+      getEntries,
+      isSingleChoiceDimension,
+      getCurrentDate,
+      clientToSvgCoord,
+      calculateTheTimeSlotClicked,
+      onFeedback: (drag) => this.renderDragFeedback(drag),
+      onLimit: (drag) => this.flashLimitCue(drag.entryId),
+      onCommit: (drag, neighbourChanges) => this.onDragCommit(drag, neighbourChanges),
+      onCancelled: (drag) => this.cancelDragVisuals(drag),
+    });
+  }
+
+  // the live drag's state, if any - also what the host (and the tests)
+  // observe through BaseTimeline's activeDrag getter
+  get activeDrag() {
+    return this.session.drag;
   }
 
   // long-press detection - a press held on an entry (never on the read-only
@@ -116,59 +136,24 @@ export class EntryResizeController {
       // ever being in flight at the same time
       return;
     }
-    this.longPressCandidate = {
-      entryId: Number(entryIdRaw),
-      pointerId: e.pointerId,
-      pointerType: e.pointerType,
-      startX: e.clientX,
-      startY: e.clientY,
-    };
-    this.longPressTimer = setTimeout(() => this.onLongPressFire(), LONG_PRESS_MS);
+    this.recognizer.begin(e, Number(entryIdRaw));
   }
 
   onEntryPointerMove(e) {
     if (e.pointerId === this.ignoredPointerId) {
       return;
     }
-    if (this.activeDrag && e.pointerId === this.activeDrag.pointerId) {
-      // touch-action:none on the handle/SVG (see startHandleDrag and
+    if (this.session.has(e.pointerId)) {
+      // touch-action:none on the handle/SVG (see DragSession.startResize and
       // timeline.css) should already stop the scrollable timeline stack
       // from panning during this drag, but SVG shape elements have a long
       // history of unreliable touch-action support on their own - this is
       // the reliable fallback, independent of that CSS support level
       e.preventDefault?.();
-      this.updateDragToSvgPosition(this.clientToSvgCoord(e.clientX, e.clientY));
+      this.session.updateTo(this.clientToSvgCoord(e.clientX, e.clientY));
       return;
     }
-    const armed = this.moveArmed;
-    if (armed && e.pointerId === armed.pointerId) {
-      // a long-press fired and the finger (or button) is still down: moving
-      // it now picks the Entry up
-      if (
-        Math.hypot(e.clientX - armed.startX, e.clientY - armed.startY) >
-        LONG_PRESS_CANCEL_DISTANCE_PX
-      ) {
-        this.startMoveDrag(e, armed);
-      }
-      return;
-    }
-    if (!this.longPressCandidate || e.pointerId !== this.longPressCandidate.pointerId) {
-      return;
-    }
-    const candidate = this.longPressCandidate;
-    const dx = e.clientX - candidate.startX;
-    const dy = e.clientY - candidate.startY;
-    if (Math.hypot(dx, dy) > LONG_PRESS_CANCEL_DISTANCE_PX) {
-      if (candidate.pointerType === 'mouse') {
-        // a mouse has no scroll to confuse this with: dragging an Entry
-        // moves it, without waiting for a long-press
-        this.startMoveDrag(e, candidate);
-        return;
-      }
-      // a touch that moved before the hold completed is a scroll/mis-tap,
-      // not a long-press
-      this.cancelPendingLongPress();
-    }
+    this.recognizer.onPointerMove(e);
   }
 
   handlePointerUp(e) {
@@ -178,14 +163,11 @@ export class EntryResizeController {
       this.suppressClicks();
       return;
     }
-    if (this.activeDrag && e.pointerId === this.activeDrag.pointerId) {
+    if (this.session.has(e.pointerId)) {
       this.commitDrag();
       return;
     }
-    if (this.moveArmed?.pointerId === e.pointerId) {
-      this.moveArmed = undefined;
-    }
-    this.cancelPendingLongPress();
+    this.recognizer.release(e);
     if (this.suppressNextClick) {
       // normally consumed by the 'click' this same press also fires
       // right after this - fallback in case that click never arrives
@@ -199,20 +181,17 @@ export class EntryResizeController {
   }
 
   handlePointerCancel(e) {
-    if (this.activeDrag && e.pointerId === this.activeDrag.pointerId) {
+    if (this.session.has(e.pointerId)) {
       this.cancelDrag();
       return;
     }
-    if (this.moveArmed?.pointerId === e.pointerId) {
-      this.moveArmed = undefined;
-    }
-    this.cancelPendingLongPress();
+    this.recognizer.release(e);
   }
 
   // belt-and-braces against the scrollable timeline stack panning during a
   // touch drag (see timelineStack.css's overflow-y: auto). touch-action:none
   // (on the handle, and for the drag's duration the whole SVG - see
-  // startHandleDrag/timeline.css) is the primary defense, but freshly-
+  // DragSession.startResize/timeline.css) is the primary defense, but freshly-
   // inserted SVG shape elements have a documented history of Chromium
   // sometimes not honouring it on the very first touch that lands on them
   // (the compositor's touch-action hit regions can be a frame stale right
@@ -228,7 +207,7 @@ export class EntryResizeController {
   handleTouchMove(e) {
     // a long-press that has armed a move must not scroll either, before the
     // finger has moved far enough to start it
-    if (this.activeDrag || this.moveArmed) {
+    if (this.session.drag || this.recognizer.moveArmed) {
       e.preventDefault();
     }
   }
@@ -237,10 +216,11 @@ export class EntryResizeController {
     if (e.key !== 'Escape') {
       return;
     }
-    if (this.activeDrag) {
-      if (this.activeDrag.edge === 'body') {
+    const drag = this.session.drag;
+    if (drag) {
+      if (drag.edge === 'body') {
         // the pointer is still down: its release must not count as a click
-        this.ignoredPointerId = this.activeDrag.pointerId;
+        this.ignoredPointerId = drag.pointerId;
       }
       this.cancelDrag();
       return;
@@ -265,11 +245,10 @@ export class EntryResizeController {
   // timer, so none fires against the detached SVG, and abandons any
   // in-progress drag without committing it
   destroy() {
-    this.cancelPendingLongPress();
+    this.recognizer.cancel();
+    this.session.abandon();
     clearTimeout(this.limitFlashTimer);
     clearTimeout(this.suppressClickResetTimer);
-    this.activeDrag = undefined;
-    this.moveArmed = undefined;
     this.ignoredPointerId = undefined;
     this.suppressNextClick = false;
   }
@@ -285,117 +264,33 @@ export class EntryResizeController {
     }, 0);
   }
 
-  cancelPendingLongPress() {
-    clearTimeout(this.longPressTimer);
-    this.longPressTimer = undefined;
-    this.longPressCandidate = undefined;
-  }
-
-  onLongPressFire() {
-    const candidate = this.longPressCandidate;
-    this.longPressTimer = undefined;
-    this.longPressCandidate = undefined;
-    if (!candidate) {
-      return;
-    }
+  // the recognizer's long-press completed -> show the handles; true tells it
+  // the press landed on a live Entry, so the still-down pointer arms a move
+  onLongPressFired(candidate) {
     const entry = this.getEntries().find((entry) => entry.id === candidate.entryId);
     if (!entry) {
-      return;
+      return false;
     }
     this.showHandles(entry);
     // the pointerup that ends this same press still fires a 'click' after
     // this - swallow that one click so it doesn't also open the panel
     this.suppressNextClick = true;
-    // and if the finger now moves without lifting, that is a move
-    this.moveArmed = { ...candidate };
+    return true;
   }
 
-  // picks an Entry up by its body: a drag whose "edge" is the whole Entry.
-  // `source` is the press that began it ({ entryId, pointerId, startX, startY })
-  startMoveDrag(e, source) {
+  // the recognizer saw a press travel far enough: pick the Entry up
+  onMoveStart(e, source) {
     const entry = this.getEntries().find((entry) => entry.id === source.entryId);
-    this.cancelPendingLongPress();
-    this.moveArmed = undefined;
     if (!entry) {
       return;
     }
-    try {
-      e.target?.setPointerCapture?.(e.pointerId);
-    } catch {
-      // pointer capture is best-effort - the delegated listeners on the SVG
-      // still track the drag correctly without it in the common case
-    }
-    this.svg?.classList.add('dragging-handle');
     if (this.activeHandleEntryId !== entry.id) {
       this.showHandles(entry);
     }
-    const grabCoord = this.clientToSvgCoord(source.startX, source.startY);
-    this.activeDrag = {
-      entryId: entry.id,
-      edge: 'body',
-      pointerId: e.pointerId,
-      // the 10-minute slot the Entry was picked up at: the move is how many
-      // slots the pointer has travelled from here
-      grabMins: this.calculateTheTimeSlotClicked(grabCoord >= 0 ? grabCoord : 0),
-      originalStart: entry.startOffsetMins,
-      originalEnd: entry.endOffsetMins,
-      currentStart: entry.startOffsetMins,
-      currentEnd: entry.endOffsetMins,
-      neighbours: [],
-      captureElement: e.target,
-      wasAtLimit: false,
-      atLimit: false,
-    };
-    this.updateDragToSvgPosition(this.clientToSvgCoord(e.clientX, e.clientY));
+    this.session.startMove(e, source, entry);
   }
 
-  updateMoveToSvgPosition(svgCoord) {
-    const drag = this.activeDrag;
-    const entry = this.getEntries().find((entry) => entry.id === drag.entryId);
-    if (!entry) {
-      return;
-    }
-    const slot = this.calculateTheTimeSlotClicked(svgCoord >= 0 ? svgCoord : 0);
-    const move = computeMove({
-      entry,
-      entries: this.getEntries(),
-      requestedStart: drag.originalStart + (slot - drag.grabMins),
-      singleChoice: this.isSingleChoiceDimension(),
-      nowLimitMins: getNowLimitOffsetMins(this.getCurrentDate()),
-    });
-    drag.currentStart = move.startOffsetMins;
-    drag.currentEnd = move.endOffsetMins;
-    drag.neighbours = move.neighbours;
-    drag.atLimit = move.atLimit;
-    this.renderDragFeedback();
-    // flash once per approach, not on every tick still pressed against the wall
-    if (move.atLimit && !drag.wasAtLimit) {
-      this.flashLimitCue();
-    }
-    drag.wasAtLimit = move.atLimit;
-  }
-
-  // the neighbours of a move whose span differs from what is stored
-  changedNeighbours(drag) {
-    return drag.neighbours
-      .filter((neighbour) => {
-        const stored = this.getEntries().find((entry) => entry.id === neighbour.id);
-        return (
-          stored &&
-          (stored.startOffsetMins !== neighbour.startOffsetMins ||
-            stored.endOffsetMins !== neighbour.endOffsetMins)
-        );
-      })
-      .map((neighbour) => ({
-        entryId: neighbour.id,
-        startOffsetMins: neighbour.startOffsetMins,
-        endOffsetMins: neighbour.endOffsetMins,
-      }));
-  }
-
-  // starts dragging a handle that's already visible (long-press already
-  // fired) - captures the pointer so drag tracking keeps working even if
-  // the pointer strays outside the handle's small hit area mid-drag
+  // a press on a handle that's already visible (long-press already fired)
   startHandleDrag(e, handleGroup) {
     const entryId = Number(handleGroup.dataset.handleEntryId);
     const edge = handleGroup.dataset.handleEdge;
@@ -403,69 +298,47 @@ export class EntryResizeController {
     if (!entry) {
       return;
     }
-    e.preventDefault?.();
-    try {
-      e.target?.setPointerCapture?.(e.pointerId);
-    } catch {
-      // pointer capture is best-effort - the delegated listeners on the SVG
-      // still track the drag correctly without it in the common case
-    }
-    // stops the scrollable timeline stack (see timelineStack.css) from
-    // panning under a touch drag - see the pointermove preventDefault() in
-    // onEntryPointerMove for why this alone isn't relied on
-    this.svg?.classList.add('dragging-handle');
-    // the rules (the neighbours, the limits) are computeResize's, and read
-    // the stored Entries each time, which do not change during the drag
-    this.activeDrag = {
-      entryId,
-      edge,
-      pointerId: e.pointerId,
-      currentStart: entry.startOffsetMins,
-      currentEnd: entry.endOffsetMins,
-      neighbours: [],
-      captureElement: e.target,
-      wasAtLimit: false,
-      atLimit: false,
-    };
+    this.session.startResize(e, entry, edge);
   }
 
-  updateDragToSvgPosition(svgCoord) {
-    if (!this.activeDrag) {
-      return;
+  // asks the host Timeline to turn this drag into a real store update -
+  // onCommitResize looks up the entry, dispatches, re-renders the entries
+  // layer, and hands back the post-dispatch entry (or undefined if it's
+  // gone) so this controller knows whether to keep showing handles
+  onDragCommit(drag, neighbourChanges) {
+    if (drag.edge === 'body') {
+      // the click that ends this press must not open the Entry
+      this.suppressClicks();
+      if (drag.currentStart === drag.originalStart && neighbourChanges.length === 0) {
+        // carried away and brought back: nothing to store
+        this.cancelDragVisuals(drag);
+        return;
+      }
     }
-    if (this.activeDrag.edge === 'body') {
-      this.updateMoveToSvgPosition(svgCoord);
-      return;
+    const updatedEntry = this.onCommitResize(
+      drag.entryId,
+      { startOffsetMins: drag.currentStart, endOffsetMins: drag.currentEnd },
+      neighbourChanges
+    );
+    if (updatedEntry) {
+      // handles stay up, re-draggable, at the just-committed position -
+      // no need to re-trigger long-press for a follow-up adjustment
+      this.showHandles(updatedEntry);
+    } else {
+      this.hideHandles();
     }
-    const drag = this.activeDrag;
-    const entry = this.getEntries().find((entry) => entry.id === drag.entryId);
-    if (!entry) {
-      return;
-    }
-    const resize = computeResize({
-      entry,
-      entries: this.getEntries(),
-      edge: drag.edge,
-      requestedOffsetMins: this.calculateTheTimeSlotClicked(svgCoord >= 0 ? svgCoord : 0),
-      singleChoice: this.isSingleChoiceDimension(),
-      nowLimitMins: getNowLimitOffsetMins(this.getCurrentDate()),
-    });
-    const hitLimit = resize.atLimit;
-    drag.currentStart = resize.startOffsetMins;
-    drag.currentEnd = resize.endOffsetMins;
-    drag.neighbours = resize.neighbours;
-    drag.atLimit = hitLimit;
-    this.renderDragFeedback();
-    // flash once per approach, not on every tick still pressed against the
-    // same wall - otherwise holding at a limit reads as a constant strobe
-    if (hitLimit && !this.activeDrag.wasAtLimit) {
-      this.flashLimitCue();
-    }
-    this.activeDrag.wasAtLimit = hitLimit;
   }
 
-  flashLimitCue() {
-    const rect = this.entriesLayer?.querySelector(`rect[data-id="${this.activeDrag.entryId}"]`);
+  commitDrag() {
+    this.session.commit();
+  }
+
+  cancelDrag() {
+    this.session.cancel();
+  }
+
+  flashLimitCue(entryId) {
+    const rect = this.entriesLayer?.querySelector(`rect[data-id="${entryId}"]`);
     if (!rect) {
       return;
     }
@@ -480,14 +353,13 @@ export class EntryResizeController {
 
   // live visual feedback while a handle is being dragged: resizes the
   // entry's actual rect/label in place (no store dispatch yet - see
-  // commitDrag) and repositions the handles, with a clock-time readout on
+  // onDragCommit) and repositions the handles, with a clock-time readout on
   // the one currently being dragged. Updates the existing handle elements'
   // attributes rather than rebuilding them (unlike renderHandles) - this
   // runs on every pointermove, and the handle being dragged holds pointer
-  // capture (see startHandleDrag), which is silently lost the instant its
-  // element is removed from the DOM, breaking the rest of the drag
-  renderDragFeedback() {
-    const drag = this.activeDrag;
+  // capture (see DragSession.startResize), which is silently lost the instant
+  // its element is removed from the DOM, breaking the rest of the drag
+  renderDragFeedback(drag) {
     if (!drag) {
       return;
     }
@@ -585,56 +457,6 @@ export class EntryResizeController {
     }
   }
 
-  // asks the host Timeline to turn this drag into a real store update -
-  // onCommitResize looks up the entry, dispatches, re-renders the entries
-  // layer, and hands back the post-dispatch entry (or undefined if it's
-  // gone) so this controller knows whether to keep showing handles
-  commitDrag() {
-    const drag = this.activeDrag;
-    this.activeDrag = undefined;
-    if (!drag) {
-      return;
-    }
-    this.releaseDragCapture(drag);
-    this.svg?.classList.remove('dragging-handle');
-    // only the neighbours the drag actually moved are passed on
-    const neighbourChanges = this.changedNeighbours(drag);
-    if (drag.edge === 'body') {
-      // the click that ends this press must not open the Entry
-      this.suppressClicks();
-      if (drag.currentStart === drag.originalStart && neighbourChanges.length === 0) {
-        // carried away and brought back: nothing to store
-        this.cancelDragVisuals(drag);
-        return;
-      }
-    }
-    const updatedEntry = this.onCommitResize(
-      drag.entryId,
-      { startOffsetMins: drag.currentStart, endOffsetMins: drag.currentEnd },
-      neighbourChanges
-    );
-    if (updatedEntry) {
-      // handles stay up, re-draggable, at the just-committed position -
-      // no need to re-trigger long-press for a follow-up adjustment
-      this.showHandles(updatedEntry);
-    } else {
-      this.hideHandles();
-    }
-  }
-
-  // an interrupted drag (pointercancel) or Escape mid-drag - nothing was
-  // ever dispatched, so this only has to undo the live visual feedback
-  cancelDrag() {
-    const drag = this.activeDrag;
-    this.activeDrag = undefined;
-    if (!drag) {
-      return;
-    }
-    this.releaseDragCapture(drag);
-    this.svg?.classList.remove('dragging-handle');
-    this.cancelDragVisuals(drag);
-  }
-
   // puts every block the drag touched back to what is stored, and the handles
   // back on the Entry
   cancelDragVisuals(drag) {
@@ -661,14 +483,6 @@ export class EntryResizeController {
     this.showHandles(entry);
   }
 
-  releaseDragCapture(drag) {
-    try {
-      drag.captureElement?.releasePointerCapture?.(drag.pointerId);
-    } catch {
-      // already released (e.g. by the browser on pointerup) - nothing to do
-    }
-  }
-
   showHandles(entry) {
     this.activeHandleEntryId = entry.id;
     this.renderHandles(entry);
@@ -676,7 +490,7 @@ export class EntryResizeController {
 
   hideHandles() {
     this.activeHandleEntryId = undefined;
-    this.activeDrag = undefined;
+    this.session.abandon();
     if (this.handlesLayer) {
       this.handlesLayer.innerHTML = '';
     }

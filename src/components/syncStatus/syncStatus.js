@@ -1,14 +1,16 @@
 import { TinyBase } from '../base';
 import { appSyncStatus, SYNC_STATUS } from '../../sync/syncStatus';
+import { t } from '../../i18n/i18n';
 import './syncStatus.css';
 
-// What each status says in the nav bar. Plain words, no jargon: the point is
-// that a Respondent can tell whether their work is safe.
+// What each status says in the nav bar (catalogue keys, translated at use
+// time). Plain words, no jargon: the point is that a Respondent can tell
+// whether their work is safe.
 const TEXT = {
-  [SYNC_STATUS.SAVED]: 'Saved',
-  [SYNC_STATUS.SAVING]: 'Saving…',
-  [SYNC_STATUS.UNSAVED]: 'Not saved yet - will retry',
-  [SYNC_STATUS.REJECTED]: 'Could not save to the server - your diary is kept on this device',
+  [SYNC_STATUS.SAVED]: 'syncStatus.saved',
+  [SYNC_STATUS.SAVING]: 'syncStatus.saving',
+  [SYNC_STATUS.UNSAVED]: 'syncStatus.unsaved',
+  [SYNC_STATUS.REJECTED]: 'syncStatus.rejected',
 };
 
 // A small status line for study with server accounts on (see
@@ -24,7 +26,7 @@ export class SyncStatus extends TinyBase {
 
   update() {
     const status = appSyncStatus.get();
-    this.querySelector('[data-sync-text]').textContent = TEXT[status] ?? '';
+    this.querySelector('[data-sync-text]').textContent = status in TEXT ? t(TEXT[status]) : '';
     this.dataset.status = status;
   }
 

@@ -5,6 +5,7 @@ import { TinyBase } from '../base';
 import { HIDE_PANEL, SHOW_PANEL } from '../../store/actionTypes';
 import { canSubmit, validateDiary } from '../../validation/validateDiary';
 import { studyConfig } from '../../config/appConfig';
+import { t } from '../../i18n/i18n';
 
 import './contextualHelp.css';
 
@@ -15,9 +16,9 @@ const NO_RULES = 'no-rules';
 const READY = 'ready';
 const NOT_READY = 'not-ready';
 const ACCESSIBLE_NAMES = {
-  [NO_RULES]: 'Diary checks',
-  [READY]: 'Diary checks: ready to submit',
-  [NOT_READY]: 'Diary checks: not ready',
+  [NO_RULES]: 'contextualHelp.name.noRules',
+  [READY]: 'contextualHelp.name.ready',
+  [NOT_READY]: 'contextualHelp.name.notReady',
 };
 
 // The help button in the nav bar. It opens and closes the validation panel
@@ -69,12 +70,12 @@ export class ContextualHelp extends TinyBase {
     if (state === this.readiness) return;
     this.readiness = state;
     this.helpButton.innerHTML = state === READY ? doneIconSource : helpIconSource;
-    this.helpButton.setAttribute('aria-label', ACCESSIBLE_NAMES[state]);
+    this.helpButton.setAttribute('aria-label', t(ACCESSIBLE_NAMES[state]));
   }
 
   render() {
     this.innerHTML = `
-            <button id="help-button-${this[ID]}" class="reset-to-div" type="button" aria-label="Diary checks" aria-controls="validation-panel" aria-expanded="false">
+            <button id="help-button-${this[ID]}" class="reset-to-div" type="button" aria-label="${t(ACCESSIBLE_NAMES[NO_RULES])}" aria-controls="validation-panel" aria-expanded="false">
             ${helpIconSource}
             </button>
             `;

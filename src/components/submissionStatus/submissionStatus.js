@@ -7,42 +7,35 @@ import { canSubmit, validateDiary } from '../../validation/validateDiary';
 import { studyConfig } from '../../config/appConfig';
 import { t } from '../../i18n/i18n';
 
-import './contextualHelp.css';
+import './submissionStatus.css';
 
-const ID = 'id';
 const VALIDATION_PANEL = 'validation';
 
 const NO_RULES = 'no-rules';
 const READY = 'ready';
 const NOT_READY = 'not-ready';
 const ACCESSIBLE_NAMES = {
-  [NO_RULES]: 'contextualHelp.name.noRules',
-  [READY]: 'contextualHelp.name.ready',
-  [NOT_READY]: 'contextualHelp.name.notReady',
+  [NO_RULES]: 'submissionStatus.name.noRules',
+  [READY]: 'submissionStatus.name.ready',
+  [NOT_READY]: 'submissionStatus.name.notReady',
 };
 
-// The help button in the nav bar. It opens and closes the validation panel
-// (el-validation-panel), and its icon says whether the viewed day's Diary can
-// be submitted: a check mark when no hard check is failing, otherwise (and
-// when the study has no active rules to check) a question mark.
-export class ContextualHelp extends TinyBase {
-  static observedAttributes = [ID];
-
+// The submission status button in the nav bar. It opens and closes the
+// validation panel (el-validation-panel), and its icon says whether the viewed
+// day's Diary can be submitted: a check mark when no hard check is failing,
+// otherwise (and when the study has no active rules to check) a question mark.
+// Not to be confused with SyncStatus (el-sync-status), beside it: that one
+// says whether the Diary has been saved to the server.
+export class SubmissionStatus extends TinyBase {
   store = super.getStore();
   readiness;
 
   connectedCallback() {
     super.connectedCallback();
-    this.helpButton = this.querySelector('button');
-    this.helpButton.addEventListener('click', () => this.toggle());
+    this.statusButton = this.querySelector('button');
+    this.statusButton.addEventListener('click', () => this.toggle());
     this.registerCleanup(this.store.subscribe(() => this.update()));
     this.update();
-  }
-
-  attributeChangedCallback(name, oldValue, newValue) {
-    if (this[name] !== newValue) {
-      this[name] = newValue;
-    }
   }
 
   isPanelOpen() {
@@ -56,7 +49,7 @@ export class ContextualHelp extends TinyBase {
   }
 
   update() {
-    this.helpButton.setAttribute('aria-expanded', String(this.isPanelOpen()));
+    this.statusButton.setAttribute('aria-expanded', String(this.isPanelOpen()));
     this.updateReadiness();
   }
 
@@ -69,17 +62,17 @@ export class ContextualHelp extends TinyBase {
     const state = results.length === 0 ? NO_RULES : canSubmit(results) ? READY : NOT_READY;
     if (state === this.readiness) return;
     this.readiness = state;
-    this.helpButton.innerHTML = state === READY ? doneIconSource : helpIconSource;
-    this.helpButton.setAttribute('aria-label', t(ACCESSIBLE_NAMES[state]));
+    this.statusButton.innerHTML = state === READY ? doneIconSource : helpIconSource;
+    this.statusButton.setAttribute('aria-label', t(ACCESSIBLE_NAMES[state]));
   }
 
   render() {
     this.innerHTML = `
-            <button id="help-button-${this[ID]}" class="reset-to-div" type="button" aria-label="${t(ACCESSIBLE_NAMES[NO_RULES])}" aria-controls="validation-panel" aria-expanded="false">
+            <button id="submission-status-button" class="reset-to-div" type="button" aria-label="${t(ACCESSIBLE_NAMES[NO_RULES])}" aria-controls="validation-panel" aria-expanded="false">
             ${helpIconSource}
             </button>
             `;
   }
 }
 
-customElements.define('el-contextual-help', ContextualHelp);
+customElements.define('el-submission-status', SubmissionStatus);

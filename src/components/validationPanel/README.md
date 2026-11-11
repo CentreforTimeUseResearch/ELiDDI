@@ -27,12 +27,12 @@ At the bottom is the "Diary complete" button. It is shown only when the study ha
 
 ## Opening and closing
 
-Through the store's `uipanel` (value `'validation'`), so opening any other panel closes this one. The [help button](../contextualHelp/README.md) toggles it; Escape, the close button and a click outside the panel also close it (a click on the help button is not "outside"). It also closes when the onboarding dialog is shown.
+Through the store's `uipanel` (value `'validation'`), so opening any other panel closes this one. The [submission status button](../submissionStatus/README.md) toggles it; Escape, the close button and a click outside the panel also close it (a click on the submission status button is not "outside"). It also closes when the onboarding dialog is shown.
 
 ## Accessibility
 
 - A `<section>` labelled by its heading (`aria-labelledby`).
-- Focus moves to the panel on open and back to the help button on close.
+- Focus moves to the panel on open and back to the submission status button on close.
 - While closed the panel is `inert`, so it is out of the tab order.
 - Pass and fail are shown by icon and hidden text, not colour alone.
 - Rule messages can contain Activity names typed by the Respondent, so they are escaped.

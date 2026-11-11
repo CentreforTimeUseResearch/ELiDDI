@@ -9,7 +9,7 @@ import {
 } from '../../store/actionTypes';
 import helpIconSource from '../../assets/icons/help-252.svg?raw';
 import doneIconSource from '../../assets/icons/check-252.svg?raw';
-import './contextualHelp';
+import './submissionStatus';
 
 const DATE = '2025-01-01';
 const OTHER_DATE = '2025-01-02';
@@ -27,11 +27,11 @@ const addEntry = (date, dimensionIndex, activity, id = dimensionIndex) =>
     payload: { date, dimensionIndex, id, startOffsetMins: 0, endOffsetMins: 1440, activity },
   });
 
-describe('ContextualHelp', () => {
+describe('SubmissionStatus', () => {
   let button;
   const mount = () => {
-    document.body.innerHTML = '<el-contextual-help></el-contextual-help>';
-    button = document.querySelector('el-contextual-help button');
+    document.body.innerHTML = '<el-submission-status></el-submission-status>';
+    button = document.querySelector('el-submission-status button');
   };
   const showsCheckMark = () => button.innerHTML.trim() === serialised(doneIconSource).trim();
   const showsQuestionMark = () => button.innerHTML.trim() === serialised(helpIconSource).trim();
@@ -141,7 +141,7 @@ describe('ContextualHelp', () => {
 
       addEntry(DATE, 0, 'Sleeping');
 
-      expect(document.querySelector('el-contextual-help button')).toBe(button);
+      expect(document.querySelector('el-submission-status button')).toBe(button);
       expect(document.activeElement).toBe(button);
     });
   });

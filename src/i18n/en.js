@@ -213,9 +213,9 @@ export default {
   'navbar.announce.complete': 'Showing {day}, diary complete',
   'navbar.announce.progress': 'Showing {day}, {started} of {total} timelines started',
 
-  'contextualHelp.name.noRules': 'Diary checks',
-  'contextualHelp.name.ready': 'Diary checks: ready to submit',
-  'contextualHelp.name.notReady': 'Diary checks: not ready',
+  'submissionStatus.name.noRules': 'Diary checks',
+  'submissionStatus.name.ready': 'Diary checks: ready to submit',
+  'submissionStatus.name.notReady': 'Diary checks: not ready',
 
   'syncStatus.saved': 'Saved',
   'syncStatus.saving': 'Saving…',

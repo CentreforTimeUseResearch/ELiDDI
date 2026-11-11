@@ -1,5 +1,5 @@
 import '../timelinePicker/timelinePicker.js';
-import '../contextualHelp/contextualHelp.js';
+import '../submissionStatus/submissionStatus.js';
 import '../syncStatus/syncStatus.js';
 import { TinyBase } from '../base';
 import { RESET_ONBOARDING, SHOW_PANEL } from '../../store/actionTypes';
@@ -253,7 +253,7 @@ export class Navbar extends TinyBase {
             </div>
             <div class="right-pane">
                 ${accounts().enabled ? '<el-sync-status></el-sync-status>' : ''}
-                <el-contextual-help></el-contextual-help>
+                <el-submission-status></el-submission-status>
             </div>
         </nav>
         `;

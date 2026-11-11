@@ -6,7 +6,7 @@
 
 ## What it does
 
-The top navigation bar: a hamburger menu (Instructions / Reset), the [Timeline Picker](../timelinePicker/README.md) for switching Dimension, the day controls (Previous day, the date button, Next day, Today), and the [Contextual Help](../contextualHelp/README.md) button.
+The top navigation bar: a hamburger menu (Instructions / Reset), the [Timeline Picker](../timelinePicker/README.md) for switching Dimension, the day controls (Previous day, the date button, Next day, Today), and the [Submission Status](../submissionStatus/README.md) button.
 
 ## Custom element
 

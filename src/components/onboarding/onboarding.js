@@ -9,6 +9,7 @@ import {
 import './onboarding.css';
 import { escapeHtml } from '../../utils/html';
 import { onboardingSteps } from '../../config/appConfig';
+import { t } from '../../i18n/i18n';
 
 export class Onboarding extends TinyBase {
   store = super.getStore();
@@ -98,10 +99,10 @@ export class Onboarding extends TinyBase {
               <div>${text}</div> 
             </div>
             <div class="navigation">
-              <progress id="onboarding-progress" max="${steps.length}" value="${onboardingStep + 1}">${onboardingStep} of ${steps.length}</progress>
+              <progress id="onboarding-progress" max="${steps.length}" value="${onboardingStep + 1}">${t('onboarding.progress', { step: onboardingStep, total: steps.length })}</progress>
               <div class="button-bar">
-                ${onboardingStep > 0 ? `<button data-back>back</button>` : ''}
-                <button data-next ${isLastStep ? `class="last"` : ''} >${isLastStep ? 'start' : 'next'}</button>
+                ${onboardingStep > 0 ? `<button data-back>${t('onboarding.back')}</button>` : ''}
+                <button data-next ${isLastStep ? `class="last"` : ''} >${isLastStep ? t('onboarding.start') : t('onboarding.next')}</button>
               </div>
             </div>
         `;

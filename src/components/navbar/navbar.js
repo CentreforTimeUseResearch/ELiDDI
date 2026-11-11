@@ -14,36 +14,38 @@ import { announce, ensureAnnouncer } from '../../utils/announce';
 import { dayBefore, stepDay, goToToday } from '../../utils/navigation';
 import { accounts, dimensions } from '../../config/appConfig';
 import { requestLogout } from '../../sync/appSync';
+import { t } from '../../i18n/i18n';
 import './navbar.css';
 
 // the sidebar's generic menu options - rendered twice (sidebar drawer below
 // 1024px, nav bar at/above it, see renderMenuItems) rather than switched via
-// JS, so this is the one place their labels/handlers are defined
+// JS, so this is the one place their labels/handlers are defined. Labels are
+// catalogue keys, translated when rendered (ADR 0008)
 const MENU_ITEMS = [
-  { label: 'Instructions', buttonClass: 'instructions-button' },
-  { label: 'Keyboard shortcuts', buttonClass: 'shortcuts-button' },
-  { label: 'Reset (clears this day)', buttonClass: 'reset-diary-button' },
-  { label: 'View stats' },
-  { label: 'About this study' },
+  { label: 'navbar.menu.instructions', buttonClass: 'instructions-button' },
+  { label: 'navbar.menu.shortcuts', buttonClass: 'shortcuts-button' },
+  { label: 'navbar.menu.reset', buttonClass: 'reset-diary-button' },
+  { label: 'navbar.menu.stats' },
+  { label: 'navbar.menu.about' },
   // only with server accounts on (see renderMenuItems)
-  { label: 'Log out (switch person)', buttonClass: 'logout-button', accountsOnly: true },
+  { label: 'navbar.menu.logout', buttonClass: 'logout-button', accountsOnly: true },
 ];
 
 // why Next day / Today can't be used right now - shown as text (the title,
 // and a description the screen reader reads), not just by dimming the button
-const NEXT_DAY_REASON = "You can't fill in days that haven't happened";
-const TODAY_REASON = 'Already showing today';
+const NEXT_DAY_REASON = 'navbar.nextDayReason';
+const TODAY_REASON = 'navbar.todayReason';
 
 // a Diary's progress for the date button: nothing entered yet, some entered,
 // or submitted
 export function getDayStatus(diary) {
   if (diary?.status === DIARY_STATUS.COMPLETE) {
-    return 'Complete';
+    return t('navbar.status.complete');
   }
   const started = diary?.timelines?.some(
     (timeline) => Array.isArray(timeline) && timeline.length > 0
   );
-  return started ? 'In progress' : 'Not started';
+  return started ? t('navbar.status.inProgress') : t('navbar.status.notStarted');
 }
 
 // each Navbar's description elements get their own ids (aria-describedby needs
@@ -54,13 +56,13 @@ let instanceCount = 0;
 export function getDayAnnouncement(dateKey, diary) {
   const day = formatDateKeyAsLongDate(dateKey);
   if (diary?.status === DIARY_STATUS.COMPLETE) {
-    return `Showing ${day}, diary complete`;
+    return t('navbar.announce.complete', { day });
   }
   const total = dimensions().length;
   const started = (diary?.timelines ?? []).filter(
     (timeline) => Array.isArray(timeline) && timeline.length > 0
   ).length;
-  return `Showing ${day}, ${started} of ${total} timelines started`;
+  return t('navbar.announce.progress', { day, started, total });
 }
 
 export class Navbar extends TinyBase {
@@ -86,7 +88,7 @@ export class Navbar extends TinyBase {
     }
     const { currentDate, diaries } = this.store.getState();
     this.querySelector('.date-text').innerHTML =
-      `<span class="date-label">Selected day: </span>${formatDateKeyAsDDMMYYYY(currentDate)} <u>change</u>`;
+      `<span class="date-label">${t('navbar.selectedDay')}</span>${formatDateKeyAsDDMMYYYY(currentDate)} <u>${t('navbar.changeDate')}</u>`;
     this.querySelector('.day-status').textContent = getDayStatus(diaries[currentDate]);
     this.updateDayButtons(currentDate, getCurrentDiaryDateKey());
     // however the day changed (a button, the date picker, anything else) it is
@@ -102,26 +104,31 @@ export class Navbar extends TinyBase {
   updateDayButtons(currentDate, today) {
     this.querySelector('.previous-day-button').setAttribute(
       'aria-label',
-      `Previous day, ${formatDateKeyAsLongDate(dayBefore(currentDate, today))}`
+      t('navbar.previousDayLabel', {
+        date: formatDateKeyAsLongDate(dayBefore(currentDate, today)),
+      })
     );
     const nextDisabled = currentDate >= today;
     this.setDayButton('.next-day-button', '.next-day-reason', nextDisabled, NEXT_DAY_REASON);
     this.querySelector('.next-day-button').setAttribute(
       'aria-label',
       nextDisabled
-        ? 'Next day'
-        : `Next day, ${formatDateKeyAsLongDate(addDaysToDateKey(currentDate, 1))}`
+        ? t('navbar.nextDayDisabledLabel')
+        : t('navbar.nextDayLabel', {
+            date: formatDateKeyAsLongDate(addDaysToDateKey(currentDate, 1)),
+          })
     );
     this.setDayButton('.today-button', '.today-reason', currentDate === today, TODAY_REASON);
     this.querySelector('.today-button').setAttribute(
       'aria-label',
-      `Today, ${formatDateKeyAsLongDate(today)}`
+      t('navbar.todayLabel', { date: formatDateKeyAsLongDate(today) })
     );
   }
 
   // aria-disabled, not disabled: a disabled button can't be focused, so a
   // keyboard user could never reach its reason
-  setDayButton(buttonSelector, reasonSelector, disabled, reason) {
+  setDayButton(buttonSelector, reasonSelector, disabled, reasonKey) {
+    const reason = t(reasonKey);
     const button = this.querySelector(buttonSelector);
     if (disabled) {
       button.setAttribute('aria-disabled', 'true');
@@ -201,8 +208,8 @@ export class Navbar extends TinyBase {
     return MENU_ITEMS.filter((item) => accountsOn || !item.accountsOnly)
       .map((item) =>
         item.buttonClass
-          ? `<li class="${itemClass}"><button class="reset-to-div ${item.buttonClass}" type="button">${item.label}</button></li>`
-          : `<li class="${itemClass}">${item.label}</li>`
+          ? `<li class="${itemClass}"><button class="reset-to-div ${item.buttonClass}" type="button">${t(item.label)}</button></li>`
+          : `<li class="${itemClass}">${t(item.label)}</li>`
       )
       .join('');
   }
@@ -232,14 +239,14 @@ export class Navbar extends TinyBase {
             </div>
             <div class="middle-pane">
                 <el-timeline-picker></el-timeline-picker>
-                <div class="day-controls" role="group" aria-label="Change day">
+                <div class="day-controls" role="group" aria-label="${t('navbar.changeDay')}">
                     <button class="day-button previous-day-button" type="button"><span aria-hidden="true">&lsaquo;</span></button>
                     <button class="reset-to-div date-indicator change-date-button" type="button">
                         <span class="date-text"></span>
                         <span class="day-status"></span>
                     </button>
                     <button class="day-button next-day-button" type="button" aria-describedby="next-day-reason-${this.instanceId}"><span aria-hidden="true">&rsaquo;</span></button>
-                    <button class="day-button today-button" type="button" aria-describedby="today-reason-${this.instanceId}">Today</button>
+                    <button class="day-button today-button" type="button" aria-describedby="today-reason-${this.instanceId}">${t('navbar.today')}</button>
                     <span id="next-day-reason-${this.instanceId}" class="next-day-reason sr-only"></span>
                     <span id="today-reason-${this.instanceId}" class="today-reason sr-only"></span>
                 </div>

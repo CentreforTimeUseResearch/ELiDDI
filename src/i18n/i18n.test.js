@@ -1,6 +1,25 @@
 import { describe, it, expect, afterEach } from 'vitest';
-import { t, setLocale, addCatalogue } from './i18n';
+import { t, setLocale, addCatalogue, dateLocale } from './i18n';
 import en from './en';
+
+describe('dateLocale()', () => {
+  afterEach(() => setLocale(undefined));
+
+  it('is British English for English, the default, and a language with no catalogue', () => {
+    expect(dateLocale()).toBe('en-GB');
+    setLocale('en');
+    expect(dateLocale()).toBe('en-GB');
+    setLocale('xx');
+    expect(dateLocale()).toBe('en-GB');
+  });
+
+  it('is the study language once it has a catalogue', () => {
+    const undo = addCatalogue('fr', {});
+    setLocale('fr');
+    expect(dateLocale()).toBe('fr');
+    undo();
+  });
+});
 
 describe('t()', () => {
   afterEach(() => setLocale(undefined));

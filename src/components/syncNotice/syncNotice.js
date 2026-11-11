@@ -1,15 +1,16 @@
 import { TinyBase } from '../base';
 import { appSyncStatus, NOTICE_KIND } from '../../sync/syncStatus';
 import { logoutAnyway, requestLogout } from '../../sync/appSync';
-import { t } from '../../i18n/i18n';
+import { t, dateLocale } from '../../i18n/i18n';
 import './syncNotice.css';
 
-// "3 November 2026" from "2026-11-03"; the key as it is if it is not a date
+// "3 November 2026" from "2026-11-03"; the key as it is if it is not a date.
+// In the study's language, not the browser's (ADR 0008)
 export function describeDate(key) {
   const date = new Date(`${key}T12:00:00`);
   return Number.isNaN(date.getTime())
     ? key
-    : date.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+    : date.toLocaleDateString(dateLocale(), { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
 // "a and b", "a, b and c" - the joining words come from the catalogue

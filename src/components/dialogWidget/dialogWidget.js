@@ -1,5 +1,6 @@
 import './dialogWidget.css';
 import { TinyBase } from '../base';
+import { t } from '../../i18n/i18n';
 
 const ID = 'id';
 const TEXT = 'text';
@@ -124,7 +125,7 @@ export class DialogWidget extends TinyBase {
                   this.props?.dismissible === false
                     ? ''
                     : `<div class="dialog-actions">
-                      <button class="reset-to-div" data-close>${this.props?.closeLabel ?? 'close'}</button>
+                      <button class="reset-to-div" data-close>${this.props?.closeLabel ?? t('dialog.close')}</button>
                 </div>`
                 }
             </div>

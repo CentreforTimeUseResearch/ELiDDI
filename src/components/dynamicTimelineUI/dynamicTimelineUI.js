@@ -21,6 +21,7 @@ import { watchDesktopBreakpoint } from '../../utils/breakpoint';
 import { accounts as serverAccounts } from '../../config/appConfig';
 import { appSession } from '../../auth/session';
 import { appSyncStatus, BLOCKS_DIARY } from '../../sync/syncStatus';
+import { t } from '../../i18n/i18n';
 
 import './dynamicTimelineUI.css';
 
@@ -163,7 +164,7 @@ export class DynamicTimelineUI extends TinyBase {
                 this.onboardingDialogActions = actions;
               },
               content: onboardingMarkup,
-              closeLabel: 'skip',
+              closeLabel: t('dialog.skip'),
               onRequestClose: () => this.store.dispatch({ type: DISMISS_ONBOARDING }),
             })}></el-dialog>
             <el-dialog id="date-dialog" ${this.setProps({
@@ -185,9 +186,9 @@ export class DynamicTimelineUI extends TinyBase {
               registerDialogActions: (actions) => {
                 this.resetDialogActions = actions;
               },
-              content: `<p>Clear every entry for the selected day? This can't be undone.</p>
-                <button type="button" data-confirm-reset>Clear this day</button>`,
-              closeLabel: 'cancel',
+              content: `<p>${t('resetDialog.message')}</p>
+                <button type="button" data-confirm-reset>${t('resetDialog.confirm')}</button>`,
+              closeLabel: t('dialog.cancel'),
               onRequestClose: () => this.store.dispatch({ type: HIDE_PANEL }),
             })}></el-dialog>
             `;

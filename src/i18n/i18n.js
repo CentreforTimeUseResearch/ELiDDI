@@ -25,9 +25,26 @@ export function setLocale(code) {
   localeOverride = code || undefined;
 }
 
+function activeCode() {
+  return localeOverride ?? language();
+}
+
 function activeCatalogue() {
-  const code = localeOverride ?? language();
-  return catalogues[code] ?? en;
+  return catalogues[activeCode()] ?? en;
+}
+
+// The BCP 47 tag to give Intl / toLocaleDateString for the study's language,
+// so dates read in the same language as the words around them rather than
+// following the browser (every Respondent in a study sees what was piloted -
+// ADR 0008). English is the British English the app has always shown
+// ("Saturday 7 November"); a language with no catalogue falls back with the
+// words, to English.
+export function dateLocale() {
+  const code = activeCode();
+  if (!catalogues[code] || code === 'en') {
+    return 'en-GB';
+  }
+  return code;
 }
 
 // Lookup order: active catalogue, then en, then the key itself - a

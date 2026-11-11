@@ -1,4 +1,5 @@
 import { dayBoundary } from '../config/appConfig';
+import { dateLocale } from '../i18n/i18n';
 
 // Entries store times as offsets in minutes from config/config.json's
 // general.day_boundary (e.g. "04:00"), not from midnight - see CONTEXT.md.
@@ -66,10 +67,11 @@ export function addDaysToDateKey(dateKey, days) {
 }
 
 // a Diary date key for reading aloud or in a label: "Saturday 7 November".
-// Like the above, from the date parts, so the time zone cannot move it
+// Like the above, from the date parts, so the time zone cannot move it.
+// In the study's language (dateLocale), not the browser's
 export function formatDateKeyAsLongDate(dateKey) {
   const [year, month, day] = dateKey.split('-').map(Number);
-  return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString('en-GB', {
+  return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString(dateLocale(), {
     weekday: 'long',
     day: 'numeric',
     month: 'long',

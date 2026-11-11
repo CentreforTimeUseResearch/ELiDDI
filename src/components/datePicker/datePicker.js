@@ -2,6 +2,7 @@ import { TinyBase } from '../base';
 import { HIDE_PANEL, SWITCH_DATE } from '../../store/actionTypes';
 import { getCurrentDiaryDateKey } from '../../utils/time';
 import { guardUnsavedEdits } from '../../utils/unsavedEdits';
+import { t } from '../../i18n/i18n';
 import './datePicker.css';
 
 export class DatePicker extends TinyBase {
@@ -73,7 +74,7 @@ export class DatePicker extends TinyBase {
   render() {
     this.innerHTML = `
             <div class="el-form-group width-adjust">
-                <label class="el-label" for="date-picker">Choose date:</label>
+                <label class="el-label" for="date-picker">${t('datePicker.label')}</label>
                 <input
                   type="date"
                   id="date-picker"

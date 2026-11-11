@@ -1,5 +1,6 @@
 import { formatOffsetAsClockTime } from '../../utils/time';
 import { SVGNS, MIN_ENTRY_DURATION_MINS } from './timelineConstants';
+import { t } from '../../i18n/i18n';
 
 const NO_ROOM_FLASH_MS = 600;
 
@@ -43,7 +44,7 @@ export class CreatePreview {
       startOffsetMins: slotMins,
       endOffsetMins: slotMins + MIN_ENTRY_DURATION_MINS,
       atLimit: true,
-      label: 'No room here',
+      label: t('createPreview.noRoom'),
     });
     clearTimeout(this.noRoomTimer);
     this.noRoomTimer = setTimeout(() => this.hide(), NO_ROOM_FLASH_MS);
@@ -56,7 +57,7 @@ export class CreatePreview {
 
   timeRange(startOffsetMins, endOffsetMins, atLimit) {
     const range = `${formatOffsetAsClockTime(startOffsetMins)}–${formatOffsetAsClockTime(endOffsetMins)}`;
-    return atLimit ? `${range} · limit` : range;
+    return atLimit ? t('timeline.withLimit', { text: range }) : range;
   }
 
   render({ startOffsetMins, endOffsetMins, atLimit, label }) {

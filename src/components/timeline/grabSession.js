@@ -1,4 +1,5 @@
 import { MINUTES_PER_DAY, MIN_ENTRY_DURATION_MINS } from './timelineConstants';
+import { t } from '../../i18n/i18n';
 import { computeMove } from './moveSpan';
 import { computeResize } from './resizeSpan';
 
@@ -82,13 +83,13 @@ export class GrabSession {
     const movesStart = kind === 'move' || kind === 'start';
     const movesEnd = kind === 'move' || kind === 'end';
     if (direction < 0 && movesStart && start === 0) {
-      return 'start of the day';
+      return t('grabSession.limit.startOfDay');
     }
     if (direction > 0 && movesEnd && end === MINUTES_PER_DAY) {
-      return 'end of the day';
+      return t('grabSession.limit.endOfDay');
     }
     if (direction > 0 && movesEnd && end === this.nowLimitMins) {
-      return "can't go past now";
+      return t('grabSession.limit.now');
     }
     if (
       this.neighbours.some(
@@ -96,9 +97,9 @@ export class GrabSession {
           neighbour.endOffsetMins - neighbour.startOffsetMins === MIN_ENTRY_DURATION_MINS
       )
     ) {
-      return `the neighbouring entry can't be shorter than ${MIN_ENTRY_DURATION_MINS} minutes`;
+      return t('grabSession.limit.neighbourMin', { minutes: MIN_ENTRY_DURATION_MINS });
     }
-    return `an entry must last at least ${MIN_ENTRY_DURATION_MINS} minutes`;
+    return t('grabSession.limit.entryMin', { minutes: MIN_ENTRY_DURATION_MINS });
   }
 
   // the Entries as they stand after the current run

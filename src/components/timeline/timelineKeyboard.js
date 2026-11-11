@@ -1,4 +1,5 @@
 import { formatOffsetAsClockTime } from '../../utils/time';
+import { t } from '../../i18n/i18n';
 import { SVGNS } from './timelineConstants';
 import { FocusRing } from './focusRing';
 import { GrabSession } from './grabSession';
@@ -79,7 +80,10 @@ export class TimelineKeyboard {
   // once the host's SVG is in place: names the group and makes the first Tab stop
   connect() {
     this.svg.setAttribute('role', 'group');
-    this.svg.setAttribute('aria-label', `${this.getDimensionName()} timeline`);
+    this.svg.setAttribute(
+      'aria-label',
+      t('timelineKeyboard.timeline', { dimension: this.getDimensionName() })
+    );
     this.cursor = firstStop(this.stops());
     this.syncRoving();
   }
@@ -106,13 +110,18 @@ export class TimelineKeyboard {
   }
 
   entryName(entry) {
-    const start = formatOffsetAsClockTime(entry.startOffsetMins);
-    const end = formatOffsetAsClockTime(entry.endOffsetMins);
-    return `${this.activityText(entry)}, ${start} to ${end}, ${this.getDimensionName()}`;
+    return t('timelineKeyboard.entryName', {
+      activity: this.activityText(entry),
+      range: this.timeRange(entry.startOffsetMins, entry.endOffsetMins),
+      dimension: this.getDimensionName(),
+    });
   }
 
   slotName(startOffsetMins) {
-    return `Add entry at ${formatOffsetAsClockTime(startOffsetMins)}, ${this.getDimensionName()}`;
+    return t('timelineKeyboard.slotName', {
+      time: formatOffsetAsClockTime(startOffsetMins),
+      dimension: this.getDimensionName(),
+    });
   }
 
   // called by renderEntryBlocks for each block of this Timeline (never for the
@@ -425,18 +434,27 @@ export class TimelineKeyboard {
       singleChoice: this.isSingleChoice(),
       nowLimitMins: this.getNowLimitMins(),
     });
-    const keyName = (key) => key.replace('Arrow', '');
-    const arrows = `${keyName(this.axis.previousKey)} and ${keyName(this.axis.nextKey)} arrow keys`;
+    // "ArrowUp" -> the catalogue's name for that key ("Up")
+    const keyName = (key) => t(`keyboardHelp.key.${key.replace('Arrow', '').toLowerCase()}`);
+    const arrows = t('timelineKeyboard.arrowKeys', {
+      previous: keyName(this.axis.previousKey),
+      next: keyName(this.axis.nextKey),
+    });
     showKeyboardStatus(
-      `Grabbed ${this.activityText(entry)}, ${this.timeRange(entry.startOffsetMins, entry.endOffsetMins)}. ` +
-        `${arrows} move it. Shift with an arrow key changes its end; ` +
-        'Alt and Shift with an arrow key change its start. Enter to confirm, Escape to cancel.'
+      t('timelineKeyboard.grabbed', {
+        name: this.activityText(entry),
+        range: this.timeRange(entry.startOffsetMins, entry.endOffsetMins),
+        arrows,
+      })
     );
     this.ring.show(entry);
   }
 
   timeRange(start, end) {
-    return `${formatOffsetAsClockTime(start)} to ${formatOffsetAsClockTime(end)}`;
+    return t('timelineKeyboard.timeRange', {
+      start: formatOffsetAsClockTime(start),
+      end: formatOffsetAsClockTime(end),
+    });
   }
 
   onGrabKey(e) {
@@ -486,17 +504,25 @@ export class TimelineKeyboard {
   // "Now 04:50 to 05:30. The next entry now starts at 06:00. Limit reached: ..."
   describeStep(result) {
     const time = formatOffsetAsClockTime;
-    const parts = [`Now ${this.timeRange(result.startOffsetMins, result.endOffsetMins)}.`];
+    const parts = [
+      t('timelineKeyboard.step.now', {
+        range: this.timeRange(result.startOffsetMins, result.endOffsetMins),
+      }),
+    ];
     for (const neighbour of result.neighbours) {
       if (neighbour.startMoved) {
-        parts.push(`The next entry now starts at ${time(neighbour.startOffsetMins)}.`);
+        parts.push(
+          t('timelineKeyboard.step.nextStarts', { time: time(neighbour.startOffsetMins) })
+        );
       }
       if (neighbour.endMoved) {
-        parts.push(`The previous entry now ends at ${time(neighbour.endOffsetMins)}.`);
+        parts.push(
+          t('timelineKeyboard.step.previousEnds', { time: time(neighbour.endOffsetMins) })
+        );
       }
     }
     if (result.atLimit) {
-      parts.push(`Limit reached: ${result.reason}.`);
+      parts.push(t('timelineKeyboard.step.limit', { reason: result.reason }));
     }
     return parts.join(' ');
   }
@@ -504,7 +530,7 @@ export class TimelineKeyboard {
   // the Entry's name as the announcements say it
   grabbedName() {
     const entry = this.getEntries().find((entry) => entry.id === this.session.entryId);
-    return entry ? this.activityText(entry) : 'The entry';
+    return entry ? this.activityText(entry) : t('timelineKeyboard.theEntry');
   }
 
   confirmGrab() {
@@ -515,12 +541,17 @@ export class TimelineKeyboard {
     if (!outcome.changed) {
       this.onRestore();
       const was = session.initialSpan;
-      endKeyboardStatus(`No change. ${name} stays at ${this.timeRange(was.start, was.end)}.`);
+      endKeyboardStatus(
+        t('timelineKeyboard.noChange', { name, range: this.timeRange(was.start, was.end) })
+      );
       return;
     }
     this.onCommit(session.entryId, outcome.span, outcome.neighbourChanges);
     endKeyboardStatus(
-      `Done. ${name} is now ${this.timeRange(outcome.span.startOffsetMins, outcome.span.endOffsetMins)}.`
+      t('timelineKeyboard.done', {
+        name,
+        range: this.timeRange(outcome.span.startOffsetMins, outcome.span.endOffsetMins),
+      })
     );
   }
 
@@ -530,7 +561,9 @@ export class TimelineKeyboard {
     this.session = undefined;
     this.onRestore();
     const was = session.initialSpan;
-    endKeyboardStatus(`Cancelled. ${name} is back at ${this.timeRange(was.start, was.end)}.`);
+    endKeyboardStatus(
+      t('timelineKeyboard.cancelled', { name, range: this.timeRange(was.start, was.end) })
+    );
   }
 
   // Enter on a stop: opens the Entry, or makes the default block at the slot

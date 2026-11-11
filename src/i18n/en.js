@@ -20,6 +20,45 @@ export default {
   'login.gate.reload': 'Reload the page',
   'login.gate.logout': 'Log out',
 
+  // Timeline names and the keyboard grab announcements (timelineKeyboard.js,
+  // grabSession.js). {range} is "04:50 to 05:30"; {arrows} is "Up and Down
+  // arrow keys" built from keyboardHelp.key.* names
+  'timelineKeyboard.timeline': '{dimension} timeline',
+  'timelineKeyboard.timeRange': '{start} to {end}',
+  'timelineKeyboard.entryName': '{activity}, {range}, {dimension}',
+  'timelineKeyboard.slotName': 'Add entry at {time}, {dimension}',
+  'timelineKeyboard.arrowKeys': '{previous} and {next} arrow keys',
+  'timelineKeyboard.grabbed':
+    'Grabbed {name}, {range}. {arrows} move it. Shift with an arrow key changes its end; Alt and Shift with an arrow key change its start. Enter to confirm, Escape to cancel.',
+  'timelineKeyboard.step.now': 'Now {range}.',
+  'timelineKeyboard.step.nextStarts': 'The next entry now starts at {time}.',
+  'timelineKeyboard.step.previousEnds': 'The previous entry now ends at {time}.',
+  'timelineKeyboard.step.limit': 'Limit reached: {reason}.',
+  'timelineKeyboard.theEntry': 'The entry',
+  'timelineKeyboard.noChange': 'No change. {name} stays at {range}.',
+  'timelineKeyboard.done': 'Done. {name} is now {range}.',
+  'timelineKeyboard.cancelled': 'Cancelled. {name} is back at {range}.',
+  'grabSession.limit.startOfDay': 'start of the day',
+  'grabSession.limit.endOfDay': 'end of the day',
+  'grabSession.limit.now': "can't go past now",
+  'grabSession.limit.neighbourMin':
+    "the neighbouring entry can't be shorter than {minutes} minutes",
+  'grabSession.limit.entryMin': 'an entry must last at least {minutes} minutes',
+
+  // on-screen feedback while dragging / creating; {text} is a time range
+  'timeline.withLimit': '{text} · limit',
+  'createPreview.noRoom': 'No room here',
+  'entryCommands.overlap':
+    'This overlaps with your existing "{activity}" entry ({start}–{end}). Adjust the time, or edit/delete that entry first.',
+
+  'horizontalTimelineAxis.zoomIn': 'Zoom in',
+  'horizontalTimelineAxis.zoomOut': 'Zoom out',
+  'horizontalTimelineAxis.zoom': 'Zoom {percent}%',
+  'horizontalTimelineAxis.zoomClosest': 'Zoom {percent}%, the closest view',
+  'horizontalTimelineAxis.zoomWholeDay': 'Zoom {percent}%, the whole day is showing',
+  'horizontalTimelineStack.dimensions': 'Dimensions',
+  'timelinePicker.label': 'Dimension',
+
   'login.failure.empty': 'Enter your login code.',
   'login.failure.invalid': 'That code was not recognised. Check it and try again.',
   'login.failure.rateLimited.one': 'Too many attempts. Please wait {minutes} minute and try again.',
@@ -184,6 +223,8 @@ export default {
   'keyboardHelp.or': ' or ',
   'keyboardHelp.key.up': 'Up',
   'keyboardHelp.key.down': 'Down',
+  'keyboardHelp.key.left': 'Left',
+  'keyboardHelp.key.right': 'Right',
   'keyboardHelp.key.home': 'Home',
   'keyboardHelp.key.end': 'End',
   'keyboardHelp.key.pageUp': 'Page Up',

@@ -20,6 +20,58 @@ export default {
   'login.gate.reload': 'Reload the page',
   'login.gate.logout': 'Log out',
 
+  'login.failure.empty': 'Enter your login code.',
+  'login.failure.invalid': 'That code was not recognised. Check it and try again.',
+  'login.failure.rateLimited.one': 'Too many attempts. Please wait {minutes} minute and try again.',
+  'login.failure.rateLimited.other':
+    'Too many attempts. Please wait {minutes} minutes and try again.',
+  'login.failure.rateLimited.unknown':
+    'Too many attempts. Please wait a few minutes and try again.',
+  'login.failure.network': 'Could not reach the server. Check your connection and try again.',
+  'login.failure.server': 'Something went wrong on the server. Please try again later.',
+
+  // the checks (src/validation/rules); {from}/{to} are clock times
+  'validation.noGaps.title': 'No gaps in Primary activity',
+  'validation.noGaps.none': 'No Primary activity has been recorded.',
+  'validation.noGaps.missing': 'Primary activity is missing from {from} to {to}.',
+  'validation.noGaps.missingMore.one':
+    'Primary activity is missing from {from} to {to} (and {more} more gap).',
+  'validation.noGaps.missingMore.other':
+    'Primary activity is missing from {from} to {to} (and {more} more gaps).',
+  'validation.differ.title': 'Primary and Secondary activity differ',
+  'validation.differ.message':
+    '"{activity}" is recorded as both Primary and Secondary activity from {from} to {to}.',
+  'validation.sleep.title': 'At least {hours} hours of sleep',
+  'validation.sleep.message': '{recorded} of sleep recorded (less than {minimum}).',
+  'validation.duration.hours': '{hours}h',
+  'validation.duration.minutes': '{minutes}m',
+  'validation.duration.hoursMinutes': '{hours}h {minutes}m',
+  'validation.eating.title': 'Eating or drinking recorded',
+  'validation.eating.message': 'No eating or drinking recorded.',
+
+  'validationPanel.title': 'Checks',
+  'validationPanel.close': 'Close checks',
+  'validationPanel.empty': 'No checks are set for this study.',
+  'validationPanel.passed': 'passed',
+  'validationPanel.failed': 'failed',
+  'validationPanel.advice': '(advice)',
+  'validationPanel.hint':
+    'The checks that are not marked as advice must pass before you can complete this Diary.',
+  'validationPanel.complete': 'Diary complete',
+  'validationPanel.sending': 'Sending…',
+  'validationPanel.submitted': 'This Diary has been submitted. Thank you.',
+  'validationPanel.confirm.title': 'Are you sure?',
+  'validationPanel.confirm.intro': 'These checks are not met:',
+  'validationPanel.confirm.submitAnyway': 'Submit anyway',
+  'validationPanel.confirm.goBack': 'Go back',
+  'validationPanel.failure.unauthorized':
+    'Your login has run out. Log in again, then press Diary complete again. Your Diary has not been lost.',
+  'validationPanel.failure.network':
+    'The Diary could not be sent. Check your connection and try again.',
+  'validationPanel.failure.http':
+    'The server could not accept the Diary (error {status}). Try again in a moment.',
+  'validationPanel.failure.noDiary': 'There is no Diary to send yet.',
+
   // joins a list of names: "a and b", "a, b and c" (ADR 0008: no plural/list
   // engine - the pieces are keys, the joining logic stays in the caller)
   'common.listAnd': ' and ',

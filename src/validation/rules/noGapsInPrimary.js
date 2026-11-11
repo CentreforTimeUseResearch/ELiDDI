@@ -1,13 +1,17 @@
 import { SLOT_COUNT, entrySlots, slotClockTime } from '../slots';
+import { t } from '../../i18n/i18n';
 
 const PRIMARY_DIMENSION_INDEX = 0;
 
 // the Primary activity Timeline must cover the whole day: every ten-minute
 // slot is used by at least one Entry. The whole day counts, including slots
-// that are still in the future today.
+// that are still in the future today. `title` is a getter so the words are
+// looked up when read (ADR 0008).
 export const noGapsInPrimary = {
   id: 'no-gaps-in-primary',
-  title: 'No gaps in Primary activity',
+  get title() {
+    return t('validation.noGaps.title');
+  },
   check({ diary, config }) {
     const entries = diary?.timelines?.[PRIMARY_DIMENSION_INDEX] ?? [];
     const gaps = findGaps(entries);
@@ -39,10 +43,20 @@ function findGaps(entries) {
 
 function describeGaps(gaps, config) {
   if (gaps.length === 1 && gaps[0][1] - gaps[0][0] === SLOT_COUNT) {
-    return 'No Primary activity has been recorded.';
+    return t('validation.noGaps.none');
   }
-  const [from, to] = gaps[0];
+  const [first, end] = gaps[0];
   const more = gaps.length - 1;
-  const alsoMissing = more > 0 ? ` (and ${more} more gap${more === 1 ? '' : 's'})` : '';
-  return `Primary activity is missing from ${slotClockTime(from, config)} to ${slotClockTime(to, config)}${alsoMissing}.`;
+  const times = { from: slotClockTime(first, config), to: slotClockTime(end, config) };
+  if (more === 0) {
+    return t('validation.noGaps.missing', times);
+  }
+  // one sentence per number (ADR 0008: explicit keys, no plural engine)
+  return t(
+    more === 1 ? 'validation.noGaps.missingMore.one' : 'validation.noGaps.missingMore.other',
+    {
+      ...times,
+      more,
+    }
+  );
 }

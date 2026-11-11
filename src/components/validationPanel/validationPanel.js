@@ -9,6 +9,7 @@ import { DIARY_STATUS } from '../../store/diaryStatus';
 import { canSubmit, validateDiary } from '../../validation/validateDiary';
 import { getSubmitTarget, submitDiary } from '../../submission/submitDiary';
 import { studyConfig, primaryRedirectUrl } from '../../config/appConfig';
+import { t } from '../../i18n/i18n';
 import { escapeHtml } from '../../utils/html';
 
 import './validationPanel.css';
@@ -19,13 +20,13 @@ const PANEL_NAME = 'validation';
 function describeFailure({ reason, status }) {
   switch (reason) {
     case 'unauthorized':
-      return 'Your login has run out. Log in again, then press Diary complete again. Your Diary has not been lost.';
+      return t('validationPanel.failure.unauthorized');
     case 'network':
-      return 'The Diary could not be sent. Check your connection and try again.';
+      return t('validationPanel.failure.network');
     case 'http':
-      return `The server could not accept the Diary (error ${status}). Try again in a moment.`;
+      return t('validationPanel.failure.http', { status });
     default:
-      return 'There is no Diary to send yet.';
+      return t('validationPanel.failure.noDiary');
   }
 }
 
@@ -147,7 +148,7 @@ export class ValidationPanel extends TinyBase {
 
     this.list.innerHTML =
       results.length === 0
-        ? '<li class="validation-empty">No checks are set for this study.</li>'
+        ? `<li class="validation-empty">${t('validationPanel.empty')}</li>`
         : results.map((result) => this.renderResult(result)).join('');
   }
 
@@ -160,7 +161,9 @@ export class ValidationPanel extends TinyBase {
     const blocked = !canSubmit(results);
     this.completeButton.hidden = !hasSubmitUrl;
     this.completeButton.disabled = blocked || this.isSending;
-    this.completeButton.textContent = this.isSending ? 'Sending…' : 'Diary complete';
+    this.completeButton.textContent = this.isSending
+      ? t('validationPanel.sending')
+      : t('validationPanel.complete');
     this.completeHint.hidden = !hasSubmitUrl || !blocked;
 
     const failed = this.submitError?.date === currentDate;
@@ -168,7 +171,7 @@ export class ValidationPanel extends TinyBase {
     const [text, state] = failed
       ? [this.submitError.text, 'error']
       : complete && hasSubmitUrl
-        ? ['This Diary has been submitted. Thank you.', 'success']
+        ? [t('validationPanel.submitted'), 'success']
         : ['', ''];
     // only touched when it changes, so a screen reader announces it once
     if (this.submitStatus.textContent !== text) {
@@ -221,12 +224,15 @@ export class ValidationPanel extends TinyBase {
   }
 
   renderResult({ title, level, passed, message }) {
-    const advice = level === 'soft' ? ' <span class="validation-advice">(advice)</span>' : '';
+    const advice =
+      level === 'soft'
+        ? ` <span class="validation-advice">${t('validationPanel.advice')}</span>`
+        : '';
     return `<li class="validation-result ${passed ? 'passed' : 'failed'}">
         <span class="validation-icon" aria-hidden="true">${passed ? doneIconSource : crossIconSource}</span>
         <span class="validation-text">
           <span class="validation-title">${escapeHtml(title)}${advice}
-            <span class="sr-only">${passed ? 'passed' : 'failed'}</span></span>
+            <span class="sr-only">${passed ? t('validationPanel.passed') : t('validationPanel.failed')}</span></span>
           ${passed ? '' : `<span class="validation-message">${escapeHtml(message)}</span>`}
         </span>
       </li>`;
@@ -236,28 +242,28 @@ export class ValidationPanel extends TinyBase {
     this.innerHTML = `
       <section id="validation-panel" class="validation-panel" aria-labelledby="validation-panel-title" tabindex="-1" inert>
         <header class="validation-header">
-          <h2 id="validation-panel-title">Checks</h2>
-          <button type="button" class="reset-to-div" data-close aria-label="Close checks">&times;</button>
+          <h2 id="validation-panel-title">${t('validationPanel.title')}</h2>
+          <button type="button" class="reset-to-div" data-close aria-label="${t('validationPanel.close')}">&times;</button>
         </header>
         <ul class="validation-list"></ul>
         <div class="validation-actions">
           <p class="validation-complete-hint" id="validation-complete-hint" hidden>
-            The checks that are not marked as advice must pass before you can complete this Diary.
+            ${t('validationPanel.hint')}
           </p>
           <p class="validation-submit-status" role="status"></p>
           <button type="button" class="validation-complete" aria-describedby="validation-complete-hint" hidden>
-            Diary complete
+            ${t('validationPanel.complete')}
           </button>
         </div>
         <el-dialog ${this.setProps({
           registerDialogActions: (actions) => {
             this.confirmDialogActions = actions;
           },
-          content: `<h4>Are you sure?</h4>
-            <p>These checks are not met:</p>
+          content: `<h4>${t('validationPanel.confirm.title')}</h4>
+            <p>${t('validationPanel.confirm.intro')}</p>
             <ul class="validation-soft-failures"></ul>
-            <button type="button" class="validation-confirm" data-confirm-submit>Submit anyway</button>`,
-          closeLabel: 'Go back',
+            <button type="button" class="validation-confirm" data-confirm-submit>${t('validationPanel.confirm.submitAnyway')}</button>`,
+          closeLabel: t('validationPanel.confirm.goBack'),
           onRequestClose: () => {
             this.isConfirming = false;
             this.confirmDialogActions.close();

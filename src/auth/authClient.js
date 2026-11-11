@@ -2,6 +2,7 @@
 // POST /logout). Only used when the study turns on server accounts
 // (general.server_accounts, see config/config.schema.json). Never throws for
 // a failed request: the caller gets a result to show the Respondent.
+import { t } from '../i18n/i18n';
 
 // -> { enabled, backendUrl } for a study config (the running study's comes
 // via src/config/appConfig.js's accounts()). Accounts are off unless the
@@ -100,17 +101,22 @@ const minutes = (seconds) => Math.ceil(seconds / 60);
 export function describeLoginFailure(result) {
   switch (result.reason) {
     case 'empty':
-      return 'Enter your login code.';
+      return t('login.failure.empty');
     case 'invalid':
-      return 'That code was not recognised. Check it and try again.';
-    case 'rate-limited':
-      return result.retryAfterSeconds
-        ? `Too many attempts. Please wait ${minutes(result.retryAfterSeconds)} ` +
-            `minute${minutes(result.retryAfterSeconds) === 1 ? '' : 's'} and try again.`
-        : 'Too many attempts. Please wait a few minutes and try again.';
+      return t('login.failure.invalid');
+    case 'rate-limited': {
+      if (!result.retryAfterSeconds) {
+        return t('login.failure.rateLimited.unknown');
+      }
+      const wait = minutes(result.retryAfterSeconds);
+      // one sentence per number (ADR 0008: explicit keys, no plural engine)
+      return t(wait === 1 ? 'login.failure.rateLimited.one' : 'login.failure.rateLimited.other', {
+        minutes: wait,
+      });
+    }
     case 'network':
-      return 'Could not reach the server. Check your connection and try again.';
+      return t('login.failure.network');
     default:
-      return 'Something went wrong on the server. Please try again later.';
+      return t('login.failure.server');
   }
 }

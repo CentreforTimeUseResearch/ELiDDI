@@ -7,6 +7,7 @@ import { escapeHtml } from '../../utils/html';
 import { guardUnsavedEdits } from '../../utils/unsavedEdits';
 import { MIN_ENTRY_DURATION_MINS } from '../timeline/timelineConstants';
 import { getDayBoundaryInMinutes } from '../../utils/time';
+import { t } from '../../i18n/i18n';
 import { DeleteConfirmFlow } from './deleteConfirmFlow';
 import { LeavePromptFlow } from './leavePromptFlow';
 
@@ -143,17 +144,17 @@ export class DetailsPanel extends TinyBase {
       ? this.state.activity.length > 0
       : !!this.state.activity;
     if (typeof startOffsetMins !== 'number' || typeof endOffsetMins !== 'number') {
-      reasons.push('Choose a start and end time');
+      reasons.push(t('detailsPanel.reason.times'));
     }
     if (!hasActivity) {
-      reasons.push('Choose an activity');
+      reasons.push(t('detailsPanel.reason.activity'));
     }
     if (
       typeof startOffsetMins === 'number' &&
       typeof endOffsetMins === 'number' &&
       endOffsetMins - startOffsetMins < MIN_ENTRY_DURATION_MINS
     ) {
-      reasons.push(`An entry must last at least ${MIN_ENTRY_DURATION_MINS} minutes`);
+      reasons.push(t('detailsPanel.reason.minDuration', { minutes: MIN_ENTRY_DURATION_MINS }));
     }
     return reasons;
   }
@@ -177,7 +178,7 @@ export class DetailsPanel extends TinyBase {
       this.hideSaveButton();
     }
     if (this.saveHint) {
-      this.saveHint.textContent = reasons.join('. ');
+      this.saveHint.textContent = reasons.join(t('common.sentenceJoin'));
       this.saveHint.toggleAttribute('hidden', reasons.length === 0);
     }
     this.updateSaveDescription();
@@ -431,12 +432,12 @@ export class DetailsPanel extends TinyBase {
     if (nextEntry) {
       return {
         endTimeInMinutes: nextEntry.startOffsetMins + this.dayBoundaryInMinutes,
-        label: 'Continue this activity to the next activity',
+        label: t('timePickerPanel.continue.toNext'),
       };
     }
     return {
       endTimeInMinutes: this.dayBoundaryInMinutes - 1 + 24 * 60,
-      label: 'Continue this activity to the end of the day',
+      label: t('timePickerPanel.continue.toEnd'),
     };
   }
 
@@ -587,8 +588,8 @@ export class DetailsPanel extends TinyBase {
               <el-time-picker-panel ${this.setProps({ onTimeSet: (setTimeProps) => this.onSetOffsetMins(setTimeProps), getContinueToTarget: (startTimeInMinutes) => this.getContinueToTarget(startTimeInMinutes) })} day-boundary="${this.dayBoundaryInMinutes}"></el-time-picker-panel>
               <div class="entry-error" id="entry-error-${this.instanceId}" aria-live="polite" hidden></div>
               <p class="save-hint" id="save-hint-${this.instanceId}" hidden></p>
-              <button class="btn btn-save-btn opaque" aria-disabled="true">Save</button>
-              <button class="btn btn-delete-btn hide">Delete</button>${this.leavePromptFlow.markup(this.instanceId)}${this.deleteConfirmFlow.markup(this.instanceId)}
+              <button class="btn btn-save-btn opaque" aria-disabled="true">${t('detailsPanel.save')}</button>
+              <button class="btn btn-delete-btn hide">${t('detailsPanel.delete')}</button>${this.leavePromptFlow.markup(this.instanceId)}${this.deleteConfirmFlow.markup(this.instanceId)}
             </div>
             `;
   }

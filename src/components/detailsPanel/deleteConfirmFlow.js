@@ -1,3 +1,5 @@
+import { t } from '../../i18n/i18n';
+
 // The in-panel "Delete this entry?" question (not a browser dialog) - Delete
 // does not delete, it asks, with the safe answer focused
 // (docs/design/flows/edit-entry.md). A plain class, not an element, owned by
@@ -21,9 +23,9 @@ export class DeleteConfirmFlow {
   markup(instanceId) {
     return `
               <div class="delete-confirm" role="group" aria-labelledby="delete-confirm-question-${instanceId}" hidden>
-                <p class="delete-confirm-question" id="delete-confirm-question-${instanceId}">Delete this entry? This can't be undone.</p>
-                <button type="button" class="btn btn-confirm-delete-btn">Delete</button>
-                <button type="button" class="btn btn-keep-btn" aria-describedby="delete-confirm-question-${instanceId}">Keep it</button>
+                <p class="delete-confirm-question" id="delete-confirm-question-${instanceId}">${t('deleteConfirm.question')}</p>
+                <button type="button" class="btn btn-confirm-delete-btn">${t('deleteConfirm.confirm')}</button>
+                <button type="button" class="btn btn-keep-btn" aria-describedby="delete-confirm-question-${instanceId}">${t('deleteConfirm.keep')}</button>
               </div>`;
   }
 

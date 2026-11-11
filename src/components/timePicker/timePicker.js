@@ -8,6 +8,8 @@ import {
   clearFieldError,
 } from '../../utils/validatedFormField';
 import { onHalfMinuteTick } from '../../utils/nowTicker';
+import { escapeHtml } from '../../utils/html';
+import { t } from '../../i18n/i18n';
 import './timePicker.css';
 
 const ID = INPUT_ID_ATTR;
@@ -73,7 +75,7 @@ export class TimePicker extends TinyBase {
     const isTimeSupported = this.timeInput.type === 'time';
     if (!isTimeSupported) {
       // Explicitly update attributes for screen readers on legacy browsers
-      this.timeInput.setAttribute('placeholder', 'HH:MM');
+      this.timeInput.setAttribute('placeholder', t('timePicker.placeholder'));
       this.timeInput.setAttribute('maxLength', '5');
 
       // Prevent non-numeric or non-colon character typing entirely
@@ -104,13 +106,11 @@ export class TimePicker extends TinyBase {
 
     // validate
     if (value === '' && this.timeInput.hasAttribute('required')) {
-      this.showError(`The ${this[LABEL]} time field is required.`);
+      this.showError(t('timePicker.required', { label: this[LABEL] }));
     } else if (value !== '' && !this.time24Regex.test(value)) {
-      this.showError('Please enter a valid 24-hour time between 00:00 and 23:59.');
+      this.showError(t('timePicker.invalid'));
     } else if (this[CONSTRAINED] && this.maxTimeValue !== undefined && value > this.maxTimeValue) {
-      this.showError(
-        `Time cannot be in the future. Please select a time at or before ${this.maxTimeValue}.`
-      );
+      this.showError(t('timePicker.future', { max: this.maxTimeValue }));
     } else {
       this.value = value;
       if (this[ERROR]) {
@@ -139,7 +139,7 @@ export class TimePicker extends TinyBase {
   render() {
     // the label, hint and error are tied to the input by real ids - unique
     // now that the app has one details panel (#151)
-    this.innerHTML = `<label for="${this[ID]}" class="time-label">${this[LABEL]}</label><br />
+    this.innerHTML = `<label for="${this[ID]}" class="time-label">${escapeHtml(this[LABEL])}</label><br />
 
       <input 
         type="time" 
@@ -153,7 +153,7 @@ export class TimePicker extends TinyBase {
         aria-describedby="${this[ID]}-time-hint ${this[ID]}-time-error">
         
       <!-- Accessible descriptions: Status hints and errors -->
-      <span id="${this[ID]}-time-hint" data-id="${this[ID]}-time-hint" class="hint-text" hidden>Format: HH:MM (e.g., 14:30)</span>
+      <span id="${this[ID]}-time-hint" data-id="${this[ID]}-time-hint" class="hint-text" hidden>${t('timePicker.hint')}</span>
       <span id="${this[ID]}-time-error" data-id="${this[ID]}-time-error" class="error-text" aria-live="polite" hidden></span>
     `;
   }

@@ -3,6 +3,7 @@ import { TinyBase } from '../base';
 import { searchActivities, hasKnownActivity } from '../../utils/activitySearch';
 import { dimension } from '../../config/appConfig';
 import { escapeHtml } from '../../utils/html';
+import { t } from '../../i18n/i18n';
 import { KeyboardGridNavigation } from './keyboardGridNavigation';
 import './activityPicker.css';
 
@@ -176,7 +177,7 @@ export class ActivityPicker extends TinyBase {
 
   doneButtonHtml() {
     return this.isMulti
-      ? `<button type="button" class="btn activity-picker-done-btn" data-done>Done</button>`
+      ? `<button type="button" class="btn activity-picker-done-btn" data-done>${t('activityPicker.done')}</button>`
       : '';
   }
 
@@ -192,7 +193,7 @@ export class ActivityPicker extends TinyBase {
       return '';
     }
     const safeText = escapeHtml(trimmed);
-    return `<button type="button" class="btn activity-picker-freetext-btn" data-free-text="${safeText}">Use &quot;${safeText}&quot;</button>`;
+    return `<button type="button" class="btn activity-picker-freetext-btn" data-free-text="${safeText}">${t('activityPicker.useFreeText', { text: safeText })}</button>`;
   }
 
   assignFreeTextHandler() {

@@ -21,6 +21,16 @@ describe('DurationInput', () => {
     expect(el.querySelector('#duration-minutes').value).toBe('35');
   });
 
+  it('shows a label with quotes and markup as plain text (labels come from a translator-edited catalogue)', () => {
+    const el = document.createElement('el-duration-input');
+    el.setAttribute('input-id', 'duration');
+    el.setAttribute('label', `Durée "totale" <b>en</b> heures`);
+    document.body.appendChild(el);
+
+    expect(el.querySelector('legend').textContent).toBe(`Durée "totale" <b>en</b> heures`);
+    expect(el.querySelector('legend b')).toBeNull();
+  });
+
   it('shows an error when hours exceeds 23', () => {
     const el = document.createElement('el-duration-input');
     el.setAttribute('input-id', 'duration');

@@ -31,7 +31,51 @@ export default {
   'resetDialog.message': "Clear every entry for the selected day? This can't be undone.",
   'resetDialog.confirm': 'Clear this day',
 
+  // joins sentence fragments ("Choose an activity. An entry must last…")
+  'common.sentenceJoin': '. ',
+
   'datePicker.label': 'Choose date:',
+
+  'detailsPanel.save': 'Save',
+  'detailsPanel.delete': 'Delete',
+  'detailsPanel.reason.times': 'Choose a start and end time',
+  'detailsPanel.reason.activity': 'Choose an activity',
+  'detailsPanel.reason.minDuration': 'An entry must last at least {minutes} minutes',
+
+  'deleteConfirm.question': "Delete this entry? This can't be undone.",
+  'deleteConfirm.confirm': 'Delete',
+  'deleteConfirm.keep': 'Keep it',
+
+  'leavePrompt.question': 'You have unsaved changes to this entry.',
+  'leavePrompt.cannotSave': "It can't be saved yet. {reasons}.",
+  'leavePrompt.save': 'Save',
+  'leavePrompt.discard': 'Discard',
+  'leavePrompt.keep': 'Keep editing',
+
+  'activityPicker.done': 'Done',
+  'activityPicker.useFreeText': 'Use "{text}"',
+
+  // shared by detailsPanel (the continue target) and timePickerPanel (its checkbox)
+  'timePickerPanel.continue.toEnd': 'Continue this activity to the end of the day',
+  'timePickerPanel.continue.toNext': 'Continue this activity to the next activity',
+  'timePickerPanel.legend': 'Schedule Settings',
+  'timePickerPanel.startLabel': 'Start time (24-hour format)',
+  'timePickerPanel.endLabel': 'End time (24-hour format)',
+  'timePickerPanel.durationLabel': 'Duration',
+  'timePickerPanel.endBetween': "End time can't be between {from} and {to}",
+  'timePickerPanel.endTooSoon': 'End time must be at least {minutes} minutes after the start time',
+
+  'timePicker.placeholder': 'HH:MM',
+  'timePicker.hint': 'Format: HH:MM (e.g., 14:30)',
+  'timePicker.required': 'The {label} time field is required.',
+  'timePicker.invalid': 'Please enter a valid 24-hour time between 00:00 and 23:59.',
+  'timePicker.future': 'Time cannot be in the future. Please select a time at or before {max}.',
+
+  'durationInput.hint': 'For example, 1 hour and 30 minutes',
+  'durationInput.hours': 'Hours',
+  'durationInput.minutes': 'Minutes',
+  'durationInput.hoursInvalid': 'Enter hours as a number between 0 and {max}.',
+  'durationInput.minutesInvalid': 'Enter minutes as a number between 0 and {max}.',
 
   'onboarding.back': 'back',
   'onboarding.next': 'next',

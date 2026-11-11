@@ -41,6 +41,13 @@ describe('TimePicker', () => {
     return el;
   }
 
+  it('shows a label with quotes and markup as plain text (labels come from a translator-edited catalogue)', () => {
+    const el = createPicker({ label: `Début "de" <b>l'heure</b>` });
+
+    expect(el.querySelector('label').textContent).toBe(`Début "de" <b>l'heure</b>`);
+    expect(el.querySelector('label b')).toBeNull();
+  });
+
   it('renders a labelled time input', () => {
     const el = createPicker();
     const input = el.querySelector('input[data-id="startTime"]');

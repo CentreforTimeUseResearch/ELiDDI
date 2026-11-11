@@ -1,4 +1,5 @@
 import { announce } from '../../utils/announce';
+import { t } from '../../i18n/i18n';
 
 // The in-panel "You have unsaved changes" question (not a browser dialog) -
 // shown by the DetailsPanelCoordinator's guard when something is about to
@@ -27,11 +28,11 @@ export class LeavePromptFlow {
   markup(instanceId) {
     return `
               <div class="leave-prompt" role="group" aria-labelledby="leave-prompt-question-${instanceId}" hidden>
-                <p class="leave-prompt-question" id="leave-prompt-question-${instanceId}">You have unsaved changes to this entry.</p>
+                <p class="leave-prompt-question" id="leave-prompt-question-${instanceId}">${t('leavePrompt.question')}</p>
                 <p class="leave-prompt-reason" hidden></p>
-                <button type="button" class="btn btn-leave-save">Save</button>
-                <button type="button" class="btn btn-leave-discard">Discard</button>
-                <button type="button" class="btn btn-leave-keep" aria-describedby="leave-prompt-question-${instanceId}">Keep editing</button>
+                <button type="button" class="btn btn-leave-save">${t('leavePrompt.save')}</button>
+                <button type="button" class="btn btn-leave-discard">${t('leavePrompt.discard')}</button>
+                <button type="button" class="btn btn-leave-keep" aria-describedby="leave-prompt-question-${instanceId}">${t('leavePrompt.keep')}</button>
               </div>`;
   }
 
@@ -59,11 +60,13 @@ export class LeavePromptFlow {
     const reasons = this.getIncompleteReasons();
     const complete = reasons.length === 0;
     this.saveButton.toggleAttribute('hidden', !complete);
-    this.reason.textContent = complete ? '' : `It can't be saved yet. ${reasons.join('. ')}.`;
+    this.reason.textContent = complete
+      ? ''
+      : t('leavePrompt.cannotSave', { reasons: reasons.join(t('common.sentenceJoin')) });
     this.reason.toggleAttribute('hidden', complete);
     this.prompt.removeAttribute('hidden');
     this.host.setAttribute('data-leaving', '');
-    announce(`You have unsaved changes to this entry. ${this.reason.textContent}`.trim());
+    announce(`${t('leavePrompt.question')} ${this.reason.textContent}`.trim());
     this.keepButton.focus();
   }
 

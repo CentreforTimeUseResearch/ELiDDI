@@ -4,6 +4,8 @@ import { TinyBase } from '../base';
 import { getMaxEditableTimeInMinutes } from '../../utils/time';
 import { dayBoundary } from '../../config/appConfig';
 import { MIN_ENTRY_DURATION_MINS } from '../timeline/timelineConstants';
+import { escapeHtml } from '../../utils/html';
+import { t } from '../../i18n/i18n';
 import './timePickerPanel.css';
 
 const DAY_BOUNDARY = 'day-boundary';
@@ -137,9 +139,12 @@ export class TimePickerPanel extends TinyBase {
        the minimum after the start (#162) - recomputed on every change, so
        the message clears once the times are valid */
     if (endTotalMinutes > endDayBoundaryInMinutes) {
-      this.endTimeError = `End time can't be between ${dayBoundary()} and ${this.convertMinutesToTimePickerFormat(this.startInputMinutes)}`;
+      this.endTimeError = t('timePickerPanel.endBetween', {
+        from: dayBoundary(),
+        to: this.convertMinutesToTimePickerFormat(this.startInputMinutes),
+      });
     } else if (endTotalMinutes - startTotalMinutes < MIN_ENTRY_DURATION_MINS) {
-      this.endTimeError = `End time must be at least ${MIN_ENTRY_DURATION_MINS} minutes after the start time`;
+      this.endTimeError = t('timePickerPanel.endTooSoon', { minutes: MIN_ENTRY_DURATION_MINS });
     } else {
       this.endTimeError = '';
     }
@@ -213,30 +218,30 @@ export class TimePickerPanel extends TinyBase {
   render() {
     this.innerHTML = `
     <fieldset class="time-container">
-      <legend class="sr-only">Schedule Settings</legend>
+      <legend class="sr-only">${t('timePickerPanel.legend')}</legend>
       
       <el-time-picker ${this.setProps({ change: (timeInHHMMFormat) => this.onTimeInputChange('startTime', this.convertTimePickerFormatToMinutes(timeInHHMMFormat)), getMaxTime: () => this.getMaxEditableTime() })}
         input-id="startTime"
-        label="Start time (24-hour format)"
+        label="${escapeHtml(t('timePickerPanel.startLabel'))}"
         ${valueAttribute(this.formatIfSet(this.startInputMinutes))}
         constrained="true"
       ></el-time-picker>
       <el-time-picker ${this.setProps({ change: (timeInHHMMFormat) => this.onTimeInputChange('endTime', this.convertTimePickerFormatToMinutes(timeInHHMMFormat)), getMaxTime: () => this.getMaxEditableTime() })}
         input-id="endTime"
-        label="End time (24-hour format)"
+        label="${escapeHtml(t('timePickerPanel.endLabel'))}"
         ${valueAttribute(this.formatIfSet(this.endInputMinutes))}
         constrained="true"
-        ${this.endTimeError ? `error="${this.endTimeError}"` : ''}
+        ${this.endTimeError ? `error="${escapeHtml(this.endTimeError)}"` : ''}
       ></el-time-picker>
       <div class="rest-of-day-checkbox-layout">
         <input type="checkbox" id="timepicker-rest-of-day">
-        <label for="timepicker-rest-of-day">Continue this activity to the end of the day</label>
+        <label for="timepicker-rest-of-day">${t('timePickerPanel.continue.toEnd')}</label>
       </div>
 
       <el-duration-input ${this.setProps({ change: (valueInMinutes) => this.onTimeInputChange('duration', valueInMinutes) })}
         data-id="duration"
         input-id="duration"
-        label="Duration"
+        label="${escapeHtml(t('timePickerPanel.durationLabel'))}"
         ${valueAttribute(isSet(this.durationInputMinutes) ? this.durationInputMinutes : undefined)}
       ></el-duration-input>
 

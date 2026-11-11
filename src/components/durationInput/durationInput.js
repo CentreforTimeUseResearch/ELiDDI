@@ -7,6 +7,8 @@ import {
   showFieldError,
   clearFieldError,
 } from '../../utils/validatedFormField';
+import { escapeHtml } from '../../utils/html';
+import { t } from '../../i18n/i18n';
 import './durationInput.css';
 
 const ID = INPUT_ID_ATTR;
@@ -73,11 +75,11 @@ export class DurationInput extends TinyBase {
     const minutesRaw = this.minutesInput.value.trim();
 
     if (hoursRaw !== '' && Number(hoursRaw) > MAX_HOURS) {
-      this.showError(this.hoursInput, `Enter hours as a number between 0 and ${MAX_HOURS}.`);
+      this.showError(this.hoursInput, t('durationInput.hoursInvalid', { max: MAX_HOURS }));
       return false;
     }
     if (minutesRaw !== '' && Number(minutesRaw) > MAX_MINUTES) {
-      this.showError(this.minutesInput, `Enter minutes as a number between 0 and ${MAX_MINUTES}.`);
+      this.showError(this.minutesInput, t('durationInput.minutesInvalid', { max: MAX_MINUTES }));
       return false;
     }
     this.clearError();
@@ -115,11 +117,11 @@ export class DurationInput extends TinyBase {
     const id = this[ID];
 
     this.innerHTML = `<fieldset class="duration-fieldset">
-        <legend>${this[LABEL]}</legend>
-        <span id="${id}-hint" class="hint-text">For example, 1 hour and 30 minutes</span>
+        <legend>${escapeHtml(this[LABEL])}</legend>
+        <span id="${id}-hint" class="hint-text">${t('durationInput.hint')}</span>
         <div class="duration-fields">
           <div class="duration-field">
-            <label for="${id}-hours">Hours</label>
+            <label for="${id}-hours">${t('durationInput.hours')}</label>
             <input
               type="text"
               inputmode="numeric"
@@ -131,7 +133,7 @@ export class DurationInput extends TinyBase {
               aria-describedby="${id}-hint ${id}-error">
           </div>
           <div class="duration-field">
-            <label for="${id}-minutes">Minutes</label>
+            <label for="${id}-minutes">${t('durationInput.minutes')}</label>
             <input
               type="text"
               inputmode="numeric"

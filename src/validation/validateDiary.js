@@ -5,8 +5,9 @@ import { eatingOrDrinking } from './rules/eatingOrDrinking';
 
 // Checks one Diary against the Validation rules a study has switched on, and
 // says whether the Respondent may submit it (CONTEXT.md: Validation rule,
-// Hard check, Soft check). Pure - the Diary and the study config are
-// arguments, so it needs no store and no global config.
+// Hard check, Soft check). The Diary and the study config are arguments, so it
+// needs no store and no global config; the only ambient input is the language
+// the messages are written in (t(), ADR 0008), which is fixed for a study.
 
 // Every rule ELiDDI ships, in the order they are reported. The config only
 // chooses which are active and how strictly (config.validation, rule id ->

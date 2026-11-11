@@ -3,6 +3,7 @@ import { formatOffsetAsClockTime } from '../../utils/time';
 import { ADD_ENTRY, UPDATE_ENTRY, DELETE_ENTRY } from '../../store/actionTypes';
 import { MIN_ENTRY_DURATION_MINS } from './timelineConstants';
 import { dimension } from '../../config/appConfig';
+import { t } from '../../i18n/i18n';
 
 // What a Timeline can do to its own Entries in the store, and the rules
 // that apply - id allocation, overlap validation - with no DOM. Shared by
@@ -117,5 +118,5 @@ export class EntryCommands {
 export function formatOverlapMessage(conflict) {
   const start = formatOffsetAsClockTime(conflict.startOffsetMins);
   const end = formatOffsetAsClockTime(conflict.endOffsetMins);
-  return `This overlaps with your existing "${conflict.activity}" entry (${start}–${end}). Adjust the time, or edit/delete that entry first.`;
+  return t('entryCommands.overlap', { activity: conflict.activity, start, end });
 }

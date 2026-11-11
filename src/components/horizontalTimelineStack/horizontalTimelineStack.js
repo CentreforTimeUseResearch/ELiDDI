@@ -5,6 +5,7 @@ import '../detailsPanel/detailsPanel';
 import { DetailsPanelCoordinator } from '../detailsPanel/detailsPanelCoordinator';
 import { HIDE_PANEL, SWITCH_DIMENSION } from '../../store/actionTypes';
 import { dimension, dimensions } from '../../config/appConfig';
+import { t } from '../../i18n/i18n';
 import './horizontalTimelineStack.css';
 
 // The desktop layout: the shared axis, one HorizontalTimeline row per
@@ -119,7 +120,7 @@ export class HorizontalTimelineStack extends TinyBase {
     const tabList = document.createElement('div');
     tabList.className = 'dimension-tabs';
     tabList.setAttribute('role', 'tablist');
-    tabList.setAttribute('aria-label', 'Dimensions');
+    tabList.setAttribute('aria-label', t('horizontalTimelineStack.dimensions'));
     tabList.setAttribute('aria-orientation', 'vertical');
     tabList.addEventListener('keydown', (event) => this.onTabKeyDown(event));
     return tabList;

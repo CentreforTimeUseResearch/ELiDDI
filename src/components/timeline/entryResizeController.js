@@ -1,4 +1,5 @@
 import { formatOffsetAsClockTime } from '../../utils/time';
+import { t } from '../../i18n/i18n';
 import { SVGNS } from './timelineConstants';
 import { LongPressRecognizer } from './longPressRecognizer';
 import { DragSession } from './dragSession';
@@ -395,7 +396,7 @@ export class EntryResizeController {
       drag.currentStart,
       true,
       false,
-      drag.atLimit ? `${times} · limit` : times
+      drag.atLimit ? t('timeline.withLimit', { text: times }) : times
     );
     this.updateHandlePosition('end', drag.currentEnd, false);
   }
@@ -424,8 +425,8 @@ export class EntryResizeController {
       group.appendChild(readout);
     }
     readout.setAttributeNS(null, this.axis.positionAttr, position);
-    readout.textContent =
-      label ?? formatOffsetAsClockTime(offsetMins) + (atLimit ? ' · limit' : '');
+    const time = formatOffsetAsClockTime(offsetMins);
+    readout.textContent = label ?? (atLimit ? t('timeline.withLimit', { text: time }) : time);
   }
 
   // the clock-time text beside a handle; the caller sets its position along

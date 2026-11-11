@@ -3,6 +3,7 @@ import { HIDE_PANEL, SWITCH_DIMENSION } from '../../store/actionTypes';
 import './timelinePicker.css';
 import { escapeHtml } from '../../utils/html';
 import { dimensions } from '../../config/appConfig';
+import { t } from '../../i18n/i18n';
 
 export class TimelinePicker extends TinyBase {
   dimensionNames;
@@ -94,7 +95,7 @@ export class TimelinePicker extends TinyBase {
                   class="el-select"
                   data-timeline-picker
                   name="timeline-picker"
-                  aria-label="Dimension"
+                  aria-label="${t('timelinePicker.label')}"
                 >
                     ${this.createOptions()}
                 </select>

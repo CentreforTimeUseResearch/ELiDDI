@@ -10,6 +10,7 @@ import { announce, ensureAnnouncer } from '../../utils/announce';
 import { NATIVE_ZOOM, MAX_ZOOM, ZOOM_STEP, getEffectivePxPerMinute } from './zoomConstants';
 import { renderGridLines } from './gridLines';
 import { onHalfMinuteTick } from '../../utils/nowTicker';
+import { t } from '../../i18n/i18n';
 import './horizontalTimelineAxis.css';
 const AXIS_HEIGHT = 40; // matches #svg-horizontal-timeline-axis's viewBox height in index.html
 const GRID_TICK_TOP = 28;
@@ -113,14 +114,14 @@ export class HorizontalTimelineAxis extends TinyBase {
 
   // "Zoom 125%", and when it can go no further, which way that is
   describeZoom() {
-    const percent = `Zoom ${Math.round(this.zoomLevel * 100)}%`;
+    const percent = Math.round(this.zoomLevel * 100);
     if (this.zoomLevel >= MAX_ZOOM) {
-      return `${percent}, the closest view`;
+      return t('horizontalTimelineAxis.zoomClosest', { percent });
     }
     if (this.zoomLevel <= this.computeMinZoom()) {
-      return `${percent}, the whole day is showing`;
+      return t('horizontalTimelineAxis.zoomWholeDay', { percent });
     }
-    return percent;
+    return t('horizontalTimelineAxis.zoom', { percent });
   }
 
   updateButtonDisabledState() {
@@ -202,8 +203,8 @@ export class HorizontalTimelineAxis extends TinyBase {
     const controls = document.createElement('div');
     controls.className = 'zoom-controls';
     controls.innerHTML = `
-      <button type="button" class="reset-to-div zoom-button zoom-out" aria-label="Zoom out">−</button>
-      <button type="button" class="reset-to-div zoom-button zoom-in" aria-label="Zoom in">+</button>
+      <button type="button" class="reset-to-div zoom-button zoom-out" aria-label="${t('horizontalTimelineAxis.zoomOut')}">−</button>
+      <button type="button" class="reset-to-div zoom-button zoom-in" aria-label="${t('horizontalTimelineAxis.zoomIn')}">+</button>
     `;
     this.appendChild(controls);
     this.appendChild(this.fragment);

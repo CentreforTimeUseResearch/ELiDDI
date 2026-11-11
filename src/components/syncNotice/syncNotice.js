@@ -1,6 +1,7 @@
 import { TinyBase } from '../base';
 import { appSyncStatus, NOTICE_KIND } from '../../sync/syncStatus';
 import { logoutAnyway, requestLogout } from '../../sync/appSync';
+import { t } from '../../i18n/i18n';
 import './syncNotice.css';
 
 // "3 November 2026" from "2026-11-03"; the key as it is if it is not a date
@@ -11,8 +12,11 @@ export function describeDate(key) {
     : date.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
+// "a and b", "a, b and c" - the joining words come from the catalogue
 const listOf = (items) =>
-  items.length < 3 ? items.join(' and ') : `${items.slice(0, -1).join(', ')} and ${items.at(-1)}`;
+  items.length < 3
+    ? items.join(t('common.listAnd'))
+    : `${items.slice(0, -1).join(t('common.listSeparator'))}${t('common.listAnd')}${items.at(-1)}`;
 
 // What the Respondent is told, and what they can do about it, when the server's
 // copy of their diary and this device's disagreed (docs/adr/0007, "Two devices").
@@ -33,22 +37,26 @@ export class SyncNotice extends TinyBase {
     }
     if (notice.kind === NOTICE_KIND.REPLACED) {
       const days = listOf(notice.dates.map(describeDate));
-      const plural = notice.dates.length > 1;
+      // one sentence per number (ADR 0008: explicit keys, no plural engine)
+      const message = t(
+        notice.dates.length > 1 ? 'syncNotice.replaced.other' : 'syncNotice.replaced.one',
+        {
+          days,
+        }
+      );
       this.innerHTML = `
         <div class="sync-notice" role="status">
-          <p>Another device had a newer version of ${days}, so ${plural ? 'those days now show' : 'that day now shows'} the newer ${plural ? 'versions' : 'version'}.
-          Your earlier ${plural ? 'versions are' : 'version is'} kept on this device.</p>
-          <div class="sync-notice-buttons"><button type="button" data-notice="dismiss">OK</button></div>
+          <p>${message}</p>
+          <div class="sync-notice-buttons"><button type="button" data-notice="dismiss">${t('syncNotice.ok')}</button></div>
         </div>`;
     } else if (notice.kind === NOTICE_KIND.UNSENT) {
       this.innerHTML = `
         <div class="sync-notice sync-notice-alert" role="alert">
-          <p>Your latest changes could not be sent to the server. If you log out now they stay on this device,
-          and are sent the next time you log in here.</p>
+          <p>${t('syncNotice.unsent')}</p>
           <div class="sync-notice-buttons">
-            <button type="button" data-notice="retry">Try again</button>
-            <button type="button" data-notice="logout">Log out anyway</button>
-            <button type="button" data-notice="dismiss">Stay logged in</button>
+            <button type="button" data-notice="retry">${t('syncNotice.retry')}</button>
+            <button type="button" data-notice="logout">${t('syncNotice.logoutAnyway')}</button>
+            <button type="button" data-notice="dismiss">${t('syncNotice.stayLoggedIn')}</button>
           </div>
         </div>`;
     }

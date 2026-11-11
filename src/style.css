@@ -101,6 +101,9 @@
   /* Phase 10's desktop tier (DESIGN.md's "small desktop" breakpoint) - every
      `@media (min-width: 1024px)` rule in the codebase should match this. */
   --desktop-width: 1024px;
+  /* from here the nav bar carries the menu links and the burger is hidden;
+     hand-kept literal in navbar.css (media queries can't read this) */
+  --wide-nav-width: 1200px;
 
   color-scheme: light;
   font-family: var(--font-text);

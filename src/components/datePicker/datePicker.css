@@ -42,4 +42,31 @@ el-date-picker {
   .width-adjust {
     width: calc(100% - 4px);
   }
+
+  /* each day with its status; the native date input cannot show that */
+  .day-choices {
+    list-style: none;
+    margin: var(--space-sm) 0 0;
+    padding: 0;
+  }
+
+  .day-choice {
+    display: block;
+    width: 100%;
+    min-height: 44px;
+    padding: var(--space-xxs) var(--space-xs);
+    text-align: left;
+    cursor: pointer;
+    font-size: 16px;
+    color: var(--color-ink);
+  }
+
+  .day-choice[aria-current='date'] {
+    font-weight: bold;
+  }
+
+  .day-choice:focus-visible {
+    outline: 2px solid var(--color-primary-focus);
+    outline-offset: 2px;
+  }
 }

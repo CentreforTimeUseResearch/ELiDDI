@@ -38,6 +38,8 @@ el-dynamic-timeline {
   /* keep in sync with --medium-width in style.css's :root - media queries
      can't read custom properties, so this is a hand-kept literal */
   @media (min-width: 630px) {
+    /* the menu is a permanent sidebar from 630 to 1023px (navbar.css): one
+       375px timeline shows at a time, so the column costs nothing */
     display: grid;
     grid-template-columns: 256px 1fr;
     grid-template-rows: auto 1fr;
@@ -50,9 +52,10 @@ el-dynamic-timeline {
       display: contents;
     }
 
-    /* no sidebar from 1024px (navbar.css drops it; the Dimension labels
-       moved into HorizontalTimelineStack), so the timelines get the full
-       width. Keep in sync with --desktop-width in style.css's :root. */
+    /* no sidebar from 1024px (navbar.css drops it; the wide view needs the
+       width, and its Dimension labels moved into HorizontalTimelineStack), so
+       the timelines get the full width. Keep in sync with --desktop-width in
+       style.css's :root. */
     @media (min-width: 1024px) {
       grid-template-columns: 1fr;
       grid-template-areas:

@@ -1,10 +1,27 @@
 /**
- * Sidebar component CSS
+ * Nav bar and menu drawer CSS. Left to right the bar holds: burger, day
+ * controls, Dimension dropdown, menu links (from 1200px) and the status
+ * buttons. Widths (docs/design/flows/navigate.md, issue #274):
+ *   <630px    burger (opens the menu drawer), date + "change", dropdown, help.
+ *             Day arrows hidden.
+ *   630-1023  no burger: the menu is a permanent sidebar (one 375px timeline is
+ *             visible at a time, so it does not need the width). The room the
+ *             burger leaves spreads out the day controls.
+ *   1024-1199 the wide timeline view needs the width, so no sidebar: the burger
+ *             is back and opens the drawer.
+ *   >=1200    the five menu links in the bar, and no burger or sidebar.
+ * 1024 is --desktop-width (where the wide timeline view starts).
+ * Media queries can't read custom properties, so the 630 and 1200 literals are
+ * hand-kept: 630 in sync with --medium-width, 1200 with --wide-nav-width in
+ * style.css's :root.
  */
 
+/* The menu: a drawer (opened by the burger) except from 630 to 1023px, where it
+   is a permanent sidebar column, and gone from 1200px, where the nav bar has
+   the links. */
 .off-screen-menu {
   position: fixed;
-  top: 4.9rem;
+  top: 4.16rem;
   left: -450px;
   background-color: var(--color-surface-tile);
   color: var(--color-on-dark);
@@ -16,10 +33,14 @@
   padding: 18px 16px 0;
   transition: 0.3s ease;
   z-index: 2;
+}
 
-  /* keep in sync with --medium-width in style.css's :root - media queries
-     can't read custom properties, so this is a hand-kept literal */
-  @media (min-width: 630px) {
+.off-screen-menu.active {
+  left: 0;
+}
+
+@media (min-width: 630px) and (max-width: 1023px) {
+  .off-screen-menu {
     grid-area: sidebar;
     position: static;
     width: 256px;
@@ -27,19 +48,29 @@
   }
 }
 
-.off-screen-menu.active {
-  left: 0;
+@media (min-width: 1200px) {
+  .off-screen-menu {
+    display: none;
+  }
 }
 
-/* The sidebar is the generic menu's drawer (below 630px) and column (from
-   630px). From 1024px the nav bar carries those items itself and the
-   Dimension labels sit beside the timeline rows (HorizontalTimelineStack),
-   so the sidebar has nothing left to hold: it is dropped, and
-   dynamicTimelineUI.css gives its column to the timelines. Keep in sync with
-   --desktop-width in style.css's :root - media queries can't read custom
-   properties, so this is a hand-kept literal */
-@media (min-width: 1024px) {
-  .off-screen-menu {
+/* With server accounts on, the sync indicator is in the top of the drawer
+   below 630px (the bar has no room); from 630px it stays in the bar. Only one
+   is ever displayed, so a screen reader hears the live region once. */
+.drawer-sync-status {
+  display: block;
+  margin: 0 0 var(--space-xs);
+  font-size: 16px;
+}
+
+@media (min-width: 630px) {
+  .drawer-sync-status {
+    display: none;
+  }
+}
+
+@media (max-width: 629px) {
+  .bar-sync-status {
     display: none;
   }
 }
@@ -79,69 +110,62 @@ nav {
   line-height: var(--text-fine-print-lh);
   letter-spacing: var(--text-fine-print-ls);
 
-  /* keep in sync with --medium-width in style.css's :root - media queries
-     can't read custom properties, so this is a hand-kept literal */
   @media (min-width: 630px) {
     grid-area: nav;
   }
-}
 
-.left-pane {
-  flex: 0 0 auto;
-  align-self: center;
-}
-
-.middle-pane {
-  padding-left: var(--space-sm);
-  flex: 1 1 0%;
-
-  .date-indicator {
-    margin: 4px auto;
-    text-align: center;
-
-    u {
-      color: blue;
-    }
+  /* 320-359px: below the 360px the layout is drawn for, give the dropdown the
+     room it needs by trimming the sides (it clips its text before it wraps) */
+  @media (max-width: 359px) {
+    padding-left: 8px;
+    padding-right: 8px;
   }
 }
 
-/* Previous day / the date button / Next day / Today, in one row. The date
-   button takes the room left, and shows the day's status under the date */
+/* the Dimension dropdown takes whatever the other items leave; min-width: 0
+   lets it shrink below its content, clipping the name rather than wrapping */
+nav el-timeline-picker {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
+/* Previous day / the date button / Next day, in one row. The date button
+   shows the date over the "change" link; the day's status is read out, not
+   drawn (it is shown beside each day in the date dialog) */
 .day-controls {
   display: flex;
   align-items: center;
   gap: var(--space-xs);
-  /* not stretched across a wide bar, which would leave the arrows far from the date */
-  max-width: 28rem;
-  margin: 0 auto;
+  flex: 0 0 auto;
 }
 
 .day-controls .date-indicator {
-  flex: 1 1 auto;
-  min-width: 0;
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
   margin: 0;
+  /* 12px: over the 11px floor for the date and the "change" link */
+  font-size: var(--text-fine-print-size);
   line-height: 1.35;
+  text-align: center;
+  white-space: nowrap;
 }
 
+.date-text u {
+  display: block;
+  color: var(--color-primary-on-dark);
+  /* 7:1 on the black bar; blue was 2.4:1 */
+}
+
+/* "Selected day:" and the status stay for screen readers, out of sight */
+.day-controls .date-label,
 .day-status {
-  color: var(--color-body-muted);
-}
-
-/* "Selected day:" is dropped from view on narrow screens, where the date, the
-   word "change" and the status would otherwise wrap to three lines. It stays
-   for screen readers. Keep in sync with --medium-width in style.css's :root -
-   media queries can't read custom properties, so this is a hand-kept literal */
-@media (max-width: 629px) {
-  .day-controls .date-label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-  }
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
 }
 
 /* a quiet outlined button on the black bar. min 40px: comfortably over the 24px
@@ -151,7 +175,7 @@ nav {
   min-width: 40px;
   min-height: 40px;
   padding: 0 var(--space-sm);
-  border: 1px solid var(--color-body-muted);
+  border: 0;
   border-radius: var(--radius-pill);
   background: transparent;
   color: var(--color-on-dark);
@@ -161,8 +185,12 @@ nav {
   cursor: pointer;
 }
 
-.today-button {
-  font-size: inherit;
+/* below 630px "change" is the only way to another day, which saves the dropdown
+   about 80px. Hidden, not removed, so stepDay and its tests still apply */
+@media (max-width: 629px) {
+  .day-button {
+    display: none;
+  }
 }
 
 .day-button:focus-visible,
@@ -181,40 +209,63 @@ nav {
 .right-pane {
   display: flex;
   flex: 0 0 auto;
-  align-self: center;
+  align-items: center;
 }
 
-.ham-menu {
-  height: 50px;
-  width: 50px;
-  margin-right: auto;
+/* 630-1023px: no burger (the sidebar is always open), so the day controls take
+   the freed room - wider gaps and a larger date */
+@media (min-width: 630px) and (max-width: 1023px) {
+  .day-controls {
+    flex: 1 1 auto;
+    justify-content: space-evenly;
+    gap: var(--space-lg);
+  }
+
+  .day-controls .date-indicator {
+    font-size: 14px;
+  }
+}
+
+/* the burger: 10% smaller than before (50px -> 45px) to make room */
+nav button.ham-menu {
+  height: 45px;
+  width: 45px;
+  flex: 0 0 auto;
   position: relative;
 }
 
-.left-pane .ham-menu {
-  /* two-class selector needed to outweigh style.css's `button.reset-to-div`
-     (element+class), which otherwise wins the display:block/none fight -
-     keep in sync with --medium-width in style.css's :root: media queries
-     can't read custom properties, so this is a hand-kept literal */
-  @media (min-width: 630px) {
+/* a failed save, flagged on the burger so it is not buried in the closed drawer */
+nav button.ham-menu[data-sync-alert]::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--color-primary-on-dark);
+  border: 2px solid var(--color-surface-black);
+}
+
+@media (min-width: 630px) and (max-width: 1023px), (min-width: 1200px) {
+  nav button.ham-menu {
     display: none;
   }
 }
 
-/* .left-pane is empty space from 630px (the hamburger above hides) until
-   1024px, where it's reclaimed for the generic menu items' nav-bar copy
-   (see navbar.js's renderMenuItems) - DESIGN.md's global-nav grammar: quiet
-   nav-link text, no background, inheriting <nav>'s own typography below
-   rather than redeclaring it - keep in sync with --desktop-width in
-   style.css's :root, media queries can't read custom properties */
+/* the menu's nav-bar copy, from 1200px: quiet nav-link text, 16px so the
+   links stay readable (the bar's own 12px is for the date) */
 .nav-menu-list {
   display: none;
   list-style: none;
   margin: 0;
   padding: 0;
   gap: var(--space-lg);
+  font-size: 16px;
+  line-height: 1.25;
+  white-space: nowrap;
 
-  @media (min-width: 1024px) {
+  @media (min-width: 1200px) {
     display: flex;
     align-items: center;
   }

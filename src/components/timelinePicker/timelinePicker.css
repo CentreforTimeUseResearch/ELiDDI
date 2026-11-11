@@ -19,7 +19,8 @@ el-timeline-picker {
     -moz-osx-font-smoothing: grayscale;
     font-family: var(--font-text);
     font-weight: var(--text-button-utility-weight);
-    font-size: var(--text-button-utility-size);
+    font-size: 16px;
+    /* not below 16px: the larger text in the nav bar */
     line-height: var(--text-button-utility-lh);
     letter-spacing: var(--text-button-utility-ls);
     box-sizing: border-box;
@@ -40,5 +41,10 @@ el-timeline-picker {
 
   .width-adjust {
     width: calc(100% - 4px);
+    max-width: 360px;
+  }
+
+  .center {
+    margin: 0 auto;
   }
 }

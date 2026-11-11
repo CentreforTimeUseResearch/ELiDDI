@@ -4,7 +4,7 @@
 
 ---
 
-Every class in `src/`. All Web Components extend [`TinyBase`](README.md#basejs) (itself extending the platform's `HTMLElement`); four plain helper classes — [`KeyboardGridNavigation`](activityPicker/README.md), [`EntryResizeController`](timeline/README.md), [`EntryCommands`](timeline/README.md) and [`DetailsPanelCoordinator`](detailsPanel/README.md) — are not custom elements, just state machines constructed and owned by the component that needs them. `src/store/` and `src/utils/` are deliberately function/module-based, not classes (see the [store README](../store/README.md)) — the hand-rolled Redux clone in `store.js` and the props-passing registry in `propsRegistry.js` are the main reasons `TinyBase` can stay so small.
+Every class in `src/`. All Web Components extend [`TinyBase`](README.md#basejs) (itself extending the platform's `HTMLElement`). The plain classes — not custom elements, just state machines constructed and owned by the component that needs them — cluster around three hosts: the [Timeline](timeline/README.md) (`EntryResizeController` with its `LongPressRecognizer` and `DragSession`, `EntryCreateController`, `CreatePreview`, `EntryCommands`, and the keyboard family `TimelineKeyboard`/`GrabSession`/`FocusRing`), the [details panel](detailsPanel/README.md) (`DetailsPanelCoordinator`, `DeleteConfirmFlow`, `LeavePromptFlow`), and the [activity picker](activityPicker/README.md) (`KeyboardGridNavigation`). `src/store/` and `src/utils/` are deliberately function/module-based, not classes (see the [store README](../store/README.md)) — the hand-rolled Redux clone in `store.js` and the props-passing registry in `propsRegistry.js` are the main reasons `TinyBase` can stay so small.
 
 ```mermaid
 classDiagram
@@ -55,10 +55,26 @@ classDiagram
 
     class DetailsPanel {
         <<el-details-panel>>
+        -deleteConfirmFlow : DeleteConfirmFlow
+        -leavePromptFlow : LeavePromptFlow
         +openEntry(entry)
         +openNewEntry(startOffsetMins)
         +onSaveButtonClick()
-        +onDeleteButtonClick()
+        +showLeavePrompt(callbacks)
+    }
+
+    class DeleteConfirmFlow {
+        +confirming
+        +begin()
+        +confirm()
+        +cancel(returnFocus)
+    }
+
+    class LeavePromptFlow {
+        +isShowing
+        +show(callbacks)
+        +answer(which)
+        +hide()
     }
 
     class DialogWidget {
@@ -81,9 +97,33 @@ classDiagram
         +renderStack()
     }
 
+    class KeyboardHelp {
+        <<el-keyboard-help>>
+    }
+
+    class Login {
+        <<el-login>>
+        +submit(event)
+        +showGate()
+    }
+
     class Navbar {
         <<el-nav-bar>>
         +updateDateIndicator()
+    }
+
+    class SyncNotice {
+        <<el-sync-notice>>
+    }
+
+    class SyncStatus {
+        <<el-sync-status>>
+    }
+
+    class ValidationPanel {
+        <<el-validation-panel>>
+        +onStoreUpdate()
+        +submit()
     }
 
     class Onboarding {
@@ -95,6 +135,9 @@ classDiagram
     class BaseTimeline {
         <<abstract base>>
         -resizeController : EntryResizeController
+        -createController : EntryCreateController
+        -createPreview : CreatePreview
+        -keyboard : TimelineKeyboard
         -entryCommands : EntryCommands
         +saveEntry(entry)
         +createEntry(entry)
@@ -188,15 +231,63 @@ classDiagram
     }
 
     class EntryResizeController {
+        -recognizer : LongPressRecognizer
+        -session : DragSession
         +activeHandleEntryId
         +activeDrag
         +onEntryPointerDown(e)
         +onEntryPointerMove(e)
-        +startHandleDrag(e, handleGroup)
         +commitDrag()
         +cancelDrag()
         +showHandles(entry)
         +hideHandles()
+    }
+
+    class LongPressRecognizer {
+        +begin(e, entryId)
+        +onPointerMove(e)
+        +release(e)
+    }
+
+    class DragSession {
+        +startMove(e, source, entry)
+        +startResize(e, entry, edge)
+        +updateTo(svgCoord)
+        +commit()
+        +cancel()
+    }
+
+    class EntryCreateController {
+        +onPointerDown(e)
+        +commitDrag()
+        +cancelDrag()
+    }
+
+    class CreatePreview {
+        +show(span)
+        +flashNoRoom(slotMins)
+        +hide()
+    }
+
+    class TimelineKeyboard {
+        -ring : FocusRing
+        -session : GrabSession
+        +onKeyDown(e)
+        +beforeRender()
+        +afterRender()
+        +decorateEntry(rect, entry, group)
+    }
+
+    class GrabSession {
+        +step(kind, delta)
+        +previewEntries()
+        +changedEntries()
+        +outcome()
+    }
+
+    class FocusRing {
+        +show(span)
+        +hide()
     }
 
     %% inheritance
@@ -209,8 +300,13 @@ classDiagram
     TinyBase <|-- DialogWidget
     TinyBase <|-- DurationInput
     TinyBase <|-- DynamicTimelineUI
+    TinyBase <|-- KeyboardHelp
+    TinyBase <|-- Login
     TinyBase <|-- Navbar
     TinyBase <|-- Onboarding
+    TinyBase <|-- SyncNotice
+    TinyBase <|-- SyncStatus
+    TinyBase <|-- ValidationPanel
     TinyBase <|-- BaseTimeline
     BaseTimeline <|-- Timeline
     BaseTimeline <|-- HorizontalTimeline
@@ -224,7 +320,16 @@ classDiagram
     %% composition: constructs and owns a real object instance
     ActivityPicker *-- KeyboardGridNavigation : constructs in constructor()
     BaseTimeline *-- EntryResizeController : constructs in connectedCallback(), axis from the subclass (Y_AXIS / X_AXIS)
+    BaseTimeline *-- EntryCreateController : constructs in connectedCallback()
+    BaseTimeline *-- CreatePreview : constructs in connectedCallback()
+    BaseTimeline *-- TimelineKeyboard : constructs in connectedCallback()
     BaseTimeline *-- EntryCommands : constructs in constructor()
+    EntryResizeController *-- LongPressRecognizer : constructs in constructor()
+    EntryResizeController *-- DragSession : constructs in constructor()
+    TimelineKeyboard *-- FocusRing : constructs in constructor()
+    TimelineKeyboard *-- GrabSession : one per Space-grab of an Entry
+    DetailsPanel *-- DeleteConfirmFlow : field initializer
+    DetailsPanel *-- LeavePromptFlow : field initializer
     TimelineStack "1" *-- "many" Timeline : new Timeline() per Dimension
 
     %% dependency: renders as a child custom element + props-registry handshake
@@ -232,9 +337,14 @@ classDiagram
     DynamicTimelineUI ..> Navbar : renders
     DynamicTimelineUI ..> TimelineStack : renders into #stack-container, when not isDesktopLayout
     DynamicTimelineUI ..> HorizontalTimelineStack : renders into #stack-container, when isDesktopLayout
-    DynamicTimelineUI ..> DialogWidget : renders x2
+    DynamicTimelineUI ..> ValidationPanel : renders
+    DynamicTimelineUI ..> SyncNotice : renders, accounts only
+    DynamicTimelineUI ..> DialogWidget : renders one per dialog (onboarding, date, shortcuts, login, reset)
     DynamicTimelineUI ..> Onboarding : renders (inside a dialog)
     DynamicTimelineUI ..> DatePicker : renders (inside a dialog)
+    DynamicTimelineUI ..> KeyboardHelp : renders (inside a dialog)
+    DynamicTimelineUI ..> Login : renders (inside a dialog), accounts only
+    Navbar ..> SyncStatus : renders, accounts only
     HorizontalTimelineStack ..> HorizontalTimelineAxis : renders
     HorizontalTimelineStack ..> HorizontalTimeline : renders x6, injects panelActions props
     Navbar ..> TimelinePicker : renders
@@ -258,7 +368,7 @@ classDiagram
 ## What's deliberately left out
 
 - **Test-only harness classes** — several `*.test.js` files declare a small local `class TestHarness extends TinyBase {}` (or `RegisterCleanupHarness`) purely so a test can call `setProps` on a component's behalf (see the test-naming note in the root [CLAUDE.md](../../CLAUDE.md), and `base.test.js`, `detailsPanel.test.js`, `dialogWidget.test.js`, `onboarding.test.js`, `timePicker.test.js`, `timePickerPanel.test.js`). These are test infrastructure, not part of the production architecture, so they're omitted here.
-- **`src/store/`, `src/utils/`, `scripts/generate_no_js.js`** — none of these define a class; they're plain functions/modules. See the [store README](../store/README.md) for how state is actually shaped.
+- **`src/store/`, `src/sync/`, `src/auth/`, `src/utils/`, `scripts/generate_no_js.js`** — none of these define a class; they're plain functions/modules (sync's `createSync` and auth's `appSession` are factory-made objects, not classes). See the [store README](../store/README.md) for how state is actually shaped.
 
 ---
 

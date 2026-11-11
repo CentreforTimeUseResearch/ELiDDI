@@ -63,7 +63,7 @@ ELiDDI is built as a **progressive enhancement** time-use diary: it must work as
 - **JS layer** — a hand-rolled set of Web Components (extending a small shared base class, `TinyBase`) takes over rendering once JavaScript loads, replacing the no-JS form with the interactive timeline UI.
 - **State management** — a single, hand-rolled Redux-style store holds all diary data, persisted to `localStorage`.
 
-Full documentation of every component and the store lives alongside the code itself:
+**[ARCHITECTURE.md](ARCHITECTURE.md) is the one-page map** — the two layers, what every `src/` folder is for, and the component lifecycle contract. Full documentation of every component and the store lives alongside the code itself:
 
 - [`src/components/`](src/components/README.md) — the shared `TinyBase` base class, the props-passing mechanism, and a README per component (linked from that index).
 - [`src/store/`](src/store/README.md) — how state is shaped, what each store file does, and how the reducer tree maps onto the diary domain.

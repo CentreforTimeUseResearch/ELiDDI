@@ -30,6 +30,8 @@ Tests run against `jsdom` and rely on `vitest.setup.js` (registered via `test.se
 
 ## Architecture
 
+`ARCHITECTURE.md` at the repo root is the one-page map (layer map, component lifecycle contract, links); what follows here is the agent-oriented detail.
+
 ELiDDI is a **progressive enhancement** time-use diary. The core principle is that the diary must work without JavaScript as a plain HTML form, then be enhanced by a web component when JS is available.
 
 ### How the two layers connect

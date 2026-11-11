@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { appSession } from '../../auth/session';
+import { appSyncStatus, SYNC_STATUS } from '../../sync/syncStatus';
 import { Navbar } from './navbar';
 import { appStore } from '../../store/appStore';
 import {
@@ -102,13 +103,12 @@ describe('Navbar', () => {
 
     const previous = (el) => el.querySelector('.previous-day-button');
     const next = (el) => el.querySelector('.next-day-button');
-    const today = (el) => el.querySelector('.today-button');
     const currentDate = () => appStore.getState().currentDate;
     const isDisabled = (button) => button.getAttribute('aria-disabled') === 'true';
     const reasonOf = (el, button) =>
       el.querySelector(`#${button.getAttribute('aria-describedby')}`)?.textContent;
 
-    it('has the three buttons in a group with the date button', () => {
+    it('has the two day buttons in a group with the date button, and no Today button', () => {
       const el = mount();
 
       const group = el.querySelector('.day-controls');
@@ -116,7 +116,7 @@ describe('Navbar', () => {
       expect(group.getAttribute('aria-label')).toBe('Change day');
       expect(group.contains(previous(el))).toBe(true);
       expect(group.contains(next(el))).toBe(true);
-      expect(group.contains(today(el))).toBe(true);
+      expect(el.querySelector('.today-button')).toBeNull();
       expect(group.contains(el.querySelector('.change-date-button'))).toBe(true);
     });
 
@@ -127,7 +127,6 @@ describe('Navbar', () => {
 
       expect(previous(el).getAttribute('aria-label')).toBe('Previous day, Saturday 7 November');
       expect(next(el).getAttribute('aria-label')).toBe('Next day, Monday 9 November');
-      expect(today(el).getAttribute('aria-label')).toBe('Today, Monday 9 November');
     });
 
     it('keeps those names up to date as the day changes', () => {
@@ -235,50 +234,16 @@ describe('Navbar', () => {
       });
     });
 
-    describe('Today', () => {
-      it('is disabled on today, with the reason as text', () => {
-        const el = mount();
-
-        expect(isDisabled(today(el))).toBe(true);
-        expect(reasonOf(el, today(el))).toBe('Already showing today');
-        expect(today(el).title).toBe('Already showing today');
-        const dispatch = vi.spyOn(appStore, 'dispatch');
-        today(el).click();
-        expect(dispatch).not.toHaveBeenCalled();
-      });
-
-      it('returns to today from another day', () => {
-        appStore.dispatch({ type: SWITCH_DATE, payload: '2026-10-01' });
-        const el = mount();
-        expect(isDisabled(today(el))).toBe(false);
-
-        today(el).click();
-
-        expect(currentDate()).toBe(TODAY);
-        expect(isDisabled(today(el))).toBe(true);
-      });
-    });
-
     describe('around the 04:00 day boundary', () => {
       beforeEach(() => {
         vi.setSystemTime(new Date(2026, 10, 9, 2, 0)); // 02:00 on the 9th: still the 8th's Diary day
       });
 
-      it('counts the previous date as today until 04:00', () => {
-        appStore.dispatch({ type: SWITCH_DATE, payload: '2026-11-05' });
-        const el = mount();
-
-        today(el).click();
-
-        expect(currentDate()).toBe('2026-11-08');
-      });
-
-      it('has no Next day, nor Today, on that day', () => {
+      it('has no Next day on that day', () => {
         appStore.dispatch({ type: SWITCH_DATE, payload: '2026-11-08' });
         const el = mount();
 
         expect(isDisabled(next(el))).toBe(true);
-        expect(isDisabled(today(el))).toBe(true);
         expect(previous(el).getAttribute('aria-label')).toBe('Previous day, Saturday 7 November');
       });
 
@@ -359,8 +324,16 @@ describe('Navbar', () => {
       appStore.dispatch({ type: SHOW_PANEL, payload: 'details' });
     });
 
-    describe("shows the day's status on the date button", () => {
+    describe("holds the day's status in the date button, for screen readers only", () => {
       const status = (el) => el.querySelector('.day-status').textContent;
+
+      it('is not drawn: it is clipped out of sight (navbar.css), not removed', () => {
+        const el = mount();
+
+        expect(
+          el.querySelector('.change-date-button').contains(el.querySelector('.day-status'))
+        ).toBe(true);
+      });
 
       it('is "Not started" until something is entered', () => {
         const el = mount();
@@ -487,7 +460,7 @@ describe('Navbar', () => {
 
       el.querySelector('.previous-day-button').click();
       expect(said()).toContain('Sunday 8 November');
-      el.querySelector('.today-button').click();
+      el.querySelector('.next-day-button').click();
       expect(said()).toContain('Monday 9 November');
       appStore.dispatch({ type: SWITCH_DATE, payload: '2026-11-03' });
       expect(said()).toContain('Tuesday 3 November');
@@ -508,7 +481,7 @@ describe('Navbar', () => {
     it('leaves focus on the button that was pressed, so it can be pressed again', () => {
       const el = mount();
 
-      for (const selector of ['.previous-day-button', '.next-day-button', '.today-button']) {
+      for (const selector of ['.previous-day-button', '.next-day-button']) {
         const button = el.querySelector(selector);
         button.focus();
         button.click();
@@ -570,7 +543,7 @@ describe('Navbar', () => {
     expect(el.querySelector('.ham-menu').classList.contains('active')).toBe(false);
   });
 
-  it('renders the generic menu items twice - once in the sidebar, once duplicated into the nav bar - for the >=1024px CSS-only switch', () => {
+  it('renders the generic menu items twice - once in the drawer, once duplicated into the nav bar - for the >=1200px CSS-only switch', () => {
     const el = document.createElement('el-nav-bar');
     document.body.appendChild(el);
 
@@ -696,6 +669,29 @@ describe('Navbar', () => {
       const on = document.createElement('el-nav-bar');
       document.body.appendChild(on);
       expect(on.querySelector('el-sync-status')).not.toBeNull();
+    });
+
+    it('has a sync status in the drawer and in the bar, so each width shows one', () => {
+      accountsOn();
+      const el = document.createElement('el-nav-bar');
+      document.body.appendChild(el);
+
+      expect(el.querySelector('.off-screen-menu el-sync-status')).not.toBeNull();
+      expect(el.querySelector('.right-pane el-sync-status')).not.toBeNull();
+    });
+
+    it('badges the burger when a save is rejected, and clears it when it is not', () => {
+      accountsOn();
+      const el = document.createElement('el-nav-bar');
+      document.body.appendChild(el);
+      const burger = el.querySelector('.ham-menu');
+      expect(burger.hasAttribute('data-sync-alert')).toBe(false);
+
+      appSyncStatus.set(SYNC_STATUS.REJECTED);
+      expect(burger.hasAttribute('data-sync-alert')).toBe(true);
+
+      appSyncStatus.set(SYNC_STATUS.SAVED);
+      expect(burger.hasAttribute('data-sync-alert')).toBe(false);
     });
 
     it('closes the sidebar drawer when logging out', () => {

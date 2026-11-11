@@ -38,26 +38,18 @@ el-dynamic-timeline {
   /* keep in sync with --medium-width in style.css's :root - media queries
      can't read custom properties, so this is a hand-kept literal */
   @media (min-width: 630px) {
+    /* the menu drawer is a fixed overlay (navbar.css), so there is no
+       sidebar column: the nav bar over the timelines */
     display: grid;
-    grid-template-columns: 256px 1fr;
+    grid-template-columns: 1fr;
     grid-template-rows: auto 1fr;
     grid-template-areas:
-      'nav nav'
-      'sidebar main';
+      'nav'
+      'main';
 
     el-nav-bar,
     el-dialog {
       display: contents;
-    }
-
-    /* no sidebar from 1024px (navbar.css drops it; the Dimension labels
-       moved into HorizontalTimelineStack), so the timelines get the full
-       width. Keep in sync with --desktop-width in style.css's :root. */
-    @media (min-width: 1024px) {
-      grid-template-columns: 1fr;
-      grid-template-areas:
-        'nav'
-        'main';
     }
 
     /* whichever stack component DynamicTimelineUI.renderStack() has

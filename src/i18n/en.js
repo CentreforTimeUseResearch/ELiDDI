@@ -144,6 +144,8 @@ export default {
   'common.sentenceJoin': '. ',
 
   'datePicker.label': 'Choose date:',
+  'datePicker.daysLabel': 'Days in this diary',
+  'datePicker.dayStatus': '{date}: {status}',
 
   'detailsPanel.save': 'Save',
   'detailsPanel.delete': 'Delete',
@@ -200,13 +202,11 @@ export default {
   'navbar.changeDay': 'Change day',
   'navbar.selectedDay': 'Selected day: ',
   'navbar.changeDate': 'change',
-  'navbar.today': 'Today',
-  'navbar.todayLabel': 'Today, {date}',
+  'navbar.menuLabel': 'Menu',
   'navbar.previousDayLabel': 'Previous day, {date}',
   'navbar.nextDayLabel': 'Next day, {date}',
   'navbar.nextDayDisabledLabel': 'Next day',
   'navbar.nextDayReason': "You can't fill in days that haven't happened",
-  'navbar.todayReason': 'Already showing today',
   'navbar.status.complete': 'Complete',
   'navbar.status.inProgress': 'In progress',
   'navbar.status.notStarted': 'Not started',

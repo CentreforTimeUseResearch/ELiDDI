@@ -6,7 +6,7 @@ el-submission-status {
 
   svg {
     margin-left: var(--space-xxs);
-    width: 56px;
+    width: 50px; /* 10% under 56px, to leave the dropdown room */
     fill: currentColor;
   }
 }

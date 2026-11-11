@@ -3,19 +3,13 @@
 // (general.server_accounts, see config/config.schema.json). Never throws for
 // a failed request: the caller gets a result to show the Respondent.
 import { t } from '../i18n/i18n';
+import { getAccounts } from '../config/appConfig';
 
-// -> { enabled, backendUrl } for a study config (the running study's comes
-// via src/config/appConfig.js's accounts()). Accounts are off unless the
-// config explicitly says true, so a config that predates the setting behaves
-// exactly as before.
-export function getAccounts(config) {
-  const general = config?.general;
-  const backendUrl = typeof general?.backend_url === 'string' ? general.backend_url : '';
-  return {
-    enabled: general?.server_accounts === true && backendUrl !== '',
-    backendUrl: backendUrl.replace(/\/+$/, ''),
-  };
-}
+// getAccounts lives with the other config readers (src/config/appConfig.js),
+// which i18n depends on; defining it here made an import cycle
+// (appConfig -> authClient -> i18n -> appConfig). Re-exported so callers that
+// hold a config and import it from here keep working.
+export { getAccounts };
 
 // -> { ok: true, token, respondentId, expiresAt }
 //  | { ok: false, reason: 'empty' }                  (no request is made)

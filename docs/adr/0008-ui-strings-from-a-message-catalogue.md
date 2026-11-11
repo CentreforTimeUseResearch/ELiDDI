@@ -14,7 +14,7 @@ ELiDDI will be deployed in studies that are not run in English. Until now every 
 
 `general.language` in `config/config.json` — the key already existed in the config schema (a two-letter code, optional) and now does this: it selects the catalogue, falling back to `en` when it is absent or no catalogue of that name exists. The config is the single source of truth for diary content, and the language of a study is decided by the researcher configuring it, not by the browser — so `navigator.language` is deliberately not consulted; every Respondent in a study sees the same words that were piloted.
 
-`t()` resolves the language **per call**, lazily, from `GLOBALS.DATA.general.language`. It is not latched at module-evaluation time because custom elements begin upgrading (and rendering, and therefore translating) while modules are still being evaluated — the same ordering lesson `freezeGlobals.js` records. `setLocale(code)` exists as an explicit override for the two callers that have a config but no `GLOBALS`: the no-JS generator, and tests.
+`t()` resolves the language **per call**, lazily, from `GLOBALS.DATA.general.language`. It is not latched at module-evaluation time because custom elements begin upgrading (and rendering, and therefore translating) while modules are still being evaluated — the same ordering lesson `freezeGlobals.js` records. `setLocale(code)` exists as an explicit override for tests. The no-JS generator, which has a config but no `GLOBALS`, does not use it — it takes a fixed-language `translatorFor(code)` instead (see "The no-JS form").
 
 ## Missing keys and fallback
 
@@ -26,7 +26,9 @@ No plural engine. Where a count changes the sentence, the caller picks between e
 
 ## The no-JS form
 
-The generated fallback form must speak the same language, or a translated study ships an English baseline. `scripts/lib/generateNoJs.js` already imports from `src/` (`src/utils/html.js`), so it imports the same catalogue and calls `setLocale(config.general?.language)` from the config it was handed, at the top of `buildDiaryHtml`. The strings themselves move in #250.
+The generated fallback form must speak the same language, or a translated study ships an English baseline. `scripts/lib/generateNoJs.js` already imports from `src/` (`src/utils/html.js`), so it imports the same catalogue. It reads `general.language` from the config it was handed and builds `translatorFor(language)` — a `t()` fixed to that language, passed down to the functions that write words. (The first draft of this ADR had it call `setLocale()` instead; that sets process-wide state, which a function documented as pure must not do, and would let one diary's language leak into the next build in the same process.) Done in #250.
+
+Two practical constraints follow from the generator running in **plain Node**, not Vite: everything it imports from `src/` (`i18n.js`, `en.js`, `config/appConfig.js`) uses explicit `.js` extensions, which Node requires and Vite does not; and those modules must stay free of anything that touches the DOM or other browser-only globals at import time. `scripts/lib/generateNoJs.test.js` runs the real CLI, so a violation fails CI.
 
 ## What a new language costs
 
@@ -35,6 +37,7 @@ One file: `src/i18n/<code>.js`, copied from `en.js` and translated, plus one lin
 ## Consequences
 
 - New user-facing strings go in `en.js` and are read through `t()`; a literal in a component is now a review flag.
-- `login` is the reference migration (this change); the remaining JS-layer strings are #249, the generator's are #250.
+- `login` was the reference migration; the rest of the JS layer followed in #249, and the no-JS generator in #250. `src/i18n/catalogueKeys.test.js` fails if code refers to a catalogue key that `en.js` lacks.
+- Dates are formatted in the study's language too (`dateLocale()`), not the browser's.
 - Tests assert through the catalogue or against the English catalogue's values — either keeps working, since `en` is the default in jsdom (no `general.language` override in `vitest.setup.js`'s config means the fallback applies).
 - Config-supplied content (Dimension names, activity names, onboarding `instructions`) is already per-study data and is **not** in the catalogue: the researcher writes it in the study's language in `config.json`, as today.

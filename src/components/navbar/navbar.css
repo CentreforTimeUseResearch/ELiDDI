@@ -2,19 +2,26 @@
  * Nav bar and menu drawer CSS. Left to right the bar holds: burger, day
  * controls, Dimension dropdown, menu links (from 1200px) and the status
  * buttons. Widths (docs/design/flows/navigate.md, issue #274):
- *   <630px   burger, date + "change", dropdown, help. Day arrows hidden.
- *   630-1199 the same with the Previous / Next arrows.
- *   >=1200   the burger gives way to the five menu links.
+ *   <630px    burger (opens the menu drawer), date + "change", dropdown, help.
+ *             Day arrows hidden.
+ *   630-1023  no burger: the menu is a permanent sidebar (one 375px timeline is
+ *             visible at a time, so it does not need the width). The room the
+ *             burger leaves spreads out the day controls.
+ *   1024-1199 the wide timeline view needs the width, so no sidebar: the burger
+ *             is back and opens the drawer.
+ *   >=1200    the five menu links in the bar, and no burger or sidebar.
+ * 1024 is --desktop-width (where the wide timeline view starts).
  * Media queries can't read custom properties, so the 630 and 1200 literals are
  * hand-kept: 630 in sync with --medium-width, 1200 with --wide-nav-width in
  * style.css's :root.
  */
 
-/* The menu drawer, below 1200px. A fixed overlay at every width: from 630px
-   it no longer takes a grid column, so the timelines keep that room. */
+/* The menu: a drawer (opened by the burger) except from 630 to 1023px, where it
+   is a permanent sidebar column, and gone from 1200px, where the nav bar has
+   the links. */
 .off-screen-menu {
   position: fixed;
-  top: 4.9rem;
+  top: 4.16rem;
   left: -450px;
   background-color: var(--color-surface-tile);
   color: var(--color-on-dark);
@@ -30,6 +37,15 @@
 
 .off-screen-menu.active {
   left: 0;
+}
+
+@media (min-width: 630px) and (max-width: 1023px) {
+  .off-screen-menu {
+    grid-area: sidebar;
+    position: static;
+    width: 256px;
+    height: 100%;
+  }
 }
 
 @media (min-width: 1200px) {
@@ -109,7 +125,7 @@ nav {
 /* the Dimension dropdown takes whatever the other items leave; min-width: 0
    lets it shrink below its content, clipping the name rather than wrapping */
 nav el-timeline-picker {
-  flex: 1 1 0%;
+  flex: 1 1 100%;
   min-width: 0;
 }
 
@@ -138,7 +154,8 @@ nav el-timeline-picker {
 
 .date-text u {
   display: block;
-  color: var(--color-primary-on-dark); /* 7:1 on the black bar; blue was 2.4:1 */
+  color: var(--color-primary-on-dark);
+  /* 7:1 on the black bar; blue was 2.4:1 */
 }
 
 /* "Selected day:" and the status stay for screen readers, out of sight */
@@ -158,7 +175,7 @@ nav el-timeline-picker {
   min-width: 40px;
   min-height: 40px;
   padding: 0 var(--space-sm);
-  border: 1px solid var(--color-body-muted);
+  border: 0;
   border-radius: var(--radius-pill);
   background: transparent;
   color: var(--color-on-dark);
@@ -195,6 +212,20 @@ nav el-timeline-picker {
   align-items: center;
 }
 
+/* 630-1023px: no burger (the sidebar is always open), so the day controls take
+   the freed room - wider gaps and a larger date */
+@media (min-width: 630px) and (max-width: 1023px) {
+  .day-controls {
+    flex: 1 1 auto;
+    justify-content: space-evenly;
+    gap: var(--space-lg);
+  }
+
+  .day-controls .date-indicator {
+    font-size: 14px;
+  }
+}
+
 /* the burger: 10% smaller than before (50px -> 45px) to make room */
 nav button.ham-menu {
   height: 45px;
@@ -216,7 +247,7 @@ nav button.ham-menu[data-sync-alert]::after {
   border: 2px solid var(--color-surface-black);
 }
 
-@media (min-width: 1200px) {
+@media (min-width: 630px) and (max-width: 1023px), (min-width: 1200px) {
   nav button.ham-menu {
     display: none;
   }

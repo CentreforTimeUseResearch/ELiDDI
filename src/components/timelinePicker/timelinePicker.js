@@ -88,7 +88,7 @@ export class TimelinePicker extends TinyBase {
   render() {
     // this component is a work in progress so this output is for debug purposes
     this.innerHTML = `
-            <div class="el-form-group width-adjust">
+            <div class="el-form-group width-adjust center">
                <!-- <label class="el-label" for="timeline-picker">Choose dimension:</label> -->
                 <select
                   id="timeline-picker"

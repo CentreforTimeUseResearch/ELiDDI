@@ -12,7 +12,6 @@ Each component subfolder has its own `README.md`:
 | ------------------------------------------------------------ | -------------------------------- | ---------------------------------------------------------------------------------------- |
 | [accordion](accordion/README.md)                             | `<el-accordion>`                 | Category/Activity list rendered inside a picker's popover.                               |
 | [activityPicker](activityPicker/README.md)                   | `<el-activity-picker>`           | Searchable Activity picker (ARIA combobox + grid).                                       |
-| [contextualHelp](contextualHelp/README.md)                   | `<el-contextual-help>`           | Help button that toggles the validation panel.                                           |
 | [datePicker](datePicker/README.md)                           | `<el-date-picker>`               | Switches the currently-viewed Diary date.                                                |
 | [detailsPanel](detailsPanel/README.md)                       | `<el-details-panel>`             | Create/edit panel for one Entry.                                                         |
 | [dialogWidget](dialogWidget/README.md)                       | `<el-dialog>`                    | Generic native-`<dialog>` modal wrapper.                                                 |
@@ -25,6 +24,7 @@ Each component subfolder has its own `README.md`:
 | [login](login/README.md)                                     | `<el-login>`                     | Login-code form, when the study uses server accounts.                                    |
 | [syncStatus](syncStatus/syncStatus.js)                       | `<el-sync-status>`               | "Saved / Saving / Not saved yet" in the nav bar, accounts only.                          |
 | [syncNotice](syncNotice/syncNotice.js)                       | `<el-sync-notice>`               | Banner: "another device had a newer version of..." and the logout choice, accounts only. |
+| [submissionStatus](submissionStatus/README.md)               | `<el-submission-status>`         | Nav-bar button that toggles the validation panel; check mark = ready to submit.          |
 | [navbar](navbar/README.md)                                   | `<el-nav-bar>`                   | Top navigation bar.                                                                      |
 | [onboarding](onboarding/README.md)                           | `<el-onboarding>`                | Guided-tour walkthrough steps.                                                           |
 | [timeline](timeline/README.md)                               | `<el-timeline>`                  | The SVG time axis, one per Dimension.                                                    |

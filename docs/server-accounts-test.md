@@ -114,7 +114,7 @@ Stop the backend (`docker compose stop`) with device 1 logged in.
 
 ### 8. Final submission
 
-Make a Diary that passes the study's required checks (open the checks panel from the help button), then press **Diary complete**.
+Make a Diary that passes the study's required checks (open the checks panel from the submission status button, the check or question mark in the nav bar), then press **Diary complete**.
 
 | Do                                                         | Expect                                                                                                                                                                              |
 | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

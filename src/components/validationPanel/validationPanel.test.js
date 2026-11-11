@@ -10,7 +10,7 @@ import {
   SHOW_PANEL,
   SWITCH_DATE,
 } from '../../store/actionTypes';
-import '../contextualHelp/contextualHelp';
+import '../submissionStatus/submissionStatus';
 import './validationPanel';
 
 const DATE = '2025-01-01';
@@ -25,7 +25,7 @@ const originalValidation = GLOBALS.DATA.validation;
 const originalSubmitUrl = GLOBALS.DATA.general.submit_completed_diary_url;
 const originalRedirectUrl = GLOBALS.DATA.general.primary_redirect_url;
 
-let help;
+let submissionStatus;
 let panelEl;
 const panel = () => panelEl.querySelector('.validation-panel');
 const isOpen = () => panel().classList.contains('open');
@@ -49,8 +49,8 @@ describe('ValidationPanel', () => {
     }
     setValidation(ALL_RULES);
     document.body.innerHTML =
-      '<el-contextual-help></el-contextual-help><el-validation-panel></el-validation-panel>';
-    help = document.querySelector('el-contextual-help');
+      '<el-submission-status></el-submission-status><el-validation-panel></el-validation-panel>';
+    submissionStatus = document.querySelector('el-submission-status');
     panelEl = document.querySelector('el-validation-panel');
   });
 
@@ -99,8 +99,8 @@ describe('ValidationPanel', () => {
       expect(panel().hasAttribute('inert')).toBe(true);
     });
 
-    it('opens when the help button is clicked, and closes when it is clicked again', () => {
-      const button = help.querySelector('button');
+    it('opens when the submission status button is clicked, and closes when it is clicked again', () => {
+      const button = submissionStatus.querySelector('button');
 
       button.click();
       expect(appStore.getState().uipanel).toBe('validation');
@@ -166,8 +166,8 @@ describe('ValidationPanel', () => {
   });
 
   describe('focus', () => {
-    it('moves into the panel on open and back to the help button on close', () => {
-      const button = help.querySelector('button');
+    it('moves into the panel on open and back to the submission status button on close', () => {
+      const button = submissionStatus.querySelector('button');
       button.focus();
 
       button.click();

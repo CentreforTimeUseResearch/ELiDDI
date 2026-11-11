@@ -18,7 +18,7 @@
     },
     "instructions": {
       "type": "array",
-      "description": "Onboarding walkthrough steps, read as GLOBALS.DATA.instructions by src/components/onboarding and src/components/contextualHelp.",
+      "description": "Onboarding walkthrough steps, read as GLOBALS.DATA.instructions by src/components/onboarding.",
       "items": {
         "$ref": "#/definitions/onboardingStep"
       }

@@ -43,9 +43,10 @@ classDiagram
         +renderAccordion(results, searchString)
     }
 
-    class ContextualHelp {
-        <<el-contextual-help>>
-        +stateUpdate()
+    class SubmissionStatus {
+        <<el-submission-status>>
+        +toggle()
+        +update()
     }
 
     class DatePicker {
@@ -294,7 +295,7 @@ classDiagram
     HTMLElement <|-- TinyBase
     TinyBase <|-- Accordion
     TinyBase <|-- ActivityPicker
-    TinyBase <|-- ContextualHelp
+    TinyBase <|-- SubmissionStatus
     TinyBase <|-- DatePicker
     TinyBase <|-- DetailsPanel
     TinyBase <|-- DialogWidget
@@ -348,7 +349,7 @@ classDiagram
     HorizontalTimelineStack ..> HorizontalTimelineAxis : renders
     HorizontalTimelineStack ..> HorizontalTimeline : renders x6, injects panelActions props
     Navbar ..> TimelinePicker : renders
-    Navbar ..> ContextualHelp : renders
+    Navbar ..> SubmissionStatus : renders
     TimelineStack *-- DetailsPanelCoordinator : constructs in constructor()
     HorizontalTimelineStack *-- DetailsPanelCoordinator : constructs in constructor()
     DetailsPanelCoordinator ..> DetailsPanel : creates the one panel, panelActions contract

@@ -32,7 +32,7 @@ function describeFailure({ reason, status }) {
 
 // The right-hand panel listing the study's active Validation rules for the
 // viewed day's Diary, each passed or failed. Opened by the help button in
-// el-contextual-help through the store's `uipanel` ('validation'); closed by
+// el-submission-status through the store's `uipanel` ('validation'); closed by
 // the same button, Escape, its close button or a click outside.
 //
 // At the bottom is the "Diary complete" button, when the study has somewhere
@@ -83,7 +83,7 @@ export class ValidationPanel extends TinyBase {
     });
     this.listen(document, 'click', (event) => {
       // the help button toggles the panel itself, so is not an "outside" click
-      if (this.isOpen && !event.target.closest('.validation-panel, el-contextual-help')) {
+      if (this.isOpen && !event.target.closest('.validation-panel, el-submission-status')) {
         this.requestClose();
       }
     });
@@ -127,7 +127,7 @@ export class ValidationPanel extends TinyBase {
     this.panel.classList.remove('open');
     this.panel.setAttribute('inert', '');
     if (focusWasHere || document.activeElement === document.body) {
-      document.querySelector('el-contextual-help button')?.focus();
+      document.querySelector('el-submission-status button')?.focus();
     }
   }
 

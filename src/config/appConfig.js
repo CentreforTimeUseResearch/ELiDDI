@@ -13,8 +13,6 @@
 // deliberate exception to "nothing else touches GLOBALS" is
 // src/testing/specialCharacters.js, a test-only helper that mutates the
 // (unfrozen, test-environment) config - a mutation this seam must not offer.
-import { getAccounts } from '../auth/authClient';
-
 function data() {
   return globalThis.GLOBALS?.DATA;
 }
@@ -57,8 +55,20 @@ export function primaryRedirectUrl() {
   return data()?.general?.primary_redirect_url;
 }
 
-// { enabled, backendUrl } for server accounts (ADR 0007) - accounts are off
-// unless the config explicitly says otherwise, see getAccounts
+// -> { enabled, backendUrl } for a study config. Accounts are off unless the
+// config explicitly says true (and names a backend), so a config that predates
+// the setting behaves exactly as before. Takes the config as an argument for
+// callers that hold one; accounts() below is the running study's.
+export function getAccounts(config) {
+  const general = config?.general;
+  const backendUrl = typeof general?.backend_url === 'string' ? general.backend_url : '';
+  return {
+    enabled: general?.server_accounts === true && backendUrl !== '',
+    backendUrl: backendUrl.replace(/\/+$/, ''),
+  };
+}
+
+// { enabled, backendUrl } for server accounts (ADR 0007), for the running study
 export function accounts() {
   return getAccounts(data());
 }

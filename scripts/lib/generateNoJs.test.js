@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { readFileSync, mkdtempSync, mkdirSync, cpSync, rmSync } from 'node:fs';
 import path from 'node:path';
@@ -13,6 +13,7 @@ import {
   NUM_CHUNKS,
 } from './generateNoJs';
 import { deepFreeze } from '../../src/utils/deepfreeze';
+import { addCatalogue } from '../../src/i18n/i18n';
 
 // vitest runs from the project root (and under jsdom, URL is jsdom's, which fs rejects)
 const CONFIG_JSON = readFileSync(path.join(process.cwd(), 'config', 'config.json'), 'utf8');
@@ -313,6 +314,73 @@ describe('generation does not mutate its input', () => {
 
     expect(() => generateDataLists(dimensions)).not.toThrow();
     expect(() => createCardHTML(dimensions, '04:00 - 04:09', 1, 1)).not.toThrow();
+  });
+});
+
+// #250: the words in the form come from the catalogue, in the language the
+// config names (ADR 0008)
+describe('the language of the form', () => {
+  // a made-up language with just some of the strings, to show both the
+  // translation and the fall-back to English for the rest
+  const ZZ = {
+    'noJs.heading': 'Zz diary',
+    'noJs.submit': 'Zz done',
+    'noJs.progress': 'Zz {chunk}/{total}',
+    'noJs.notAnswered': 'Zz none',
+    'noJs.nav.slot': 'Zz slot "{timeSlot}" <b>nav</b>',
+    'noJs.nav.forwardHour': 'Zz +1h',
+  };
+  const zzJson = withConfig((config) => (config.general.language = 'zz'));
+  let removeZz;
+  beforeEach(() => {
+    removeZz = addCatalogue('zz', ZZ);
+  });
+  afterEach(() => removeZz());
+
+  it('writes the study language into the heading, progress, submit button and select', () => {
+    const doc = parse(buildDiaryHtml(zzJson));
+
+    expect(doc.querySelector('h1').textContent).toBe('Zz diary');
+    expect(doc.querySelector('footer input[type="submit"]').value).toBe('Zz done');
+    expect(doc.querySelector('label progress').parentElement.textContent).toContain('Zz 1/8');
+    expect(doc.querySelector('select option[value=""]').textContent).toBe('Zz none');
+    expect(doc.querySelector('nav a[href="#1_7"]').textContent).toBe('Zz +1h');
+  });
+
+  it('falls back to English for a string the language does not have', () => {
+    const doc = parse(buildDiaryHtml(zzJson));
+
+    expect(doc.querySelector('nav a[href="#1_2"]').textContent).toBe('Skip forward ten minutes');
+  });
+
+  it('escapes translated text, so a quote or markup in a translation cannot break the page', () => {
+    const doc = parse(buildDiaryHtml(zzJson));
+    const nav = doc.querySelector('li.card-tenMinutes nav');
+
+    expect(nav.getAttribute('aria-label')).toBe('Zz slot "04:00 - 04:09" <b>nav</b>');
+    expect(nav.querySelector('b')).toBeNull();
+  });
+
+  // the form itself: the output also embeds the config JSON (which differs
+  // when the config does), so compare the markup after it
+  const formOf = (json) =>
+    parse(buildDiaryHtml(json)).querySelector('el-dynamic-timeline').innerHTML;
+
+  it('is English for a language with no catalogue, and when none is named', () => {
+    const english = formOf(CONFIG_JSON);
+
+    expect(formOf(withConfig((config) => (config.general.language = 'xx')))).toBe(english);
+    expect(formOf(withConfig((config) => delete config.general.language))).toBe(english);
+  });
+
+  it('does not leak one build’s language into the next', () => {
+    const english = formOf(CONFIG_JSON);
+    buildDiaryHtml(zzJson);
+
+    expect(formOf(CONFIG_JSON)).toBe(english);
+    expect(parse(buildDiaryHtml(CONFIG_JSON)).querySelector('h1').textContent).toBe(
+      'Time use diary'
+    );
   });
 });
 

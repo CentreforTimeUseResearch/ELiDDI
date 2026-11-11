@@ -20,6 +20,24 @@ export default {
   'login.gate.reload': 'Reload the page',
   'login.gate.logout': 'Log out',
 
+  // The no-JS form (scripts/lib/generateNoJs.js) - the progressive-enhancement
+  // baseline, built at deploy time in the study's language
+  'noJs.heading': 'Time use diary',
+  'noJs.submit': 'Diary Complete',
+  'noJs.progress': 'Diary progress: {chunk} of {total}',
+  'noJs.notAnswered': 'Not answered',
+  'noJs.markAll': 'Mark all relevant boxes',
+  'noJs.continueUntilNext':
+    'Continue this activity until next entry (if checked you can leave the between entries blank)',
+  'noJs.nav.slot': '{timeSlot} time slot navigation',
+  'noJs.nav.backHour': 'Skip backwards one hour',
+  'noJs.nav.backTenMinutes': 'Skip backwards ten minutes',
+  'noJs.nav.forwardTenMinutes': 'Skip forward ten minutes',
+  'noJs.nav.forwardHour': 'Skip forward one hour',
+  'noJs.nav.chunks': 'Jump to time chunk',
+  'noJs.nav.backThreeHours': 'Skip backwards three hours',
+  'noJs.nav.forwardThreeHours': 'Skip forward three hours',
+
   // Timeline names and the keyboard grab announcements (timelineKeyboard.js,
   // grabSession.js). {range} is "04:50 to 05:30"; {arrows} is "Up and Down
   // arrow keys" built from keyboardHelp.key.* names

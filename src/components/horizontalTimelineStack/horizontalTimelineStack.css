@@ -102,7 +102,7 @@ el-horizontal-timeline-stack {
      .resize-handle-hit-area / navbar.css's .left-pane .ham-menu. */
   el-details-panel {
     position: fixed;
-    top: 4.9rem;
+    top: 4.16rem;
     right: -416px;
     bottom: 0;
     width: 380px;

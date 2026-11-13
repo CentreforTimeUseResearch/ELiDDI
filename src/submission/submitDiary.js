@@ -65,7 +65,9 @@ export async function submitDiary({ diary, date, config, session = appSession })
   return response.ok ? { ok: true } : { ok: false, reason: 'http', status: response.status };
 }
 
-// offsets are minutes from the Day boundary, so it travels with them
+// offsets are minutes from the Day boundary, so it travels with them. Each
+// Dimension's Entries travel with its name from the study config, so the
+// receiver need not rely on array position to know which Dimension is which
 function buildPayload({ diary, date, config }) {
   return {
     experimentID: config.general.experimentID,
@@ -73,6 +75,9 @@ function buildPayload({ diary, date, config }) {
     dayBoundary: config.day_boundary,
     date,
     status: diary.status,
-    timelines: diary.timelines,
+    timelines: diary.timelines.map((entries, index) => ({
+      name: config.timeline?.[index]?.name ?? null,
+      entries,
+    })),
   };
 }

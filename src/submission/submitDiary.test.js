@@ -5,6 +5,7 @@ const URL = 'https://example.org/api/diaries';
 const config = {
   day_boundary: '04:00',
   general: { experimentID: 'exp-1', version: '2.0.0', submit_completed_diary_url: URL },
+  timeline: [{ name: 'Primary activity' }, { name: 'Location' }],
 };
 const entry = { id: 1, startOffsetMins: 0, endOffsetMins: 1440, activity: 'Sleeping' };
 const diary = { timelines: [[entry], []], status: 0 };
@@ -38,8 +39,18 @@ describe('submitDiary', () => {
       dayBoundary: '04:00',
       date: '2025-01-01',
       status: 0,
-      timelines: [[entry], []],
+      timelines: [
+        { name: 'Primary activity', entries: [entry] },
+        { name: 'Location', entries: [] },
+      ],
     });
+  });
+
+  it('sends a null name for a Dimension the config does not name', async () => {
+    await submitDiary({ diary, date: '2025-01-01', config: { ...config, timeline: undefined } });
+
+    const body = JSON.parse(fetchStub.mock.calls[0][1].body);
+    expect(body.timelines.map((t) => t.name)).toEqual([null, null]);
   });
 
   it('sends the status the Diary has', async () => {

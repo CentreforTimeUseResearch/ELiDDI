@@ -125,7 +125,7 @@ nav {
 /* the Dimension dropdown takes whatever the other items leave; min-width: 0
    lets it shrink below its content, clipping the name rather than wrapping */
 nav el-timeline-picker {
-  flex: 1 1 100%;
+  flex: 1 1 50%;
   min-width: 0;
 }
 
@@ -267,6 +267,7 @@ nav button.ham-menu[data-sync-alert]::after {
 
   @media (min-width: 1200px) {
     display: flex;
+    flex: 1 1 60%;
     align-items: center;
   }
 }

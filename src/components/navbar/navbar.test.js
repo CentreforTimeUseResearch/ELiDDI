@@ -494,7 +494,7 @@ describe('Navbar', () => {
   const MENU_LABELS = [
     'Instructions',
     'Keyboard shortcuts',
-    'Reset (clears this day)',
+    'Reset',
     'View stats',
     'About this study',
   ];
@@ -524,7 +524,7 @@ describe('Navbar', () => {
         b.textContent.trim()
       );
 
-      expect(buttons).toEqual(['Instructions', 'Keyboard shortcuts', 'Reset (clears this day)']);
+      expect(buttons).toEqual(['Instructions', 'Keyboard shortcuts', 'Reset']);
     }
   );
 

@@ -497,6 +497,25 @@ export class EntryResizeController {
     }
   }
 
+  // a press anywhere in the document: handles stay only for a press on their
+  // own Entry, one of the handles, or the details panel (which is open for the
+  // very Entry being edited); every other press dismisses them
+  dismissHandlesOnOutsidePress(e) {
+    if (this.activeHandleEntryId === undefined || this.session.drag) {
+      return;
+    }
+    const target = e.target;
+    if (target?.closest?.('.resize-handle') || target?.closest?.('el-details-panel')) {
+      return;
+    }
+    const onActiveEntry =
+      this.entriesLayer?.contains(target) &&
+      Number(target.dataset?.id) === this.activeHandleEntryId;
+    if (!onActiveEntry) {
+      this.hideHandles();
+    }
+  }
+
   hideHandlesIfActiveFor(entryId) {
     if (this.activeHandleEntryId === entryId) {
       this.hideHandles();

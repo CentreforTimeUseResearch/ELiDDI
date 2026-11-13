@@ -431,6 +431,15 @@ export class BaseTimeline extends TinyBase {
     // any press says it is a pointer (capture: before anything else reacts)
     this.listen(document, 'keydown', () => this.keyboard.noteInput(true), true);
     this.listen(document, 'pointerdown', () => this.keyboard.noteInput(false), true);
+    // a press outside the handled Entry, its handles and the details panel
+    // dismisses the handles - including a press on another Timeline or the
+    // page, which the SVG's own listeners never see
+    this.listen(
+      document,
+      'pointerdown',
+      (e) => this.resizeController.dismissHandlesOnOutsidePress(e),
+      true
+    );
     // each controller acts only on its own kind of press (an Entry or a
     // handle -> resize; empty time -> create)
     this.listen(svg, 'pointerdown', (e) => {
@@ -514,11 +523,8 @@ export class BaseTimeline extends TinyBase {
     if (this.createController.consumeSuppressedClick()) {
       return; // the click that ended a drag-to-create
     }
-    if (this.resizeController.activeHandleEntryId !== undefined) {
-      // any real click - elsewhere on the timeline, or on a different entry -
-      // dismisses whatever handles are currently showing
-      this.resizeController.hideHandles();
-    }
+    // handles are dismissed by the document-level pointerdown (see
+    // assignEventHandlers), so a click on the handled Entry keeps them
     const elementId = e.target?.dataset?.id;
     if (elementId !== undefined) {
       const entryId = Number(elementId);

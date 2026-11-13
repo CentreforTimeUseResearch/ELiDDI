@@ -30,6 +30,7 @@ Not available as a gesture. The Respondent edits the card controls: set the new 
 - Pointer events with pointer capture; handles have an enlarged invisible hit area on touch; `touch-action` prevents scroll fighting once armed.
 - Pointer-move updates a draft; only release dispatches. A move or resize that changes a neighbour is committed as a **batched dispatch** of one `UPDATE_ENTRY` per affected Entry, folded into one committed state with a single notification (see Decisions in the [README](../README.md)).
 - A move or resize does not start while the details panel is open (the same rule as the handle drags): a typed, unsaved edit and a live drag are never in flight together. The Respondent finishes with Save or Cancel first; the panel's own time fields are the way to change times while it is open.
+- Handles stay up while the Respondent presses their own Entry, one of its handles, or the details panel. Any other press (another Entry, empty time, another Timeline, the navbar, the page background) dismisses them, as does Escape.
 - Diary status becomes in-progress on commit.
 
 ## Accessibility
@@ -49,4 +50,5 @@ Not available as a gesture. The Respondent edits the card controls: set the new 
 - [ ] Escape or pointer cancel restores all affected Entries exactly.
 - [ ] Release commits all changes together.
 - [ ] Touch requires long-press, so scrolling still works.
+- [ ] A press anywhere except the handled Entry, its handles or the details panel hides the handles.
 - [ ] Handles and results are reachable and announced without a pointer.

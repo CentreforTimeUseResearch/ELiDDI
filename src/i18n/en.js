@@ -195,7 +195,7 @@ export default {
 
   'navbar.menu.instructions': 'Instructions',
   'navbar.menu.shortcuts': 'Keyboard shortcuts',
-  'navbar.menu.reset': 'Reset (clears this day)',
+  'navbar.menu.reset': 'Reset',
   'navbar.menu.stats': 'View stats',
   'navbar.menu.about': 'About this study',
   'navbar.menu.logout': 'Log out (switch person)',

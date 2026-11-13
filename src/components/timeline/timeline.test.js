@@ -525,7 +525,7 @@ describe('Timeline long-press resize handles', () => {
     expect(openEntry).toHaveBeenCalledWith(entryB);
   });
 
-  it('dismisses visible handles when a subsequent real click lands elsewhere on the timeline', () => {
+  it('dismisses visible handles when a press lands outside the timeline', () => {
     const entry = { id: 1, startOffsetMins: 0, endOffsetMins: 30, activity: 'Reading' };
     const el = createTimeline(2, [entry]);
     const rect = el.querySelector('[data-part="events"] rect[data-id="1"]');
@@ -534,10 +534,45 @@ describe('Timeline long-press resize handles', () => {
     el.onTimelineClick({ target: rect }); // the click the long-press's own release also fires - swallowed
     expect(el.activeHandleEntryId).toBe(1);
 
-    el.onTimelineClick({ target: { dataset: {} }, offsetY: 10 }); // a separate, later click elsewhere
+    document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }));
 
     expect(el.activeHandleEntryId).toBeUndefined();
     expect(el.querySelectorAll('[data-part="drag-handles"] .resize-handle')).toHaveLength(0);
+  });
+
+  it('keeps visible handles when the press is on their own entry, a handle, or the details panel', () => {
+    const entry = { id: 1, startOffsetMins: 0, endOffsetMins: 30, activity: 'Reading' };
+    const el = createTimeline(2, [entry]);
+    const rect = el.querySelector('[data-part="events"] rect[data-id="1"]');
+    el.onEntryPointerDown(pointerDownOn(rect));
+    vi.advanceTimersByTime(500);
+    expect(el.activeHandleEntryId).toBe(1);
+
+    rect.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    expect(el.activeHandleEntryId).toBe(1);
+
+    const handle = el.querySelector('[data-part="drag-handles"] .resize-handle');
+    handle.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    expect(el.activeHandleEntryId).toBe(1);
+
+    const panel = document.createElement('el-details-panel');
+    document.body.appendChild(panel);
+    panel.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    expect(el.activeHandleEntryId).toBe(1);
+    panel.remove();
+  });
+
+  it('keeps the handles when the handled entry itself is clicked', () => {
+    const entry = { id: 1, startOffsetMins: 0, endOffsetMins: 30, activity: 'Reading' };
+    const el = createTimeline(2, [entry]);
+    const rect = el.querySelector('[data-part="events"] rect[data-id="1"]');
+    el.onEntryPointerDown(pointerDownOn(rect));
+    vi.advanceTimersByTime(500);
+    el.onTimelineClick({ target: rect }); // swallowed: the long-press's own click
+
+    el.onTimelineClick({ target: rect });
+
+    expect(el.activeHandleEntryId).toBe(1);
   });
 
   it('dismisses visible, idle handles when Escape is pressed', () => {
@@ -1208,7 +1243,7 @@ describe('Timeline drag lifecycle', () => {
     el.commitDrag();
     expect(el.activeHandleEntryId).toBe(entry.id);
 
-    el.onTimelineClick({ target: { dataset: {} }, offsetY: 10 }); // a later click, on empty space
+    document.body.dispatchEvent(new Event('pointerdown', { bubbles: true })); // a later press, on empty space
 
     expect(el.activeHandleEntryId).toBeUndefined();
     expect(el.querySelectorAll('[data-part="drag-handles"] .resize-handle')).toHaveLength(0);
@@ -1237,6 +1272,7 @@ describe('Timeline drag lifecycle', () => {
     expect(el.activeHandleEntryId).toBe(entryA.id);
 
     const rectB = el.querySelector(`[data-part="events"] rect[data-id="${entryB.id}"]`);
+    rectB.dispatchEvent(new Event('pointerdown', { bubbles: true }));
     el.onTimelineClick({ target: rectB });
 
     expect(el.activeHandleEntryId).toBeUndefined();

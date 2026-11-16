@@ -21,10 +21,24 @@ el-horizontal-timeline-stack {
      HorizontalTimelineAxis reads --hz-label-width to work out its minimum
      zoom, so the gutter is not counted as room for the day. */
   --hz-label-width: 168px;
+
+  /* the details panel is a fixed overlay on the right. While it is open the
+     scrollable area gets this much room after the last minute of the day, so
+     scrolling to the end brings the end of the timelines out from under the
+     panel; scroll-padding makes scrollIntoView/focus keep things clear of it
+     too. The scroller's own width is unchanged, so HorizontalTimelineAxis's
+     minimum zoom is not retriggered. */
+  --hz-panel-width: 380px;
+  --hz-panel-clearance: calc(var(--hz-panel-width) + var(--space-sm));
   display: grid;
   grid-template-columns: var(--hz-label-width) max-content;
   row-gap: 10px;
   align-content: start;
+
+  &:has(el-details-panel.active) {
+    padding-inline-end: var(--hz-panel-clearance);
+    scroll-padding-inline-end: var(--hz-panel-clearance);
+  }
 
   el-horizontal-timeline-axis {
     grid-column: 2;
@@ -103,9 +117,9 @@ el-horizontal-timeline-stack {
   el-details-panel {
     position: fixed;
     top: 4.16rem;
-    right: -416px;
+    right: calc(-1 * var(--hz-panel-clearance) - var(--space-sm));
     bottom: 0;
-    width: 380px;
+    width: var(--hz-panel-width);
     height: auto;
     transition: right 0.3s ease;
     z-index: 2;

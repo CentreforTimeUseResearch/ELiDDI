@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { installSvgTemplates } from '../../testing/svgTemplates';
 import { HorizontalTimelineStack } from './horizontalTimelineStack';
 import { moveToNewParent, errorsDuring } from '../../testing/domMoves';
@@ -342,6 +342,68 @@ describe('HorizontalTimelineStack', () => {
 
       expect(findSpy).toHaveBeenCalledWith(30);
       expect(el.panelElement.getAttribute('dimensionindex')).toBe('4');
+    });
+  });
+
+  // jsdom has no layout, so the geometry is stubbed: a 1000px-wide viewport,
+  // 168px of labels from x=0, and 392px reserved for the open panel, so
+  // Entries must end by x=608 and start after x=168
+  describe('revealing the selected Entry from under the panel', () => {
+    afterEach(() => vi.restoreAllMocks());
+
+    function stackWithSelectedEntry({ left, right }) {
+      appStore.dispatch({ type: SWITCH_DIMENSION, payload: 0 });
+      const el = createStack();
+      const row = el.rows[0];
+      row.selectedID = 7;
+      const block = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      block.dataset.id = '7';
+      block.getBoundingClientRect = () => ({ left, right });
+      row.appendChild(block);
+      el.getBoundingClientRect = () => ({ left: 0 });
+      el.scrollBy = vi.fn();
+      vi.spyOn(window, 'getComputedStyle').mockReturnValue({
+        paddingInlineEnd: '392px',
+        getPropertyValue: (name) => (name === '--hz-label-width' ? '168px' : ''),
+      });
+      Object.defineProperty(document.documentElement, 'clientWidth', {
+        value: 1000,
+        configurable: true,
+      });
+      return el;
+    }
+
+    it('pans by just what the panel would cover', () => {
+      const el = stackWithSelectedEntry({ left: 500, right: 700 });
+
+      el.revealSelectedEntry();
+
+      expect(el.scrollBy).toHaveBeenCalledWith({ left: 92 });
+    });
+
+    it('leaves an Entry the panel does not cover', () => {
+      const el = stackWithSelectedEntry({ left: 300, right: 600 });
+
+      el.revealSelectedEntry();
+
+      expect(el.scrollBy).not.toHaveBeenCalled();
+    });
+
+    it('stops with the start of a wide Entry at the labels, not under them', () => {
+      const el = stackWithSelectedEntry({ left: 300, right: 1200 });
+
+      el.revealSelectedEntry();
+
+      expect(el.scrollBy).toHaveBeenCalledWith({ left: 132 });
+    });
+
+    it('does nothing when no Entry is selected', () => {
+      const el = stackWithSelectedEntry({ left: 500, right: 700 });
+      el.rows[0].selectedID = undefined;
+
+      el.revealSelectedEntry();
+
+      expect(el.scrollBy).not.toHaveBeenCalled();
     });
   });
 

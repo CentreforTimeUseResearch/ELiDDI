@@ -151,6 +151,7 @@ export class EntryResizeController {
       // history of unreliable touch-action support on their own - this is
       // the reliable fallback, independent of that CSS support level
       e.preventDefault?.();
+      this.session.trackPointer(e.clientX, e.clientY);
       this.session.updateTo(this.clientToSvgCoord(e.clientX, e.clientY));
       return;
     }

@@ -31,6 +31,7 @@ Not available as a gesture. The Respondent edits the card controls: set the new 
 - Pointer-move updates a draft; only release dispatches. A move or resize that changes a neighbour is committed as a **batched dispatch** of one `UPDATE_ENTRY` per affected Entry, folded into one committed state with a single notification (see Decisions in the [README](../README.md)).
 - A move or resize does not start while the details panel is open (the same rule as the handle drags): a typed, unsaved edit and a live drag are never in flight together. The Respondent finishes with Save or Cancel first; the panel's own time fields are the way to change times while it is open.
 - Handles stay up while the Respondent presses their own Entry, one of its handles, or the details panel. Any other press (another Entry, empty time, another Timeline, the navbar, the page background) dismisses them, as does Escape.
+- Auto-scroll: on the horizontal timeline, holding a dragging pointer near the left or right edge of the visible timeline area (after the Dimension label gutter) scrolls it that way, faster the closer to the edge, after a short dwell, so a time that is off screen can be reached in one drag. The dragged time keeps updating while it scrolls. Scrolling stops when the pointer leaves the edge zone or the drag ends or is cancelled. Under `prefers-reduced-motion` the speed is lower.
 - Diary status becomes in-progress on commit.
 
 ## Accessibility
@@ -49,6 +50,7 @@ Not available as a gesture. The Respondent edits the card controls: set the new 
 - [ ] Day edges and "now" stop the drag.
 - [ ] Escape or pointer cancel restores all affected Entries exactly.
 - [ ] Release commits all changes together.
+- [ ] Holding a drag near the edge of the horizontal timeline scrolls it, the dragged time keeps updating, and scrolling stops on release, cancel or leaving the edge.
 - [ ] Touch requires long-press, so scrolling still works.
 - [ ] A press anywhere except the handled Entry, its handles or the details panel hides the handles.
 - [ ] Handles and results are reachable and announced without a pointer.

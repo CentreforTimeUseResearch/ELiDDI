@@ -10,6 +10,8 @@ This project must not depend on any JavaScript library at runtime — `package.j
 
 ```bash
 npm run dev          # start Vite dev server
+npm run dev:local    # dev server with server_accounts forced off (config via ACTIONS_ENV; config.json untouched)
+npm run dev:local -- --with-server   # also starts the ../ELiDDI_backend Docker backend, turns accounts on, stops it on exit (--help for more)
 npm run build        # production build, outputs to dist/ (base path is relative: --base=./)
 npm run preview      # preview production build locally
 npm test             # run vitest in watch mode

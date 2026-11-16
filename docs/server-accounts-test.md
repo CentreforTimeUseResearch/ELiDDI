@@ -6,6 +6,14 @@ The automated tests cover each piece against a fake server. This is the only che
 
 ## Set up
 
+**The short way** (in `ELiDDI`; needs Docker running and `ELiDDI_backend` next to it):
+
+```bash
+npm run dev:local -- --with-server
+```
+
+This starts the backend, prints the six login codes, runs the dev server with `server_accounts` on (the config goes in through `ACTIONS_ENV`, so `config/config.json` stays as committed), and stops the backend when you press Ctrl-C. Add `--fresh` to start from nothing (new codes, empty diaries), `--keep-server` to leave the backend running at the end, or see `npm run dev:local -- --help`. Then go to step 3. The two steps below are the same thing done by hand, and what to do when you need to run the parts separately.
+
 **1. The backend** (in `ELiDDI_backend`; needs Docker running):
 
 ```bash
@@ -124,7 +132,7 @@ Make a Diary that passes the study's required checks (open the checks panel from
 
 ### 9. Accounts off (nothing changed)
 
-Stop Vite. Start it without `ACTIONS_ENV` (so `config/config.json` is used as committed). Reload.
+Stop Vite. Start it with `npm run dev:local` (accounts off whatever `config/config.json` says), or `npm run dev` without `ACTIONS_ENV` (so `config/config.json` is used as committed). Reload.
 
 | Expect                                                                                                         |
 | -------------------------------------------------------------------------------------------------------------- |

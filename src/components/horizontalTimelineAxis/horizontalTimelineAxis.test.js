@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { installSvgTemplates } from '../../testing/svgTemplates';
 import { HorizontalTimelineAxis } from './horizontalTimelineAxis';
 import { appStore } from '../../store/appStore';
@@ -131,6 +131,56 @@ describe('HorizontalTimelineAxis', () => {
 
       expect(el.querySelector('.zoom-in').disabled).toBe(false);
       expect(el.querySelector('.zoom-out').disabled).toBe(true); // minZoom = 2880/2880 = 1
+    });
+
+    describe('when the stack is resized after the axis is built', () => {
+      let resizeCallback;
+      let observed;
+      let disconnected;
+
+      beforeEach(() => {
+        observed = [];
+        disconnected = false;
+        vi.stubGlobal(
+          'ResizeObserver',
+          class {
+            constructor(callback) {
+              resizeCallback = callback;
+            }
+            observe(target) {
+              observed.push(target);
+            }
+            disconnect() {
+              disconnected = true;
+            }
+          }
+        );
+      });
+
+      afterEach(() => {
+        vi.unstubAllGlobals();
+      });
+
+      // the diary is hidden behind the login dialog while the axis is built: the
+      // stack has no width yet, so zoom-out looks to be at its minimum
+      it('enables zoom-out once the stack gains the width it did not have when built', () => {
+        const el = createAxis({ containerWidth: 0 });
+        expect(el.querySelector('.zoom-out').disabled).toBe(true);
+        expect(observed).toEqual([el.parentElement]);
+
+        setClientWidth(el.parentElement, 1536);
+        resizeCallback();
+
+        expect(el.querySelector('.zoom-out').disabled).toBe(false);
+      });
+
+      it('stops watching when the axis is removed', () => {
+        const el = createAxis();
+
+        el.remove();
+
+        expect(disconnected).toBe(true);
+      });
     });
   });
 

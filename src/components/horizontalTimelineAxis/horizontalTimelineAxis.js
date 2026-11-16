@@ -53,7 +53,21 @@ export class HorizontalTimelineAxis extends TinyBase {
     this.renderAxis();
     this.updateFutureOverlay();
     this.updateButtonDisabledState();
+    this.watchStackWidth();
     this.registerCleanup(onHalfMinuteTick(() => this.updateFutureOverlay()));
+  }
+
+  // the minimum zoom depends on the stack's width, which is not known when
+  // the axis is built while the diary is hidden (behind the login dialog) and
+  // changes whenever the window is resized: the buttons are re-checked then,
+  // not only when the zoom changes
+  watchStackWidth() {
+    if (typeof ResizeObserver === 'undefined' || !this.parentElement) {
+      return; // no layout to watch (e.g. a test environment)
+    }
+    const observer = new ResizeObserver(() => this.updateButtonDisabledState());
+    observer.observe(this.parentElement);
+    this.registerCleanup(() => observer.disconnect());
   }
 
   getChildElementReferences() {

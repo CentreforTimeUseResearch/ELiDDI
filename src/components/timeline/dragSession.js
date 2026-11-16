@@ -1,6 +1,7 @@
 import { computeMove } from './moveSpan';
 import { computeResize } from './resizeSpan';
 import { getNowLimitOffsetMins } from './createSpan';
+import { AutoScroller } from './autoScroller';
 
 // One pointer drag of an Entry, from start to commit or cancel: a handle
 // drag (edge 'start'/'end', the rules are computeResize's) or a move of the
@@ -38,6 +39,35 @@ export class DragSession {
     this.onLimit = onLimit;
     this.onCommit = onCommit;
     this.onCancelled = onCancelled;
+    // scrolls the horizontal timeline stack when the pointer is held near its
+    // edge; a no-op for a Timeline with no such scroller (the vertical one)
+    this.autoScroller = new AutoScroller({
+      getScroller: () => this.svg?.closest?.('el-horizontal-timeline-stack') ?? undefined,
+      getInsets: () => this.scrollerInsets(),
+      onScrolled: () => this.retick(),
+    });
+  }
+
+  // the stack's sticky dimension-label gutter covers the start of its
+  // scrollable width, so the left edge zone begins after it
+  scrollerInsets() {
+    const scroller = this.autoScroller.scroller;
+    const gutter = parseFloat(getComputedStyle(scroller).getPropertyValue('--hz-label-width'));
+    return { left: Number.isFinite(gutter) ? gutter : 0, right: 0 };
+  }
+
+  // the pointer has not moved but the content under it has: recompute the
+  // drag at the pointer's last position
+  retick() {
+    if (this.drag && this.lastClient) {
+      this.updateTo(this.clientToSvgCoord(this.lastClient.x, this.lastClient.y));
+    }
+  }
+
+  // each pointermove of the live drag: the new position, in client pixels
+  trackPointer(clientX, clientY) {
+    this.lastClient = { x: clientX, y: clientY };
+    this.autoScroller.update(clientX);
   }
 
   get active() {
@@ -70,6 +100,8 @@ export class DragSession {
       wasAtLimit: false,
       atLimit: false,
     };
+    this.lastClient = { x: e.clientX, y: e.clientY };
+    this.autoScroller.start(e.clientX);
     this.updateTo(this.clientToSvgCoord(e.clientX, e.clientY));
   }
 
@@ -96,6 +128,8 @@ export class DragSession {
       wasAtLimit: false,
       atLimit: false,
     };
+    this.lastClient = { x: e.clientX, y: e.clientY };
+    this.autoScroller.start(e.clientX);
   }
 
   // one tick of the drag: computes the constrained span at this position,
@@ -181,12 +215,14 @@ export class DragSession {
   // the owner's destroy() and hideHandles(), where the SVG is going away or
   // the drag's visuals are being cleared wholesale anyway
   abandon() {
+    this.autoScroller.stop();
     this.drag = undefined;
   }
 
   end() {
     const drag = this.drag;
     this.drag = undefined;
+    this.autoScroller.stop();
     if (drag) {
       this.releaseCapture(drag);
       this.svg?.classList.remove('dragging-handle');

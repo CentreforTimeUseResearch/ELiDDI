@@ -325,3 +325,44 @@ describe('EntryCreateController', () => {
     });
   });
 });
+
+describe('EntryCreateController auto-scroll', () => {
+  it('starts the auto-scroller when a drag begins, follows the pointer, and stops it on release', () => {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    const preview = { show: vi.fn(), hide: vi.fn() };
+    const controller = new EntryCreateController({
+      svg,
+      preview,
+      getEntries: () => [],
+      isSingleChoiceDimension: () => true,
+      getCurrentDate: () => '2000-01-01',
+      clientToSvgCoord: (x, y) => y,
+      calculateTheTimeSlotClicked: (c) => Math.floor(c / 10) * 10,
+      onCreate: vi.fn(),
+    });
+    const start = vi.spyOn(controller.autoScroller, 'start');
+    const update = vi.spyOn(controller.autoScroller, 'update');
+    const stop = vi.spyOn(controller.autoScroller, 'stop');
+    const zone = { dataset: { part: 'gridline-zone' }, setPointerCapture: vi.fn() };
+    const ev = (clientY, clientX = 5) => ({
+      target: zone,
+      pointerId: 1,
+      pointerType: 'mouse',
+      button: 0,
+      clientX,
+      clientY,
+      preventDefault: vi.fn(),
+    });
+    controller.onPointerDown(ev(0));
+    controller.onPointerMove(ev(100, 7));
+    expect(start).toHaveBeenCalledWith(7);
+    controller.onPointerMove(ev(150, 9));
+    expect(update).toHaveBeenCalledWith(9);
+    // the content scrolled under a stationary pointer
+    preview.show.mockClear();
+    controller.retick();
+    expect(preview.show).toHaveBeenCalled();
+    controller.handlePointerUp(ev(150, 9));
+    expect(stop).toHaveBeenCalled();
+  });
+});

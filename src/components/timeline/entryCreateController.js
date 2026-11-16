@@ -1,3 +1,4 @@
+import { createStackAutoScroller } from './autoScroller';
 import { clampCreateSpan, getNowLimitOffsetMins } from './createSpan';
 
 // how long a touch must rest on empty time before it starts painting a block;
@@ -41,6 +42,16 @@ export class EntryCreateController {
     this.clientToSvgCoord = clientToSvgCoord;
     this.calculateTheTimeSlotClicked = calculateTheTimeSlotClicked;
     this.onCreate = onCreate;
+    // scrolls the horizontal timeline stack when a drag is held near its edge
+    this.autoScroller = createStackAutoScroller(svg, () => this.retick());
+  }
+
+  // the pointer has not moved but the content under it has: recompute the
+  // span at the pointer's last position
+  retick() {
+    if (this.activeDrag && this.lastClient) {
+      this.updateSpan(this.slotAt(this.lastClient));
+    }
   }
 
   onPointerDown(e) {
@@ -79,6 +90,8 @@ export class EntryCreateController {
       // the stack may scroll under a touch drag; touch-action and the host's
       // touchmove handler are the main defence, this is the fallback
       e.preventDefault?.();
+      this.lastClient = { clientX: e.clientX, clientY: e.clientY };
+      this.autoScroller.update(e.clientX);
       this.updateSpan(this.slotAt(e));
       return;
     }
@@ -180,6 +193,8 @@ export class EntryCreateController {
       span: undefined,
       captureElement: e.target,
     };
+    this.lastClient = { clientX: e.clientX, clientY: e.clientY };
+    this.autoScroller.start(e.clientX);
   }
 
   updateSpan(currentMins) {
@@ -221,6 +236,7 @@ export class EntryCreateController {
   endDrag() {
     const drag = this.activeDrag;
     this.activeDrag = undefined;
+    this.autoScroller.stop();
     if (!drag) {
       return;
     }

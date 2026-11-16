@@ -34,13 +34,48 @@ export class HorizontalTimelineStack extends TinyBase {
     super.connectedCallback();
     this.rows = [...this.querySelectorAll('el-horizontal-timeline')];
     this.registerCleanup(this.panelCoordinator.registerGuard());
+    let panelWasShown = this.store.getState().uipanel === 'details';
     this.registerCleanup(
       this.store.subscribe(() => {
         this.panelCoordinator.onStoreUpdate();
         this.updateCurrentLabel();
+        const panelShown = this.store.getState().uipanel === 'details';
+        if (panelShown && !panelWasShown) {
+          // after the opener has selected its Entry and the panel's room
+          // after the day is in place
+          requestAnimationFrame(() => this.revealSelectedEntry());
+        }
+        panelWasShown = panelShown;
       })
     );
     this.updateCurrentLabel();
+  }
+
+  // the details panel is an overlay on the right: when opening it would cover
+  // the Entry just clicked, pans the day just far enough to bring that Entry
+  // out from under it. Never pans so far that the Entry's start goes under the
+  // labels (an Entry wider than the room left starts at the labels' edge)
+  revealSelectedEntry() {
+    const timeline = this.panelCoordinator.activeTimeline();
+    if (!timeline || timeline.selectedID === undefined) {
+      return;
+    }
+    const block = timeline.querySelector(`rect[data-id="${timeline.selectedID}"]`);
+    if (!block) {
+      return;
+    }
+    const style = getComputedStyle(this);
+    // the room the stack reserves for the open panel (a calc() custom
+    // property isn't resolved, its padding is)
+    const clearancePx = parseFloat(style.paddingInlineEnd) || 0;
+    const labelPx = parseFloat(style.getPropertyValue('--hz-label-width')) || 0;
+    const entryBox = block.getBoundingClientRect();
+    const visibleRight = document.documentElement.clientWidth - clearancePx;
+    const visibleLeft = this.getBoundingClientRect().left + labelPx;
+    const panBy = Math.min(entryBox.right - visibleRight, entryBox.left - visibleLeft);
+    if (panBy > 0) {
+      this.scrollBy({ left: panBy });
+    }
   }
 
   // the tab of the current Dimension is selected (for assistive tech, and the

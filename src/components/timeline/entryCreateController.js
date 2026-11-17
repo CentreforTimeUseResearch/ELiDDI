@@ -33,6 +33,8 @@ export class EntryCreateController {
     clientToSvgCoord,
     calculateTheTimeSlotClicked,
     onCreate,
+    onPaintStart,
+    isOnDraft,
   }) {
     this.svg = svg;
     this.preview = preview;
@@ -42,6 +44,8 @@ export class EntryCreateController {
     this.clientToSvgCoord = clientToSvgCoord;
     this.calculateTheTimeSlotClicked = calculateTheTimeSlotClicked;
     this.onCreate = onCreate;
+    this.onPaintStart = onPaintStart; // () => void: a fresh block is being painted, replacing any provisional one
+    this.isOnDraft = isOnDraft; // (e) => whether a press is on the provisional block's body, which moves it instead
     // scrolls the horizontal timeline stack when a drag is held near its edge
     this.autoScroller = createStackAutoScroller(svg, () => this.retick());
   }
@@ -62,6 +66,9 @@ export class EntryCreateController {
     // mirror strip have their own gestures
     if (e.target?.dataset?.part !== 'gridline-zone') {
       return;
+    }
+    if (this.isOnDraft?.(e)) {
+      return; // picks the provisional block up (EntryResizeController)
     }
     this.cancelCandidate();
     const isTouch = e.pointerType === 'touch';
@@ -180,6 +187,7 @@ export class EntryCreateController {
 
   startDrag(e, candidate) {
     this.cancelCandidate();
+    this.onPaintStart?.();
     try {
       e.target?.setPointerCapture?.(e.pointerId);
     } catch {

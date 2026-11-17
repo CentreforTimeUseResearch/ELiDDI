@@ -3,11 +3,12 @@ import { ADD_TIMELINE, HIDE_PANEL } from '../../store/actionTypes';
 import { EntryResizeController } from './entryResizeController';
 import { EntryCreateController } from './entryCreateController';
 import { CreatePreview } from './createPreview';
+import { DRAFT_ENTRY_ID } from './draftSpan';
 import { TimelineKeyboard } from './timelineKeyboard';
 import { stepDay, goToToday, stepDimension } from '../../utils/navigation';
 import { clampCreateSpan, getNowLimitOffsetMins } from './createSpan';
 import { EntryCommands, formatOverlapMessage } from './entryCommands';
-import { SVGNS } from './timelineConstants';
+import { SVGNS, MINUTES_PER_DAY, MIN_ENTRY_DURATION_MINS } from './timelineConstants';
 import { guardUnsavedEdits } from '../../utils/unsavedEdits';
 import { dimension, dimensions } from '../../config/appConfig';
 
@@ -52,6 +53,7 @@ export class BaseTimeline extends TinyBase {
   resizeController; // owns the long-press/drag/resize-handle pipeline
   createController; // owns the press-and-drag-to-create gesture
   createPreview; // the provisional block shown while a new Entry is open
+  draft; // { startOffsetMins, endOffsetMins } of that block once painted: it has handles and can be moved
   keyboard; // keyboard access: roving focus, names, Enter (timelineKeyboard.js)
   entryCommands;
 
@@ -103,6 +105,7 @@ export class BaseTimeline extends TinyBase {
       axis: this.constructor.axis,
       getPxPerMinute: () => this.getPxPerMinute(),
       crossBox: this.constructor.crossAxisBox,
+      onHide: () => this.clearDraft(),
     });
     this.createController = this.createCreateController();
     this.registerCleanup(() => this.createController.destroy());
@@ -149,6 +152,9 @@ export class BaseTimeline extends TinyBase {
       entriesLayer: this.entriesLayer,
       handlesLayer: this.handlesLayer,
       getEntries: () => this.entries,
+      getDraft: () => this.draft,
+      onCommitDraft: (span) => this.commitDraft(span),
+      onDraftFeedback: (span) => this.createPreview.show(span),
       isSingleChoiceDimension: () => this.isSingleChoiceDimension,
       getCurrentDate: () => this.currentDate,
       isPanelOpen: () => this.store.getState().uipanel === 'details',
@@ -209,6 +215,8 @@ export class BaseTimeline extends TinyBase {
       clientToSvgCoord: (clientX, clientY) => this.clientToSvgCoord(clientX, clientY),
       calculateTheTimeSlotClicked: (coord) => this.calculateTheTimeSlotClicked(coord),
       onCreate: (span) => this.startNewEntry(span),
+      onPaintStart: () => this.clearDraft(),
+      isOnDraft: (e) => this.resizeController.isDraftBodyPress(e),
     });
   }
 
@@ -340,7 +348,47 @@ export class BaseTimeline extends TinyBase {
       // after opening: the panel's own store updates run first, and
       // syncCreatePreview hides the block unless the panel is showing
       this.createPreview.show({ startOffsetMins, endOffsetMins, atLimit });
+      this.setDraft({ startOffsetMins, endOffsetMins });
     });
+  }
+
+  // the provisional block is now this span, with handles: the Respondent can
+  // go on adjusting it by pointer while the panel is open
+  setDraft({ startOffsetMins, endOffsetMins }) {
+    this.draft = { startOffsetMins, endOffsetMins };
+    this.resizeController.showHandles({ id: DRAFT_ENTRY_ID, ...this.draft });
+  }
+
+  // the provisional block is gone (replaced, saved, or the panel closed)
+  clearDraft() {
+    this.draft = undefined;
+    this.resizeController.hideHandlesIfActiveFor(DRAFT_ENTRY_ID);
+  }
+
+  // a drag of the provisional block was released: the panel takes the new times
+  commitDraft(span) {
+    this.createPreview.show({ ...span, atLimit: false });
+    this.setDraft(span);
+    this.panelActions.setNewEntryTimes?.(span.startOffsetMins, span.endOffsetMins);
+  }
+
+  // the panel's start or end field changed: the block follows (when the times
+  // make a block at all)
+  syncDraftFromPanel(startOffsetMins, endOffsetMins) {
+    if (!this.draft || this.resizeController.activeDrag) {
+      return;
+    }
+    const valid =
+      Number.isFinite(startOffsetMins) &&
+      Number.isFinite(endOffsetMins) &&
+      startOffsetMins >= 0 &&
+      endOffsetMins <= MINUTES_PER_DAY &&
+      endOffsetMins - startOffsetMins >= MIN_ENTRY_DURATION_MINS;
+    if (!valid) {
+      return;
+    }
+    this.createPreview.show({ startOffsetMins, endOffsetMins, atLimit: false });
+    this.setDraft({ startOffsetMins, endOffsetMins });
   }
 
   // the provisional block belongs to the new-Entry panel session: it goes
@@ -522,6 +570,9 @@ export class BaseTimeline extends TinyBase {
     }
     if (this.createController.consumeSuppressedClick()) {
       return; // the click that ended a drag-to-create
+    }
+    if (this.resizeController.isDraftBodyPress(e)) {
+      return; // a click on the provisional block leaves it as it is
     }
     // handles are dismissed by the document-level pointerdown (see
     // assignEventHandlers), so a click on the handled Entry keeps them

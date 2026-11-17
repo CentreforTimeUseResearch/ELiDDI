@@ -18,7 +18,10 @@ export class CreatePreview {
   layer;
   noRoomTimer;
 
-  constructor({ container, axis, getPxPerMinute, crossBox }) {
+  // onHide: called whenever the block is cleared, so whatever is attached to it
+  // (the handles of the provisional block) goes with it
+  constructor({ container, axis, getPxPerMinute, crossBox, onHide }) {
+    this.onHide = onHide;
     this.container = container;
     this.axis = axis;
     this.getPxPerMinute = getPxPerMinute;
@@ -53,6 +56,7 @@ export class CreatePreview {
   hide() {
     clearTimeout(this.noRoomTimer);
     this.layer?.replaceChildren();
+    this.onHide?.();
   }
 
   timeRange(startOffsetMins, endOffsetMins, atLimit) {

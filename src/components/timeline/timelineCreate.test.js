@@ -267,4 +267,130 @@ describe.each(LAYOUTS)('drag to create - $name', (layout) => {
     expect(openNewEntry).not.toHaveBeenCalled();
     expect(preview()).toBeNull();
   });
+
+  describe('adjusting the provisional block while the panel is open', () => {
+    const { position, size } = layout.previewRect;
+    const previewSpan = () => ({
+      start: Number(preview().getAttribute(position)) / el.getPxPerMinute(),
+      end:
+        (Number(preview().getAttribute(position)) + Number(preview().getAttribute(size))) /
+        el.getPxPerMinute(),
+    });
+    const handle = (edge) => el.querySelector(`.resize-handle[data-handle-edge="${edge}"]`);
+
+    // press on a handle, move, release - the pointer stays captured by the handle
+    function dragHandle(edge, toMins) {
+      const target = handle(edge).querySelector('circle');
+      const press = new Event('pointerdown', { bubbles: true, cancelable: true });
+      Object.assign(press, { pointerId: 1, pointerType: 'mouse', button: 0, ...layout.at(0, el) });
+      target.dispatchEvent(press);
+      fire('pointermove', toMins);
+      fire('pointerup', toMins);
+      // the browser follows the press with a click on the captured handle
+      handle(edge)
+        .querySelector('circle')
+        .dispatchEvent(new MouseEvent('click', { bubbles: true, ...layout.at(toMins, el) }));
+    }
+
+    beforeEach(() => {
+      mount();
+      el.panelActions.setNewEntryTimes = vi.fn();
+      drag(60, 90); // 60-100
+    });
+
+    it('shows a start and an end handle on the block', () => {
+      expect(el.querySelectorAll('.resize-handle')).toHaveLength(2);
+      expect(handle('start').dataset.handleEntryId).toBe('-1');
+    });
+
+    it('keeps both edges when the start is dragged earlier and then the end later', () => {
+      dragHandle('start', 30);
+      expect(previewSpan()).toEqual({ start: 30, end: 100 });
+      dragHandle('end', 150);
+
+      expect(previewSpan()).toEqual({ start: 30, end: 150 });
+      expect(el.panelActions.setNewEntryTimes).toHaveBeenLastCalledWith(30, 150);
+      expect(openNewEntry).toHaveBeenCalledOnce(); // never replaced by a fresh block
+    });
+
+    it('moves the block by its body, keeping its length', () => {
+      fire('pointerdown', 70);
+      fire('pointermove', 110);
+      fire('pointerup', 110);
+      click(110);
+
+      expect(previewSpan()).toEqual({ start: 100, end: 140 });
+      expect(el.panelActions.setNewEntryTimes).toHaveBeenLastCalledWith(100, 140);
+      expect(openNewEntry).toHaveBeenCalledOnce();
+    });
+
+    it('leaves the block as it is for a plain click on it', () => {
+      fire('pointerdown', 70);
+      fire('pointerup', 70);
+      click(70);
+
+      expect(previewSpan()).toEqual({ start: 60, end: 100 });
+      expect(openNewEntry).toHaveBeenCalledOnce();
+    });
+
+    it('paints a fresh block for a press on empty time away from it', () => {
+      drag(300, 320);
+
+      expect(openNewEntry).toHaveBeenCalledTimes(2);
+      expect(openNewEntry).toHaveBeenLastCalledWith(300, 330);
+      expect(previewSpan()).toEqual({ start: 300, end: 330 });
+      expect(el.querySelectorAll('.resize-handle')).toHaveLength(2);
+    });
+
+    it('puts the block back when Escape cancels a handle drag', () => {
+      const target = handle('end').querySelector('circle');
+      const press = new Event('pointerdown', { bubbles: true, cancelable: true });
+      Object.assign(press, { pointerId: 1, pointerType: 'mouse', button: 0 });
+      target.dispatchEvent(press);
+      fire('pointermove', 200);
+      expect(previewSpan().end).toBe(200);
+
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+
+      expect(previewSpan()).toEqual({ start: 60, end: 100 });
+      expect(el.panelActions.setNewEntryTimes).not.toHaveBeenCalled();
+    });
+
+    it('follows the panel time fields', () => {
+      el.syncDraftFromPanel(120, 200);
+
+      expect(previewSpan()).toEqual({ start: 120, end: 200 });
+      el.syncDraftFromPanel(200, 200); // not a block: ignored
+      expect(previewSpan()).toEqual({ start: 120, end: 200 });
+    });
+
+    it('takes its handles away with the block when the panel closes', () => {
+      appStore.dispatch({ type: HIDE_PANEL });
+
+      expect(preview()).toBeNull();
+      expect(el.querySelectorAll('.resize-handle')).toHaveLength(0);
+    });
+  });
+
+  it('stops a dragged provisional block at a neighbour, leaving the neighbour alone', () => {
+    mount(PRIMARY, [{ id: 7, startOffsetMins: 120, endOffsetMins: 160, activity: 'Sleep' }]);
+    drag(60, 90); // 60-100
+    const target = el.querySelector('.resize-handle[data-handle-edge="end"] circle');
+    const press = new Event('pointerdown', { bubbles: true, cancelable: true });
+    Object.assign(press, { pointerId: 1, pointerType: 'mouse', button: 0 });
+    target.dispatchEvent(press);
+    fire('pointermove', 300);
+    fire('pointerup', 300);
+
+    const rect = el.querySelector('[data-part="create-preview"] rect');
+    const end =
+      (Number(rect.getAttribute(layout.previewRect.position)) +
+        Number(rect.getAttribute(layout.previewRect.size))) /
+      el.getPxPerMinute();
+    expect(end).toBe(120);
+    expect(appStore.getState().diaries[PAST_DATE].timelines[PRIMARY][0]).toMatchObject({
+      startOffsetMins: 120,
+      endOffsetMins: 160,
+    });
+  });
 });

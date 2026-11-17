@@ -3,6 +3,7 @@ import { t } from '../../i18n/i18n';
 import { SVGNS } from './timelineConstants';
 import { LongPressRecognizer } from './longPressRecognizer';
 import { DragSession } from './dragSession';
+import { DRAFT_ENTRY_ID } from './draftSpan';
 
 // Phase 10.6: which SVG attributes carry "position along the timeline axis"
 // vs "fixed cross-axis center" - everything else in this controller already
@@ -69,6 +70,9 @@ export class EntryResizeController {
     entriesLayer,
     handlesLayer,
     getEntries,
+    getDraft,
+    onCommitDraft,
+    onDraftFeedback,
     isSingleChoiceDimension,
     getCurrentDate,
     isPanelOpen,
@@ -86,6 +90,12 @@ export class EntryResizeController {
     this.isPanelOpen = isPanelOpen;
     this.clientToSvgCoord = clientToSvgCoord;
     this.onCommitResize = onCommitResize;
+    // the provisional block of a new Entry: () => { startOffsetMins, endOffsetMins } | undefined,
+    // what to do with its span when a drag of it is released, and how to draw it live
+    this.getDraft = getDraft;
+    this.onCommitDraft = onCommitDraft;
+    this.onDraftFeedback = onDraftFeedback;
+    this.calculateTheTimeSlotClicked = calculateTheTimeSlotClicked;
     this.axis = axis;
     this.getPxPerMinute = getPxPerMinute;
     this.crossAxisCenter = crossAxisCenter;
@@ -96,6 +106,7 @@ export class EntryResizeController {
     this.session = new DragSession({
       svg,
       getEntries,
+      getDraft,
       isSingleChoiceDimension,
       getCurrentDate,
       clientToSvgCoord,
@@ -113,6 +124,29 @@ export class EntryResizeController {
     return this.session.drag;
   }
 
+  // a live Entry by id, or the provisional block of a new Entry (as an
+  // Entry-shaped object) for DRAFT_ENTRY_ID
+  findEntry(entryId) {
+    if (entryId === DRAFT_ENTRY_ID) {
+      const draft = this.getDraft?.();
+      return draft && { id: DRAFT_ENTRY_ID, ...draft };
+    }
+    return this.getEntries().find((entry) => entry.id === entryId);
+  }
+
+  // whether a pointer event is on empty time inside the provisional block of
+  // a new Entry (its body: the layer it is drawn in ignores the pointer, so
+  // the press lands on the timeline behind it)
+  isDraftBodyPress(e) {
+    const draft = this.getDraft?.();
+    if (!draft || e.target?.dataset?.part !== 'gridline-zone') {
+      return false;
+    }
+    const coord = this.clientToSvgCoord(e.clientX, e.clientY);
+    const slot = this.calculateTheTimeSlotClicked(coord >= 0 ? coord : 0);
+    return slot >= draft.startOffsetMins && slot < draft.endOffsetMins;
+  }
+
   // long-press detection - a press held on an entry (never on the read-only
   // shadow/mirror strip) without moving far, for long enough, reveals resize
   // handles instead of the click that would otherwise open the details panel
@@ -123,6 +157,13 @@ export class EntryResizeController {
     const handleGroup = e.target?.closest?.('.resize-handle');
     if (handleGroup) {
       this.startHandleDrag(e, handleGroup);
+      return;
+    }
+    if (this.isDraftBodyPress(e)) {
+      // the body of the provisional block: a press that moves picks it up. It
+      // is allowed with the details panel open (the draft is what the panel
+      // is showing), unlike an Entry's
+      this.recognizer.begin(e, DRAFT_ENTRY_ID);
       return;
     }
     const entryIdRaw = e.target?.dataset?.id;
@@ -227,7 +268,8 @@ export class EntryResizeController {
       this.cancelDrag();
       return;
     }
-    if (this.activeHandleEntryId !== undefined) {
+    if (this.activeHandleEntryId !== undefined && this.activeHandleEntryId !== DRAFT_ENTRY_ID) {
+      // (the provisional block's handles go with the block, when the panel closes)
       this.hideHandles();
     }
   }
@@ -269,7 +311,7 @@ export class EntryResizeController {
   // the recognizer's long-press completed -> show the handles; true tells it
   // the press landed on a live Entry, so the still-down pointer arms a move
   onLongPressFired(candidate) {
-    const entry = this.getEntries().find((entry) => entry.id === candidate.entryId);
+    const entry = this.findEntry(candidate.entryId);
     if (!entry) {
       return false;
     }
@@ -282,7 +324,7 @@ export class EntryResizeController {
 
   // the recognizer saw a press travel far enough: pick the Entry up
   onMoveStart(e, source) {
-    const entry = this.getEntries().find((entry) => entry.id === source.entryId);
+    const entry = this.findEntry(source.entryId);
     if (!entry) {
       return;
     }
@@ -296,7 +338,7 @@ export class EntryResizeController {
   startHandleDrag(e, handleGroup) {
     const entryId = Number(handleGroup.dataset.handleEntryId);
     const edge = handleGroup.dataset.handleEdge;
-    const entry = this.getEntries().find((entry) => entry.id === entryId);
+    const entry = this.findEntry(entryId);
     if (!entry) {
       return;
     }
@@ -308,6 +350,10 @@ export class EntryResizeController {
   // layer, and hands back the post-dispatch entry (or undefined if it's
   // gone) so this controller knows whether to keep showing handles
   onDragCommit(drag, neighbourChanges) {
+    if (drag.entryId === DRAFT_ENTRY_ID) {
+      this.commitDraftDrag(drag);
+      return;
+    }
     if (drag.edge === 'body') {
       // the click that ends this press must not open the Entry
       this.suppressClicks();
@@ -326,6 +372,22 @@ export class EntryResizeController {
       // handles stay up, re-draggable, at the just-committed position -
       // no need to re-trigger long-press for a follow-up adjustment
       this.showHandles(updatedEntry);
+    } else {
+      this.hideHandles();
+    }
+  }
+
+  // the provisional block's drag is released: its span becomes the draft (the
+  // host also tells the panel), and the handles stay up on it
+  commitDraftDrag(drag) {
+    if (drag.edge === 'body') {
+      // the click that ends this press must not count as a click on the block
+      this.suppressClicks();
+    }
+    this.onCommitDraft({ startOffsetMins: drag.currentStart, endOffsetMins: drag.currentEnd });
+    const draft = this.findEntry(DRAFT_ENTRY_ID);
+    if (draft) {
+      this.showHandles(draft);
     } else {
       this.hideHandles();
     }
@@ -364,6 +426,13 @@ export class EntryResizeController {
   renderDragFeedback(drag) {
     if (!drag) {
       return;
+    }
+    if (drag.entryId === DRAFT_ENTRY_ID) {
+      this.onDraftFeedback({
+        startOffsetMins: drag.currentStart,
+        endOffsetMins: drag.currentEnd,
+        atLimit: drag.atLimit,
+      });
     }
     if (drag.edge === 'body') {
       this.renderMoveFeedback(drag);
@@ -462,9 +531,15 @@ export class EntryResizeController {
   // puts every block the drag touched back to what is stored, and the handles
   // back on the Entry
   cancelDragVisuals(drag) {
-    const entry = this.getEntries().find((entry) => entry.id === drag.entryId);
+    const entry = this.findEntry(drag.entryId);
     if (!entry) {
       this.hideHandles();
+      return;
+    }
+    if (drag.entryId === DRAFT_ENTRY_ID) {
+      // the provisional block goes back to its span from before the drag
+      this.onDraftFeedback({ ...entry, atLimit: false });
+      this.showHandles(entry);
       return;
     }
     this.updateEntryRectLive({
@@ -505,6 +580,11 @@ export class EntryResizeController {
     if (this.activeHandleEntryId === undefined || this.session.drag) {
       return;
     }
+    if (this.activeHandleEntryId === DRAFT_ENTRY_ID) {
+      // the provisional block's handles stay for as long as the block does: it
+      // is replaced or removed by the host, not by where the next press lands
+      return;
+    }
     const target = e.target;
     if (target?.closest?.('.resize-handle') || target?.closest?.('el-details-panel')) {
       return;
@@ -525,6 +605,11 @@ export class EntryResizeController {
 
   renderHandles(entry, { activeEdge } = {}) {
     this.handlesLayer.innerHTML = '';
+    if (entry.id === DRAFT_ENTRY_ID) {
+      // the provisional block is drawn in a layer above everything (CreatePreview);
+      // its handles go above that, or the block would cover them
+      this.handlesLayer.parentNode?.appendChild(this.handlesLayer);
+    }
     const pxPerMinute = this.getPxPerMinute();
     const startOffsetPx = (entry.startOffsetMins || 0) * pxPerMinute;
     const endOffsetPx = (entry.endOffsetMins || 0) * pxPerMinute;

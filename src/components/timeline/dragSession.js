@@ -1,6 +1,7 @@
 import { computeMove } from './moveSpan';
 import { computeResize } from './resizeSpan';
 import { getNowLimitOffsetMins } from './createSpan';
+import { computeDraftMove, computeDraftResize, DRAFT_ENTRY_ID } from './draftSpan';
 import { createStackAutoScroller } from './autoScroller';
 
 // One pointer drag of an Entry, from start to commit or cancel: a handle
@@ -20,6 +21,7 @@ export class DragSession {
   constructor({
     svg,
     getEntries,
+    getDraft,
     isSingleChoiceDimension,
     getCurrentDate,
     clientToSvgCoord,
@@ -31,6 +33,7 @@ export class DragSession {
   }) {
     this.svg = svg;
     this.getEntries = getEntries;
+    this.getDraft = getDraft; // () => the provisional block of a new Entry ({ startOffsetMins, endOffsetMins }), if any
     this.isSingleChoiceDimension = isSingleChoiceDimension;
     this.getCurrentDate = getCurrentDate;
     this.clientToSvgCoord = clientToSvgCoord;
@@ -126,28 +129,50 @@ export class DragSession {
     if (!drag) {
       return;
     }
-    const entry = this.getEntries().find((entry) => entry.id === drag.entryId);
+    const isDraft = drag.entryId === DRAFT_ENTRY_ID;
+    const entry = isDraft
+      ? this.draftEntry()
+      : this.getEntries().find((entry) => entry.id === drag.entryId);
     if (!entry) {
       return;
     }
     const requested = this.calculateTheTimeSlotClicked(svgCoord >= 0 ? svgCoord : 0);
-    const result =
-      drag.edge === 'body'
-        ? computeMove({
-            entry,
-            entries: this.getEntries(),
-            requestedStart: drag.originalStart + (requested - drag.grabMins),
-            singleChoice: this.isSingleChoiceDimension(),
-            nowLimitMins: getNowLimitOffsetMins(this.getCurrentDate()),
-          })
-        : computeResize({
-            entry,
-            entries: this.getEntries(),
-            edge: drag.edge,
-            requestedOffsetMins: requested,
-            singleChoice: this.isSingleChoiceDimension(),
-            nowLimitMins: getNowLimitOffsetMins(this.getCurrentDate()),
-          });
+    const limits = {
+      entries: this.getEntries(),
+      singleChoice: this.isSingleChoiceDimension(),
+      nowLimitMins: getNowLimitOffsetMins(this.getCurrentDate()),
+    };
+    let result;
+    if (isDraft) {
+      // the provisional block of a new Entry: nothing stored, so no neighbour gives way
+      result =
+        drag.edge === 'body'
+          ? computeDraftMove({
+              draft: entry,
+              requestedStart: drag.originalStart + (requested - drag.grabMins),
+              ...limits,
+            })
+          : computeDraftResize({
+              draft: entry,
+              edge: drag.edge,
+              requestedOffsetMins: requested,
+              ...limits,
+            });
+    } else {
+      result =
+        drag.edge === 'body'
+          ? computeMove({
+              entry,
+              requestedStart: drag.originalStart + (requested - drag.grabMins),
+              ...limits,
+            })
+          : computeResize({
+              entry,
+              edge: drag.edge,
+              requestedOffsetMins: requested,
+              ...limits,
+            });
+    }
     drag.currentStart = result.startOffsetMins;
     drag.currentEnd = result.endOffsetMins;
     drag.neighbours = result.neighbours;
@@ -159,6 +184,12 @@ export class DragSession {
       this.onLimit(drag);
     }
     drag.wasAtLimit = result.atLimit;
+  }
+
+  // the provisional block as an Entry-shaped object, for the drag rules
+  draftEntry() {
+    const draft = this.getDraft?.();
+    return draft ? { id: DRAFT_ENTRY_ID, ...draft } : undefined;
   }
 
   // the neighbours of a drag whose span differs from what is stored

@@ -101,6 +101,63 @@ describe('DetailsPanel', () => {
       expect(el.hasUnsavedEdits()).toBe(true);
     });
 
+    // the provisional block can be dragged on the Timeline while the panel is open
+    it('follows a dragged new block without counting it as unsaved', () => {
+      const { el } = mountPanel();
+      el.openNewEntry(START, END);
+
+      el.setNewEntryTimes(30, 150);
+
+      expect(el.state).toMatchObject({ startOffsetMins: 30, endOffsetMins: 150 });
+      expect(el.hasUnsavedEdits()).toBe(false);
+    });
+
+    it('stays unsaved after a drag when something else was already changed', () => {
+      const { el } = mountPanel();
+      el.openNewEntry(START, END);
+      el.onSetActivityOnSelectedEntry('sleeping');
+
+      el.setNewEntryTimes(30, 150);
+
+      expect(el.hasUnsavedEdits()).toBe(true);
+    });
+
+    it('ignores a dragged block while an existing Entry is open', () => {
+      const { el } = mountPanel();
+      el.openEntry({ id: 3, startOffsetMins: START, endOffsetMins: END, activity: 'sleeping' });
+
+      el.setNewEntryTimes(30, 150);
+
+      expect(el.state).toMatchObject({ startOffsetMins: START, endOffsetMins: END });
+    });
+
+    it('tells the Timeline when a time field of a new block changes, but not of an existing Entry', () => {
+      const harness = document.createElement('test-harness-detailspanel');
+      const onNewEntryTimesChanged = vi.fn();
+      const key = harness.setProps(
+        {
+          findNextEntryAfter: () => undefined,
+          saveEntry: vi.fn(),
+          deleteEntry: vi.fn(),
+          onNewEntryTimesChanged,
+        },
+        true
+      );
+      const el = document.createElement('el-details-panel');
+      el.setAttribute('key', key);
+      el.setAttribute('dimensionindex', '0');
+      document.body.appendChild(el);
+      el.openNewEntry(START, END);
+
+      el.onSetOffsetMins({ timeField: 'endTime', timeInMinutes: clock(120) });
+      expect(onNewEntryTimesChanged).toHaveBeenLastCalledWith(START, 120);
+
+      onNewEntryTimesChanged.mockClear();
+      el.openEntry({ id: 3, startOffsetMins: START, endOffsetMins: END, activity: 'sleeping' });
+      el.onSetOffsetMins({ timeField: 'endTime', timeInMinutes: clock(120) });
+      expect(onNewEntryTimesChanged).not.toHaveBeenCalled();
+    });
+
     it('is unsaved once a new block has been given an activity', () => {
       const { el } = mountPanel();
       el.openNewEntry(START, END);

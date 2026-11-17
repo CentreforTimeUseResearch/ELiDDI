@@ -63,6 +63,8 @@ export class DetailsPanel extends TinyBase {
       openEntry: (entry) => this.openEntry(entry),
       openNewEntry: (startOffsetMins, endOffsetMins) =>
         this.openNewEntry(startOffsetMins, endOffsetMins),
+      setNewEntryTimes: (startOffsetMins, endOffsetMins) =>
+        this.setNewEntryTimes(startOffsetMins, endOffsetMins),
       close: () => this.reset(),
       hasUnsavedEdits: () => this.hasUnsavedEdits(),
       reportSaveConflict: (message) => this.showError(message),
@@ -369,6 +371,21 @@ export class DetailsPanel extends TinyBase {
     this.baseline = this.basisOf(this.state);
   }
 
+  // part of the panelActions contract: the provisional block of a new Entry
+  // was dragged to this span. The panel follows it; a block dragged and given
+  // nothing else is still not "unsaved" (see hasUnsavedEdits)
+  setNewEntryTimes(startOffsetMins, endOffsetMins) {
+    if (this.state.id !== undefined) {
+      return; // an Entry being edited, not a new one
+    }
+    const wasUnsaved = this.hasUnsavedEdits();
+    this.setStartTime(startOffsetMins);
+    this.setEndTime(endOffsetMins);
+    if (!wasUnsaved) {
+      this.baseline = this.basisOf(this.state);
+    }
+  }
+
   setStartTime(starttime) {
     this.updateState({
       ...this.state,
@@ -541,6 +558,7 @@ export class DetailsPanel extends TinyBase {
 
   // triggered by adding a  valid end time to an entry that has a valid start time
   onSetOffsetMins({ timeField, timeInMinutes }) {
+    const { startOffsetMins: wasStart, endOffsetMins: wasEnd } = this.state;
     // a clock time earlier than the day boundary (01:00 with a 04:00
     // boundary) is the end of this diary day, not before its start
     let offsetMins = timeInMinutes - this.dayBoundaryInMinutes;
@@ -561,6 +579,13 @@ export class DetailsPanel extends TinyBase {
           startOffsetMins: offsetMins,
         });
         break;
+    }
+    const changed = this.state.startOffsetMins !== wasStart || this.state.endOffsetMins !== wasEnd;
+    // (setting the picker from code, as opening an Entry does, reports the time the
+    // panel already has: not a change)
+    if (changed && this.state.id === undefined) {
+      // a new Entry: its provisional block on the Timeline follows the fields
+      this.props?.onNewEntryTimesChanged?.(this.state.startOffsetMins, this.state.endOffsetMins);
     }
   }
 

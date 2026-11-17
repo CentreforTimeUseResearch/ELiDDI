@@ -11,6 +11,7 @@ export function stubPanelActionsKey() {
     {
       openEntry: vi.fn(),
       openNewEntry: vi.fn(),
+      setNewEntryTimes: vi.fn(),
       close: vi.fn(),
       reportSaveConflict: vi.fn(),
     },

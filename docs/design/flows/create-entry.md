@@ -11,10 +11,11 @@ The Respondent wants to record what they did in a period with no Entry on the cu
 3. **Dragging**: pressing on empty time and moving paints a provisional block from the press slot to the current slot, snapped to 10 minutes, in either direction. A readout shows start, end and duration. ![Dragging](../screens/create-entry/03-dragging.png)
 4. **Clamped**: the block stops at the nearest existing Entry on a single-choice Dimension, at the day edges, and at "now" on the current day. The limit is signalled visibly (as the resize limit flash today). ![Clamped](../screens/create-entry/04-clamped.png)
 5. **Panel open (new)**: on release, the provisional block stays and the shared details panel opens with start and end filled in and the activity empty. ![Panel](../screens/create-entry/05-panel-open.png)
-6. **Saved**: Save is enabled once an Activity is chosen; saving turns the block into an Entry and closes the panel. ![Saved](../screens/create-entry/06-saved.png)
-7. **Cancelled**: Escape, Cancel or dismissing the panel removes the provisional block; the Diary is unchanged. ![Cancelled](../screens/create-entry/07-cancelled.png)
+6. **Adjusting (new)**: while the panel is open, the provisional block can still be changed by pointer, like a saved Entry: it shows a start handle and an end handle, dragging one changes only that edge, and pressing the block's body and dragging moves it, keeping its length. The same limits apply as when painting it (neighbours on single-choice Dimensions, day edges, "now", 10-minute minimum), but no saved Entry is trimmed: a draft stops at its neighbours instead. The panel's start and end times follow on release; editing the panel's time fields moves the block likewise. A press on empty time away from the block paints a fresh block, replacing it. Escape or pointer cancel mid-drag puts the block back as it was before that drag.
+7. **Saved**: Save is enabled once an Activity is chosen; saving turns the block into an Entry and closes the panel. ![Saved](../screens/create-entry/06-saved.png)
+8. **Cancelled**: Escape, Cancel or dismissing the panel removes the provisional block; the Diary is unchanged. ![Cancelled](../screens/create-entry/07-cancelled.png)
 
-A plain click or tap (press and release without moving past one slot) creates a default-length block (30 minutes, proposed) starting at the clicked slot, clamped to free space, and goes straight to state 5. If less than 10 minutes is free there, nothing is created and the limit is signalled.
+A plain click or tap (press and release without moving past one slot) creates a default-length block (30 minutes, proposed) starting at the clicked slot, clamped to free space, and goes straight to state 5. A plain click on the provisional block itself leaves it as it is. If less than 10 minutes is free there, nothing is created and the limit is signalled.
 
 ## Baseline behaviour without JavaScript
 
@@ -43,6 +44,9 @@ The server-rendered form has one card per 10-minute slot, each with a control pe
 - [ ] Block clamps to neighbours (single-choice), day edges, and "now" on the current day.
 - [ ] A single click or tap creates a 30-minute (or shorter, if clamped) block and opens the panel.
 - [ ] Release opens the panel with start and end pre-filled; Save needs an Activity.
+- [ ] Release a created block, drag its start earlier, then drag its end later: both changes are kept, on the block and in the panel.
+- [ ] Pressing the provisional block's body and dragging moves it, keeping its length; a plain click on it changes nothing; a press on empty time elsewhere paints a new block.
+- [ ] Dragging the provisional block never changes a saved Entry; it stops at its neighbours (single-choice), the day edges and "now".
 - [ ] Escape, Cancel or dismissal leaves no trace of the block and does not change the Diary.
 - [ ] Touch scrolling is never blocked by the create gesture.
 - [ ] Holding a create drag near the edge of the horizontal timeline scrolls it, the end time keeps updating, and scrolling stops on release, cancel or leaving the edge.

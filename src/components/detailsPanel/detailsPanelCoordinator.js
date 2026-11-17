@@ -47,6 +47,8 @@ export class DetailsPanelCoordinator {
           saveEntry: (entry) => this.activeTimeline()?.saveEntry(entry),
           deleteEntry: (id) => this.activeTimeline()?.deleteEntry(id),
           findNextEntryAfter: (offsetMins) => this.activeTimeline()?.findNextEntryAfter(offsetMins),
+          onNewEntryTimesChanged: (startOffsetMins, endOffsetMins) =>
+            this.activeTimeline()?.syncDraftFromPanel(startOffsetMins, endOffsetMins),
         },
         true
       )
@@ -62,6 +64,8 @@ export class DetailsPanelCoordinator {
         this.openFor(dimensionIndex, (actions) =>
           actions.openNewEntry(startOffsetMins, endOffsetMins)
         ),
+      setNewEntryTimes: (startOffsetMins, endOffsetMins) =>
+        this.panelActions?.setNewEntryTimes?.(startOffsetMins, endOffsetMins),
       close: () => this.panelActions?.close(),
       hasUnsavedEdits: () => this.panelActions?.hasUnsavedEdits?.() ?? false,
       focus: () => this.panelActions?.focus?.(),

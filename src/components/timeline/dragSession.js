@@ -1,7 +1,7 @@
 import { computeMove } from './moveSpan';
 import { computeResize } from './resizeSpan';
 import { getNowLimitOffsetMins } from './createSpan';
-import { AutoScroller } from './autoScroller';
+import { createStackAutoScroller } from './autoScroller';
 
 // One pointer drag of an Entry, from start to commit or cancel: a handle
 // drag (edge 'start'/'end', the rules are computeResize's) or a move of the
@@ -39,21 +39,8 @@ export class DragSession {
     this.onLimit = onLimit;
     this.onCommit = onCommit;
     this.onCancelled = onCancelled;
-    // scrolls the horizontal timeline stack when the pointer is held near its
-    // edge; a no-op for a Timeline with no such scroller (the vertical one)
-    this.autoScroller = new AutoScroller({
-      getScroller: () => this.svg?.closest?.('el-horizontal-timeline-stack') ?? undefined,
-      getInsets: () => this.scrollerInsets(),
-      onScrolled: () => this.retick(),
-    });
-  }
-
-  // the stack's sticky dimension-label gutter covers the start of its
-  // scrollable width, so the left edge zone begins after it
-  scrollerInsets() {
-    const scroller = this.autoScroller.scroller;
-    const gutter = parseFloat(getComputedStyle(scroller).getPropertyValue('--hz-label-width'));
-    return { left: Number.isFinite(gutter) ? gutter : 0, right: 0 };
+    // scrolls the horizontal timeline stack when the pointer is held near its edge
+    this.autoScroller = createStackAutoScroller(svg, () => this.retick());
   }
 
   // the pointer has not moved but the content under it has: recompute the

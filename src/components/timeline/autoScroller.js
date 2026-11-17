@@ -108,3 +108,21 @@ export class AutoScroller {
     this.frame = this.raf(() => this.tick());
   }
 }
+
+// the AutoScroller every drag on a Timeline uses: it scrolls the horizontal
+// timeline stack the svg sits in (a no-op for the vertical Timeline, which
+// has no such scroller). The stack's sticky dimension-label gutter covers the
+// start of its scrollable width, so the left edge zone begins after it.
+export function createStackAutoScroller(svg, onScrolled) {
+  const auto = new AutoScroller({
+    getScroller: () => svg?.closest?.('el-horizontal-timeline-stack') ?? undefined,
+    getInsets: () => {
+      const gutter = parseFloat(
+        getComputedStyle(auto.scroller).getPropertyValue('--hz-label-width')
+      );
+      return { left: Number.isFinite(gutter) ? gutter : 0, right: 0 };
+    },
+    onScrolled,
+  });
+  return auto;
+}

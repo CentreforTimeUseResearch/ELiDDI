@@ -30,7 +30,7 @@ export class AutoScroller {
   constructor({
     getScroller, // () => the scrolling element, or undefined (nothing to scroll)
     getInsets = () => ({ left: 0, right: 0 }), // px of the scroller covered at each side (sticky gutter)
-    onScrolled, // () => void, after each step that moved the container
+    onScrolled, // () => void, whenever the container scrolls during a drag, by this scroller or by the user (wheel, trackpad, scrollbar)
     raf = (cb) => requestAnimationFrame(cb),
     caf = (id) => cancelAnimationFrame(id),
     now = () => performance.now(),
@@ -46,6 +46,7 @@ export class AutoScroller {
       prefersReducedMotion,
     });
     this.frame = undefined;
+    this.onScroll = () => this.onScrolled();
   }
 
   get running() {
@@ -59,6 +60,7 @@ export class AutoScroller {
     if (!this.scroller) {
       return;
     }
+    this.scroller.addEventListener('scroll', this.onScroll, { passive: true });
     this.clientX = clientX;
     this.enteredZoneAt = undefined;
     this.lastTime = this.now();
@@ -75,6 +77,7 @@ export class AutoScroller {
       this.caf(this.frame);
     }
     this.frame = undefined;
+    this.scroller?.removeEventListener('scroll', this.onScroll);
     this.scroller = undefined;
   }
 
@@ -98,11 +101,8 @@ export class AutoScroller {
     } else {
       this.enteredZoneAt ??= time;
       if (time - this.enteredZoneAt >= DWELL_MS) {
-        const before = this.scroller.scrollLeft;
-        this.scroller.scrollLeft = before + (speed * elapsed) / 1000;
-        if (this.scroller.scrollLeft !== before) {
-          this.onScrolled();
-        }
+        // the browser's scroll event (onScroll) reports the step
+        this.scroller.scrollLeft += (speed * elapsed) / 1000;
       }
     }
     this.frame = this.raf(() => this.tick());

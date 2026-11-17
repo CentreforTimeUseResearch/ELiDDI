@@ -23,7 +23,7 @@ The server-rendered form has one card per 10-minute slot, each with a control pe
 ## Enhanced behaviour with JavaScript
 
 - `<el-dynamic-timeline>` replaces the form; gestures operate on the Timeline for the current Dimension.
-- Auto-scroll: as for [move-resize](move-resize.md), holding a painting pointer near the left or right edge of the horizontal timeline scrolls it after a short dwell, and the painted end follows.
+- Auto-scroll: as for [move-resize](move-resize.md), holding a painting pointer near the left or right edge of the horizontal timeline scrolls it after a short dwell, and the painted end follows. So does scrolling by wheel, trackpad or scrollbar mid-drag.
 - Pointer events with pointer capture; on touch, a short press-and-drag on empty time creates, while a drag that starts as a scroll gesture scrolls the Timeline (create requires the slot to be pressed without scrolling for ~150 ms, so scrolling is never hijacked).
 - Created Entries on single-choice Dimensions never overlap another Entry. On multiple-choice Dimensions the block may overlap and is not clamped by neighbours.
 - Changes mark the Diary status in-progress.

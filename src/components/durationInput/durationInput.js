@@ -15,7 +15,7 @@ const ID = INPUT_ID_ATTR;
 const LABEL = LABEL_ATTR;
 const VALUE = VALUE_ATTR;
 
-const MAX_HOURS = 23;
+const MAX_HOURS = 24; // a whole day, 04:00 to 04:00
 const MAX_MINUTES = 59;
 const MINUTES_PER_HOUR = 60;
 
@@ -80,6 +80,11 @@ export class DurationInput extends TinyBase {
     }
     if (minutesRaw !== '' && Number(minutesRaw) > MAX_MINUTES) {
       this.showError(this.minutesInput, t('durationInput.minutesInvalid', { max: MAX_MINUTES }));
+      return false;
+    }
+    // 24 hours is a whole day, so nothing may be added to it
+    if (Number(hoursRaw) === MAX_HOURS && Number(minutesRaw) > 0) {
+      this.showError(this.minutesInput, t('durationInput.dayInvalid', { max: MAX_HOURS }));
       return false;
     }
     this.clearError();

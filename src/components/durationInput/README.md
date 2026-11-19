@@ -30,7 +30,7 @@ Attribute names are shared constants imported from `src/utils/validatedFormField
 
 - Uses two `type="text" inputmode="numeric"` fields rather than native `type="number"` — the GOV.UK Design System pattern, chosen because native number-input spinner buttons and validation UI are inconsistently announced by screen readers.
 - Digit-only entry is enforced twice: `keypress` blocks non-digit keys outright, and an `input` listener strips anything that still gets through (e.g. paste).
-- Validates hours ≤ 23 and minutes ≤ 59 on `change`, showing an inline error via the shared `showFieldError`/`clearFieldError` helpers otherwise.
+- Validates hours ≤ 24 (minutes must then be 0) and minutes ≤ 59 on `change`, showing an inline error via the shared `showFieldError`/`clearFieldError` helpers otherwise.
 
 ---
 

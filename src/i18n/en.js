@@ -186,6 +186,7 @@ export default {
   'durationInput.hours': 'Hours',
   'durationInput.minutes': 'Minutes',
   'durationInput.hoursInvalid': 'Enter hours as a number between 0 and {max}.',
+  'durationInput.dayInvalid': 'With {max} hours, minutes must be 0.',
   'durationInput.minutesInvalid': 'Enter minutes as a number between 0 and {max}.',
 
   'onboarding.back': 'back',

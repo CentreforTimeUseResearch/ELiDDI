@@ -33,8 +33,11 @@ describe('SubmissionStatus', () => {
     document.body.innerHTML = '<el-submission-status></el-submission-status>';
     button = document.querySelector('el-submission-status button');
   };
-  const showsCheckMark = () => button.innerHTML.trim() === serialised(doneIconSource).trim();
-  const showsQuestionMark = () => button.innerHTML.trim() === serialised(helpIconSource).trim();
+  const showsCheckMark = () =>
+    button.querySelector('svg').outerHTML.trim() === serialised(doneIconSource).trim();
+  const statusText = () => button.querySelector('.submission-status-text').textContent;
+  const showsQuestionMark = () =>
+    button.querySelector('svg').outerHTML.trim() === serialised(helpIconSource).trim();
 
   beforeEach(() => {
     appStore.dispatch({ type: HIDE_PANEL });
@@ -91,6 +94,7 @@ describe('SubmissionStatus', () => {
     it('is a question mark for an empty Diary', () => {
       expect(showsQuestionMark()).toBe(true);
       expect(button.getAttribute('aria-label')).toBe('Diary checks: not ready');
+      expect(statusText()).toBe('Not complete');
     });
 
     it('becomes a check mark once the hard checks pass, without a reload', () => {
@@ -98,6 +102,7 @@ describe('SubmissionStatus', () => {
 
       expect(showsCheckMark()).toBe(true);
       expect(button.getAttribute('aria-label')).toBe('Diary checks: ready to submit');
+      expect(statusText()).toBe('Complete');
     });
 
     it('stays a check mark when only soft checks fail', () => {

@@ -62,14 +62,21 @@ export class SubmissionStatus extends TinyBase {
     const state = results.length === 0 ? NO_RULES : canSubmit(results) ? READY : NOT_READY;
     if (state === this.readiness) return;
     this.readiness = state;
-    this.statusButton.innerHTML = state === READY ? doneIconSource : helpIconSource;
+    this.statusButton.innerHTML = this.buttonContent(state);
     this.statusButton.setAttribute('aria-label', t(ACCESSIBLE_NAMES[state]));
+  }
+
+  // the icon with a short text label centred beneath it
+  buttonContent(state) {
+    const ready = state === READY;
+    const text = t(ready ? 'submissionStatus.text.complete' : 'submissionStatus.text.notComplete');
+    return `${ready ? doneIconSource : helpIconSource}<span class="submission-status-text">${text}</span>`;
   }
 
   render() {
     this.innerHTML = `
             <button id="submission-status-button" class="reset-to-div" type="button" aria-label="${t(ACCESSIBLE_NAMES[NO_RULES])}" aria-controls="validation-panel" aria-expanded="false">
-            ${helpIconSource}
+            ${this.buttonContent(NO_RULES)}
             </button>
             `;
   }

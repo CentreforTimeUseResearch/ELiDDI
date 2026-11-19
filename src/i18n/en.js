@@ -216,6 +216,8 @@ export default {
   'submissionStatus.name.noRules': 'Diary checks',
   'submissionStatus.name.ready': 'Diary checks: ready to submit',
   'submissionStatus.name.notReady': 'Diary checks: not ready',
+  'submissionStatus.text.complete': 'Complete',
+  'submissionStatus.text.notComplete': 'Not complete',
 
   'syncStatus.saved': 'Saved',
   'syncStatus.saving': 'Saving…',

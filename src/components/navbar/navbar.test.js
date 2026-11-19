@@ -635,9 +635,7 @@ describe('Navbar', () => {
       const el = document.createElement('el-nav-bar');
       document.body.appendChild(el);
 
-      expect(el.querySelector('.menu-list .logout-button').textContent).toBe(
-        'Log out (switch person)'
-      );
+      expect(el.querySelector('.menu-list .logout-button').textContent).toBe('Log out ');
       expect(el.querySelector('.nav-menu-list .logout-button')).not.toBeNull();
     });
 

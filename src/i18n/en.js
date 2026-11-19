@@ -198,7 +198,7 @@ export default {
   'navbar.menu.reset': 'Reset',
   'navbar.menu.stats': 'View stats',
   'navbar.menu.about': 'About this study',
-  'navbar.menu.logout': 'Log out (switch person)',
+  'navbar.menu.logout': 'Log out ',
   'navbar.changeDay': 'Change day',
   'navbar.selectedDay': 'Selected day: ',
   'navbar.changeDate': 'change',

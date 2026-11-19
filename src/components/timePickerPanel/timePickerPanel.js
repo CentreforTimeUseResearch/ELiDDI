@@ -79,7 +79,7 @@ export class TimePickerPanel extends TinyBase {
       this.onTimeInputChange('endTime', newValue);
     }
     if (name === DAY_BOUNDARY) {
-      this.dayBoundaryInMinutes = Number(this[DAY_BOUNDARY]) - 1 + 24 * 60;
+      this.dayBoundaryInMinutes = Number(this[DAY_BOUNDARY]) + 24 * 60;
     }
   }
 
@@ -133,7 +133,7 @@ export class TimePickerPanel extends TinyBase {
       endTotalMinutes += 24 * 60; // Add 24 hours in minutes
     }
 
-    const endDayBoundaryInMinutes = Number(this[DAY_BOUNDARY]) - 1 + 24 * 60;
+    const endDayBoundaryInMinutes = Number(this[DAY_BOUNDARY]) + 24 * 60;
 
     /* don't let the end time be beyond the end day boundary, or less than
        the minimum after the start (#162) - recomputed on every change, so
@@ -155,7 +155,7 @@ export class TimePickerPanel extends TinyBase {
 
   recalculateEndTime(startTotalMinutes, durationTotalMinutes) {
     const endMinutes = Number(startTotalMinutes) + Number(durationTotalMinutes);
-    // we need to check that end minutes is not later that 3.59am
+    // we need to check that end minutes is not later than the Day boundary (an end AT it, e.g. 04:00, is valid)
     this.endInputMinutes = endMinutes;
     this.endInputElement.setAttribute('value', this.convertMinutesToTimePickerFormat(endMinutes));
     this.props.onTimeSet({ timeField: 'endTime', timeInMinutes: endMinutes });

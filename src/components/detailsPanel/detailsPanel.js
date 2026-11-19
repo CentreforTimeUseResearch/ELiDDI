@@ -453,7 +453,7 @@ export class DetailsPanel extends TinyBase {
       };
     }
     return {
-      endTimeInMinutes: this.dayBoundaryInMinutes - 1 + 24 * 60,
+      endTimeInMinutes: this.dayBoundaryInMinutes + 24 * 60,
       label: t('timePickerPanel.continue.toEnd'),
     };
   }

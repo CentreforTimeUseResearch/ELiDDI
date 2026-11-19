@@ -63,19 +63,32 @@ describe('TimePickerPanel', () => {
   // regression test for a bug where reopening a saved entry (which sets
   // start-time/end-time via HTML attributes - always strings, unlike a
   // typed/checkbox-computed value, which arrives as a number) showed a
-  // wildly wrong duration. `"1679" < "840"` is true under JS's *string*
+  // wildly wrong duration. `"1680" < "840"` is true under JS's *string*
   // comparison (lexicographic: '1' < '8'), so the "wrapped past midnight"
   // branch wrongly fired, and += on a string concatenates instead of
   // adding, producing a garbage total. Reproduced for any start before
   // 16:40 (raw minutes < 1000, i.e. still a 3-digit string) paired with a
-  // 4-digit end, e.g. end-of-day (1679) via "continue to end of day".
+  // 4-digit end, e.g. end-of-day (1680) via "continue to end of day".
   it('computes the correct duration when start/end times arrive as attribute strings, not numbers', () => {
     const el = createPanel();
 
     el.setAttribute('start-time', '840'); // 14:00
-    el.setAttribute('end-time', '1679'); // 03:59 next day (end of day)
+    el.setAttribute('end-time', '1680'); // 04:00 next day (end of day)
 
-    expect(el.durationInputMinutes).toBe(839); // 13h59m, not 16790600
+    expect(el.durationInputMinutes).toBe(840); // 14h, not 16800600
+  });
+
+  // #298: dragging an end to the far right stores the Day boundary itself
+  // (04:00, offset 1440), which is a valid end - the day ends there
+  it('accepts an end time at the Day boundary but not a minute past it', () => {
+    const el = createPanel();
+
+    el.setAttribute('start-time', '840');
+    el.setAttribute('end-time', '1680');
+    expect(el.endTimeError).toBeFalsy();
+
+    el.setAttribute('end-time', '1681');
+    expect(el.endTimeError).toBeTruthy();
   });
 
   // regression coverage for the future-time-validation multi-day bug: the
